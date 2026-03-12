@@ -1,53 +1,88 @@
-import { useEffect } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
+import { Toaster } from "@/components/ui/sonner";
+
+// Pages
+import LoginPage from "@/pages/LoginPage";
+import DashboardPage from "@/pages/DashboardPage";
+import PlayersPage from "@/pages/PlayersPage";
+import CompetitionPage from "@/pages/CompetitionPage";
+import ScoreEntryPage from "@/pages/ScoreEntryPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+export const API = `${BACKEND_URL}/api`;
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+// User Context
+export const UserContext = createContext(null);
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
+export const useUser = () => {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error("useUser must be used within UserProvider");
+  }
+  return context;
 };
 
 function App() {
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem("golfUser");
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("golfUser", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("golfUser");
+    }
+  }, [user]);
+
+  const login = async (username) => {
+    try {
+      const response = await axios.post(`${API}/login`, { username });
+      setUser(response.data.player);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+  };
+
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <UserContext.Provider value={{ user, login, logout }}>
+      <div className="min-h-screen bg-background">
+        <BrowserRouter>
+          <Routes>
+            <Route
+              path="/"
+              element={user ? <Navigate to="/dashboard" /> : <LoginPage />}
+            />
+            <Route
+              path="/dashboard"
+              element={user ? <DashboardPage /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/players"
+              element={user ? <PlayersPage /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/competition/:id"
+              element={user ? <CompetitionPage /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/score/:roundId/:playerId"
+              element={user ? <ScoreEntryPage /> : <Navigate to="/" />}
+            />
+          </Routes>
+        </BrowserRouter>
+        <Toaster position="top-center" richColors />
+      </div>
+    </UserContext.Provider>
   );
 }
 

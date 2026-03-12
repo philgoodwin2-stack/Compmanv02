@@ -1,34 +1,55 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Golf App Specific Styles */
+
+.golf-header {
+    background: linear-gradient(to bottom right, #1B4D3E, #063627);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+.trophy-gold {
+    color: #D4AF37;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.trophy-gold-bg {
+    background: linear-gradient(45deg, #D4AF37, #F3E5AB, #D4AF37);
 }
 
-.App-link {
-    color: #61dafb;
+/* Scorecard styles */
+.scorecard-cell {
+    @apply w-12 h-16 flex flex-col items-center justify-center border-r border-border/20 last:border-r-0;
 }
 
-@keyframes App-logo-spin {
+.hole-active {
+    @apply ring-2 ring-primary ring-inset bg-primary/5;
+}
+
+/* Animation classes */
+.animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
     from {
-        transform: rotate(0deg);
+        opacity: 0;
+        transform: translateY(20px);
     }
     to {
-        transform: rotate(360deg);
+        opacity: 1;
+        transform: translateY(0);
     }
+}
+
+.hover-lift {
+    @apply hover:-translate-y-1 transition-transform duration-300 ease-out;
+}
+
+.button-press {
+    @apply active:scale-95 transition-transform duration-100;
+}
+
+/* Mobile safe areas */
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pt-safe {
+    padding-top: env(safe-area-inset-top);
 }
