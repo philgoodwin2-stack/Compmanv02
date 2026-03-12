@@ -1,0 +1,133 @@
+{
+  "project_name": "Stableford Golf Competition App",
+  "design_philosophy": {
+    "theme_name": "The Modern Clubhouse",
+    "core_concept": "Digital Caddie meets Private Club. Clean, legible outdoor-friendly UI with prestigious aesthetics.",
+    "emotional_tone": "Focused, Competitive, Prestigious, Green, Calm",
+    "visual_style": "Minimalist Sport. High contrast for outdoor visibility. Textured backgrounds (grain) to mimic paper scorecards.",
+    "mode": "light_preferred_with_dark_option"
+  },
+  "typography": {
+    "font_family": {
+      "headings": "Barlow Condensed, sans-serif",
+      "body": "Manrope, sans-serif",
+      "data": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-5xl md:text-6xl font-bold tracking-tight uppercase",
+      "h2": "text-3xl md:text-4xl font-bold tracking-tight uppercase",
+      "h3": "text-2xl font-semibold tracking-normal",
+      "body": "text-base leading-relaxed",
+      "caption": "text-xs tracking-wider uppercase text-muted-foreground",
+      "score": "text-4xl font-mono font-bold tracking-tighter"
+    },
+    "instructions": "Import 'Barlow Condensed' (Weights: 400, 600, 700, 800) and 'Manrope' from Google Fonts in index.html."
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "DEFAULT": "#1B4D3E",
+        "foreground": "#FFFFFF",
+        "description": "Deep Clubhouse Green. Used for primary buttons, active states, and heavy branding."
+      },
+      "secondary": {
+        "DEFAULT": "#F5F5F0",
+        "foreground": "#1B4D3E",
+        "description": "Bone/Sand. Used for section backgrounds to reduce outdoor glare compared to pure white."
+      },
+      "accent": {
+        "DEFAULT": "#D4AF37",
+        "foreground": "#000000",
+        "description": "Trophy Gold. Used for leaderboards, winners, and high-value actions."
+      },
+      "background": {
+        "light": "#FFFFFF",
+        "dark": "#0A0A0A"
+      },
+      "surface": {
+        "light": "#F8F9FA",
+        "dark": "#121212"
+      },
+      "score_indicators": {
+        "birdie": "#EF4444",
+        "par": "#E5E7EB",
+        "bogey": "#3B82F6",
+        "double_bogey": "#111827"
+      }
+    },
+    "gradients": {
+      "hero": "linear-gradient(to bottom right, #1B4D3E, #063627)",
+      "gold_shimmer": "linear-gradient(45deg, #D4AF37, #F3E5AB, #D4AF37)"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest px-8 py-3 shadow-lg",
+      "secondary": "bg-secondary text-secondary-foreground border border-primary/20 hover:bg-secondary/80 rounded-none uppercase font-bold tracking-widest px-8 py-3",
+      "ghost": "hover:bg-accent/10 hover:text-accent rounded-sm uppercase tracking-wider"
+    },
+    "cards": {
+      "style": "bg-card text-card-foreground shadow-sm border border-border/40 rounded-sm relative overflow-hidden",
+      "feature": "border-l-4 border-l-primary"
+    },
+    "inputs": {
+      "style": "rounded-none border-x-0 border-t-0 border-b-2 border-input bg-transparent px-0 py-2 focus-visible:ring-0 focus-visible:border-primary placeholder:text-muted-foreground/50 transition-colors"
+    },
+    "scorecard": {
+      "cell": "w-12 h-16 flex flex-col items-center justify-center border-r border-border/20 last:border-r-0",
+      "active_hole": "ring-2 ring-primary ring-inset bg-primary/5"
+    }
+  },
+  "layout_strategies": {
+    "dashboard": {
+      "grid": "grid grid-cols-1 md:grid-cols-12 gap-6 p-6",
+      "header": "col-span-full mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border/40 pb-6",
+      "main_content": "col-span-full md:col-span-8 space-y-6",
+      "sidebar": "col-span-full md:col-span-4 space-y-6"
+    },
+    "mobile_score_entry": {
+      "container": "flex flex-col h-[100dvh] bg-background",
+      "hole_navigator": "flex overflow-x-auto snap-x py-4 gap-2 px-4 no-scrollbar",
+      "input_area": "flex-1 flex flex-col items-center justify-center gap-8 p-6"
+    }
+  },
+  "spacing_system": {
+    "section_gap": "gap-12 md:gap-24",
+    "card_padding": "p-6 md:p-8",
+    "mobile_safe_area": "pb-safe pt-safe"
+  },
+  "assets": {
+    "icons": {
+      "library": "lucide-react",
+      "style": "stroke-1.5"
+    },
+    "images": [
+      {
+        "category": "hero",
+        "url": "https://images.unsplash.com/photo-1763917343408-4cfcc6bdd381?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzF8MHwxfHNlYXJjaHwzfHxnb2xmJTIwY291cnNlJTIwbGFuZHNjYXBlJTIwcHJvZmVzc2lvbmFsfGVufDB8fHx8MTc3MzM0MDEzNHww&ixlib=rb-4.1.0&q=85",
+        "description": "Panoramic green golf course for landing page hero."
+      },
+      {
+        "category": "texture",
+        "url": "https://www.transparenttextures.com/patterns/cubes.png",
+        "description": "Subtle paper texture for scorecard backgrounds (optional)."
+      }
+    ]
+  },
+  "animations": {
+    "page_transition": "animate-in fade-in slide-in-from-bottom-4 duration-500",
+    "micro_interactions": {
+      "hover_lift": "hover:-translate-y-1 transition-transform duration-300 ease-out",
+      "button_press": "active:scale-95 transition-transform duration-100"
+    }
+  },
+  "universal_guidelines": [
+    "Always use 'Manrope' for UI text and 'Barlow Condensed' for headings.",
+    "Do NOT use pure black (#000000). Use #0A0A0A or #121212.",
+    "Ensure high contrast for outdoor usage. Text on white backgrounds should be dark grey/green.",
+    "Use 'grid-cols-12' for complex layouts.",
+    "Interactive elements must have a min-height of 44px for mobile accessibility.",
+    "Use 'sonner' for all toast notifications.",
+    "All interactive elements must have 'data-testid' attributes."
+  ]
+}
