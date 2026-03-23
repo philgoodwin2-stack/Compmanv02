@@ -317,14 +317,23 @@ export default function CompetitionPage() {
 
           {/* Leaderboard Tab */}
           <TabsContent value="leaderboard">
-            <Card>
-              <CardHeader>
+            <Card className="relative overflow-hidden">
+              {/* Background Image */}
+              <div 
+                className="absolute inset-0 opacity-10"
+                style={{
+                  backgroundImage: 'url(https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=1200)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              />
+              <CardHeader className="relative z-10">
                 <CardTitle className="text-2xl font-bold uppercase tracking-tight flex items-center gap-2">
                   <Trophy className="w-6 h-6 text-[#D4AF37]" />
                   Leaderboard
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative z-10">
                 {leaderboard.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Trophy className="w-12 h-12 mx-auto mb-4 opacity-30" />
