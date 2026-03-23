@@ -343,7 +343,8 @@ export default function CompetitionPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16 uppercase text-xs tracking-wider">Pos</TableHead>
+                        <TableHead className="w-12 uppercase text-xs tracking-wider">Pos</TableHead>
+                        <TableHead className="w-10 uppercase text-xs tracking-wider"></TableHead>
                         <TableHead className="uppercase text-xs tracking-wider">Player</TableHead>
                         <TableHead className="uppercase text-xs tracking-wider text-center">HCP</TableHead>
                         {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round) => (
@@ -367,6 +368,13 @@ export default function CompetitionPage() {
                               {getMedalIcon(index)}
                               {index + 1}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {entry.player_team_logo ? (
+                              <img src={entry.player_team_logo} alt="Team" className="w-6 h-6 object-contain" />
+                            ) : (
+                              <div className="w-6 h-6" />
+                            )}
                           </TableCell>
                           <TableCell className="font-medium">{entry.player_username}</TableCell>
                           <TableCell className="text-center font-mono text-sm">

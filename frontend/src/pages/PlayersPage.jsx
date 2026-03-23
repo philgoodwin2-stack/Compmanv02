@@ -27,6 +27,28 @@ import {
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag } from "lucide-react";
 
+// Sports team logos - popular teams
+const TEAM_LOGOS = [
+  { name: "None", logo: "" },
+  { name: "Man United", logo: "https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg" },
+  { name: "Liverpool", logo: "https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg" },
+  { name: "Chelsea", logo: "https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg" },
+  { name: "Arsenal", logo: "https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg" },
+  { name: "Man City", logo: "https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg" },
+  { name: "Tottenham", logo: "https://upload.wikimedia.org/wikipedia/en/b/b4/Tottenham_Hotspur.svg" },
+  { name: "Real Madrid", logo: "https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg" },
+  { name: "Barcelona", logo: "https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg" },
+  { name: "Bayern Munich", logo: "https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg" },
+  { name: "PSG", logo: "https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg" },
+  { name: "Juventus", logo: "https://upload.wikimedia.org/wikipedia/commons/a/a8/Juventus_FC_-_pictogram.svg" },
+  { name: "AC Milan", logo: "https://upload.wikimedia.org/wikipedia/commons/d/d0/Logo_of_AC_Milan.svg" },
+  { name: "Inter Milan", logo: "https://upload.wikimedia.org/wikipedia/commons/0/05/FC_Internazionale_Milano_2021.svg" },
+  { name: "Borussia Dortmund", logo: "https://upload.wikimedia.org/wikipedia/commons/6/67/Borussia_Dortmund_logo.svg" },
+  { name: "Ajax", logo: "https://upload.wikimedia.org/wikipedia/en/7/79/Ajax_Amsterdam.svg" },
+  { name: "Celtic", logo: "https://upload.wikimedia.org/wikipedia/en/3/35/Celtic_FC.svg" },
+  { name: "Rangers", logo: "https://upload.wikimedia.org/wikipedia/en/4/43/Rangers_FC.svg" },
+];
+
 export default function PlayersPage() {
   const navigate = useNavigate();
   const { user } = useUser();
@@ -35,7 +57,7 @@ export default function PlayersPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(null);
-  const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18 });
+  const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "" });
 
   useEffect(() => {
     fetchPlayers();
@@ -62,7 +84,7 @@ export default function PlayersPage() {
       await axios.post(`${API}/players`, newPlayer);
       toast.success("Player added!");
       setShowAddDialog(false);
-      setNewPlayer({ username: "", handicap: 18 });
+      setNewPlayer({ username: "", handicap: 18, team_logo: "" });
       fetchPlayers();
     } catch (error) {
       if (error.response?.data?.detail) {
@@ -81,6 +103,7 @@ export default function PlayersPage() {
         username: editingPlayer.username,
         handicap: editingPlayer.handicap,
         is_active: editingPlayer.is_active,
+        team_logo: editingPlayer.team_logo,
       });
       toast.success("Player updated!");
       setShowEditDialog(false);
@@ -220,6 +243,28 @@ export default function PlayersPage() {
                     className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Team Logo</Label>
+                  <div className="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto p-2 border rounded">
+                    {TEAM_LOGOS.map((team) => (
+                      <button
+                        key={team.name}
+                        type="button"
+                        onClick={() => setNewPlayer({ ...newPlayer, team_logo: team.logo })}
+                        className={`w-10 h-10 p-1 rounded border-2 transition-all ${
+                          newPlayer.team_logo === team.logo ? 'border-primary bg-primary/10' : 'border-transparent hover:border-muted'
+                        }`}
+                        title={team.name}
+                      >
+                        {team.logo ? (
+                          <img src={team.logo} alt={team.name} className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="w-full h-full bg-muted rounded flex items-center justify-center text-xs">✕</div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
               <DialogFooter>
                 <Button
@@ -249,6 +294,7 @@ export default function PlayersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="uppercase text-xs tracking-wider w-12">Team</TableHead>
                   <TableHead className="uppercase text-xs tracking-wider">Player</TableHead>
                   <TableHead className="uppercase text-xs tracking-wider">Handicap</TableHead>
                   <TableHead className="uppercase text-xs tracking-wider text-center">Status</TableHead>
@@ -259,6 +305,13 @@ export default function PlayersPage() {
               <TableBody>
                 {players.map((player) => (
                   <TableRow key={player.id} data-testid={`player-row-${player.id}`}>
+                    <TableCell>
+                      {player.team_logo ? (
+                        <img src={player.team_logo} alt="Team" className="w-8 h-8 object-contain" />
+                      ) : (
+                        <div className="w-8 h-8 bg-muted rounded-full" />
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">{player.username}</TableCell>
                     <TableCell>
                       <span className="font-mono text-lg">{player.handicap.toFixed(1)}</span>
@@ -350,6 +403,28 @@ export default function PlayersPage() {
                     }
                     className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label>Team Logo</Label>
+                  <div className="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto p-2 border rounded">
+                    {TEAM_LOGOS.map((team) => (
+                      <button
+                        key={team.name}
+                        type="button"
+                        onClick={() => setEditingPlayer({ ...editingPlayer, team_logo: team.logo })}
+                        className={`w-10 h-10 p-1 rounded border-2 transition-all ${
+                          editingPlayer.team_logo === team.logo ? 'border-primary bg-primary/10' : 'border-transparent hover:border-muted'
+                        }`}
+                        title={team.name}
+                      >
+                        {team.logo ? (
+                          <img src={team.logo} alt={team.name} className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="w-full h-full bg-muted rounded flex items-center justify-center text-xs">✕</div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

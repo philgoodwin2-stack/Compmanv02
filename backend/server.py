@@ -31,6 +31,7 @@ class PlayerBase(BaseModel):
     username: str
     handicap: float = 18.0
     is_active: bool = True
+    team_logo: str = ""
 
 class PlayerCreate(PlayerBase):
     pass
@@ -39,6 +40,7 @@ class PlayerUpdate(BaseModel):
     username: Optional[str] = None
     handicap: Optional[float] = None
     is_active: Optional[bool] = None
+    team_logo: Optional[str] = None
 
 class Player(PlayerBase):
     model_config = ConfigDict(extra="ignore")
@@ -115,6 +117,7 @@ class LeaderboardEntry(BaseModel):
     player_id: str
     player_username: str
     player_handicap: float
+    player_team_logo: str = ""
     rounds_played: int
     total_stableford: int
     average_stableford: float = 0.0
@@ -456,6 +459,7 @@ async def get_leaderboard(competition_id: str):
                 player_id=pid,
                 player_username=player["username"],
                 player_handicap=player["handicap"],
+                player_team_logo=player.get("team_logo", ""),
                 rounds_played=data["rounds_played"],
                 total_stableford=data["total_stableford"],
                 average_stableford=round(avg_stableford, 1),
