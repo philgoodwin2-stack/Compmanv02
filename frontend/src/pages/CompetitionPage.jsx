@@ -338,7 +338,8 @@ export default function CompetitionPage() {
                         <TableHead className="uppercase text-xs tracking-wider">Player</TableHead>
                         <TableHead className="uppercase text-xs tracking-wider text-center">Handicap</TableHead>
                         <TableHead className="uppercase text-xs tracking-wider text-center">Rounds</TableHead>
-                        <TableHead className="uppercase text-xs tracking-wider text-right">Total Points</TableHead>
+                        <TableHead className="uppercase text-xs tracking-wider text-center">Total</TableHead>
+                        <TableHead className="uppercase text-xs tracking-wider text-right">Avg Points</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -359,9 +360,12 @@ export default function CompetitionPage() {
                             {entry.player_handicap.toFixed(1)}
                           </TableCell>
                           <TableCell className="text-center">{entry.rounds_played}</TableCell>
+                          <TableCell className="text-center font-mono text-muted-foreground">
+                            {entry.total_stableford}
+                          </TableCell>
                           <TableCell className="text-right">
                             <span className="font-mono text-2xl font-bold text-primary">
-                              {entry.total_stableford}
+                              {entry.average_stableford.toFixed(1)}
                             </span>
                           </TableCell>
                         </TableRow>
@@ -468,7 +472,7 @@ export default function CompetitionPage() {
             ) : (
               <div className="space-y-4">
                 {rounds
-                  .sort((a, b) => a.round_number - b.round_number)
+                  .sort((a, b) => new Date(a.date) - new Date(b.date))
                   .map((round) => (
                     <RoundCard
                       key={round.id}

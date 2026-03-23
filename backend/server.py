@@ -117,6 +117,7 @@ class LeaderboardEntry(BaseModel):
     player_handicap: float
     rounds_played: int
     total_stableford: int
+    average_stableford: float = 0.0
     round_scores: List[int] = []
 
 # ============= HELPER FUNCTIONS =============
@@ -442,17 +443,19 @@ async def get_leaderboard(competition_id: str):
     for pid, data in player_scores.items():
         player = await db.players.find_one({"id": pid}, {"_id": 0})
         if player:
+            avg_stableford = data["total_stableford"] / data["rounds_played"] if data["rounds_played"] > 0 else 0.0
             leaderboard.append(LeaderboardEntry(
                 player_id=pid,
                 player_username=player["username"],
                 player_handicap=player["handicap"],
                 rounds_played=data["rounds_played"],
                 total_stableford=data["total_stableford"],
+                average_stableford=round(avg_stableford, 1),
                 round_scores=data["round_scores"]
             ))
     
-    # Sort by total stableford (descending)
-    leaderboard.sort(key=lambda x: x.total_stableford, reverse=True)
+    # Sort by average stableford (descending)
+    leaderboard.sort(key=lambda x: x.average_stableford, reverse=True)
     return leaderboard
 
 # ============= SESSION/AUTH ENDPOINTS =============
