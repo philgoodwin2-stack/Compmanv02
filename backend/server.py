@@ -417,12 +417,16 @@ async def get_leaderboard(competition_id: str):
     if not competition:
         raise HTTPException(status_code=404, detail="Competition not found")
     
-    # Get all rounds for this competition
+    # Get all rounds for this competition, sorted by date
     rounds = await db.rounds.find({"competition_id": competition_id}, {"_id": 0}).to_list(1000)
+    rounds.sort(key=lambda r: r.get("date", ""))
     round_ids = [r["id"] for r in rounds]
     
     # Get all scores for these rounds
     scores = await db.scores.find({"round_id": {"$in": round_ids}}, {"_id": 0}).to_list(1000)
+    
+    # Create a map of round_id to index for ordering
+    round_index_map = {r["id"]: idx for idx, r in enumerate(rounds)}
     
     # Aggregate by player
     player_scores = {}
@@ -432,11 +436,13 @@ async def get_leaderboard(competition_id: str):
             player_scores[pid] = {
                 "rounds_played": 0,
                 "total_stableford": 0,
-                "round_scores": []
+                "round_scores": [None] * len(rounds)  # Initialize with None for each round
             }
+        round_idx = round_index_map.get(score["round_id"])
+        if round_idx is not None:
+            player_scores[pid]["round_scores"][round_idx] = score.get("total_stableford", 0)
         player_scores[pid]["rounds_played"] += 1
         player_scores[pid]["total_stableford"] += score.get("total_stableford", 0)
-        player_scores[pid]["round_scores"].append(score.get("total_stableford", 0))
     
     # Build leaderboard entries
     leaderboard = []
@@ -444,6 +450,8 @@ async def get_leaderboard(competition_id: str):
         player = await db.players.find_one({"id": pid}, {"_id": 0})
         if player:
             avg_stableford = data["total_stableford"] / data["rounds_played"] if data["rounds_played"] > 0 else 0.0
+            # Convert None to -1 or keep as list with actual values
+            round_scores = [s if s is not None else -1 for s in data["round_scores"]]
             leaderboard.append(LeaderboardEntry(
                 player_id=pid,
                 player_username=player["username"],
@@ -451,7 +459,7 @@ async def get_leaderboard(competition_id: str):
                 rounds_played=data["rounds_played"],
                 total_stableford=data["total_stableford"],
                 average_stableford=round(avg_stableford, 1),
-                round_scores=data["round_scores"]
+                round_scores=round_scores
             ))
     
     # Sort by average stableford (descending)

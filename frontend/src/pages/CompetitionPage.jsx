@@ -336,10 +336,14 @@ export default function CompetitionPage() {
                       <TableRow>
                         <TableHead className="w-16 uppercase text-xs tracking-wider">Pos</TableHead>
                         <TableHead className="uppercase text-xs tracking-wider">Player</TableHead>
-                        <TableHead className="uppercase text-xs tracking-wider text-center">Handicap</TableHead>
-                        <TableHead className="uppercase text-xs tracking-wider text-center">Rounds</TableHead>
+                        <TableHead className="uppercase text-xs tracking-wider text-center">HCP</TableHead>
+                        {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round, idx) => (
+                          <TableHead key={round.id} className="uppercase text-xs tracking-wider text-center">
+                            R{idx + 1}
+                          </TableHead>
+                        ))}
                         <TableHead className="uppercase text-xs tracking-wider text-center">Total</TableHead>
-                        <TableHead className="uppercase text-xs tracking-wider text-right">Avg Points</TableHead>
+                        <TableHead className="uppercase text-xs tracking-wider text-right">Avg</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -356,15 +360,19 @@ export default function CompetitionPage() {
                             </div>
                           </TableCell>
                           <TableCell className="font-medium">{entry.player_username}</TableCell>
-                          <TableCell className="text-center font-mono">
+                          <TableCell className="text-center font-mono text-sm">
                             {entry.player_handicap.toFixed(1)}
                           </TableCell>
-                          <TableCell className="text-center">{entry.rounds_played}</TableCell>
-                          <TableCell className="text-center font-mono text-muted-foreground">
+                          {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round, idx) => (
+                            <TableCell key={round.id} className="text-center font-mono">
+                              {entry.round_scores[idx] !== undefined && entry.round_scores[idx] >= 0 ? entry.round_scores[idx] : "-"}
+                            </TableCell>
+                          ))}
+                          <TableCell className="text-center font-mono font-semibold">
                             {entry.total_stableford}
                           </TableCell>
                           <TableCell className="text-right">
-                            <span className="font-mono text-2xl font-bold text-primary">
+                            <span className="font-mono text-xl font-bold text-primary">
                               {entry.average_stableford.toFixed(1)}
                             </span>
                           </TableCell>
