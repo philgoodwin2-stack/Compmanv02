@@ -337,9 +337,9 @@ export default function CompetitionPage() {
                         <TableHead className="w-16 uppercase text-xs tracking-wider">Pos</TableHead>
                         <TableHead className="uppercase text-xs tracking-wider">Player</TableHead>
                         <TableHead className="uppercase text-xs tracking-wider text-center">HCP</TableHead>
-                        {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round, idx) => (
+                        {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round) => (
                           <TableHead key={round.id} className="uppercase text-xs tracking-wider text-center">
-                            R{idx + 1}
+                            {new Date(round.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                           </TableHead>
                         ))}
                         <TableHead className="uppercase text-xs tracking-wider text-center">Total</TableHead>
