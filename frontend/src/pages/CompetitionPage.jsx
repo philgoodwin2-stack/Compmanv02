@@ -753,12 +753,16 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
           </div>
           <Button
             data-testid={`delete-round-${round.id}`}
-            variant="ghost"
+            variant="destructive"
             size="sm"
-            onClick={onDelete}
-            className="text-destructive hover:bg-destructive/10"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="hover:bg-destructive/90"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-4 h-4 mr-1" />
+            Delete
           </Button>
         </div>
       </CardHeader>
