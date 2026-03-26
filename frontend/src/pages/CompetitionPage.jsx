@@ -128,16 +128,26 @@ export default function CompetitionPage() {
     }
   };
 
-  const handleDeleteRound = async (roundId) => {
-    if (!window.confirm("Delete this round and all scores?")) return;
+  const [deleteRoundId, setDeleteRoundId] = useState(null);
+  const [showDeleteRoundDialog, setShowDeleteRoundDialog] = useState(false);
+
+  const handleDeleteRound = async () => {
+    if (!deleteRoundId) return;
 
     try {
-      await axios.delete(`${API}/rounds/${roundId}`);
+      await axios.delete(`${API}/rounds/${deleteRoundId}`);
       toast.success("Round deleted");
+      setShowDeleteRoundDialog(false);
+      setDeleteRoundId(null);
       fetchData();
     } catch (error) {
       toast.error("Failed to delete round");
     }
+  };
+
+  const openDeleteRoundDialog = (roundId) => {
+    setDeleteRoundId(roundId);
+    setShowDeleteRoundDialog(true);
   };
 
   const handleAddPlayerToCompetition = async (playerId) => {
@@ -636,7 +646,7 @@ export default function CompetitionPage() {
                       round={round}
                       competition={competition}
                       players={getCompetitionPlayers()}
-                      onDelete={() => handleDeleteRound(round.id)}
+                      onDelete={() => openDeleteRoundDialog(round.id)}
                       onRefresh={fetchData}
                     />
                   ))}
@@ -740,6 +750,43 @@ export default function CompetitionPage() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Delete Round Confirmation Dialog */}
+        <Dialog open={showDeleteRoundDialog} onOpenChange={setShowDeleteRoundDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold uppercase tracking-tight text-destructive">
+                Delete Round?
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-muted-foreground">
+                This will permanently delete this round and all player scores for it.
+              </p>
+              <p className="text-destructive font-semibold mt-2">
+                This action cannot be undone.
+              </p>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteRoundDialog(false)}
+                className="rounded-none"
+              >
+                Cancel
+              </Button>
+              <Button
+                data-testid="confirm-delete-round"
+                variant="destructive"
+                onClick={handleDeleteRound}
+                className="rounded-none"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Round
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
