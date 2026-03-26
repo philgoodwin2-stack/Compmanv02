@@ -317,88 +317,138 @@ export default function CompetitionPage() {
 
           {/* Leaderboard Tab */}
           <TabsContent value="leaderboard">
-            <Card className="relative overflow-hidden">
-              {/* Background Image */}
-              <div 
-                className="absolute inset-0 opacity-10"
-                style={{
-                  backgroundImage: 'url(https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=1200)',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }}
-              />
-              <CardHeader className="relative z-10">
-                <CardTitle className="text-2xl font-bold uppercase tracking-tight flex items-center gap-2">
-                  <Trophy className="w-6 h-6 text-[#D4AF37]" />
-                  Leaderboard
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
+            <Card className="relative overflow-hidden border-0 shadow-xl">
+              {/* The Open Style Header */}
+              <div className="bg-[#1a1a1a] text-white px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Trophy className="w-8 h-8 text-[#D4AF37]" />
+                    <div>
+                      <h2 className="text-2xl font-bold uppercase tracking-wider" style={{ fontFamily: 'Barlow Condensed, sans-serif' }}>
+                        {competition.name}
+                      </h2>
+                      <p className="text-sm text-gray-400 uppercase tracking-widest">Leaderboard</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-400 uppercase tracking-wider">Rounds Played</p>
+                    <p className="text-2xl font-bold text-[#D4AF37]">{rounds.length}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Column Headers - The Open Style */}
+              <div className="bg-[#2d2d2d] text-white px-6 py-3 grid grid-cols-12 gap-2 items-center text-xs uppercase tracking-wider font-semibold">
+                <div className="col-span-1 text-center">Pos</div>
+                <div className="col-span-3">Player</div>
+                <div className="col-span-1 text-center">Hcp</div>
+                {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round, idx) => (
+                  <div key={round.id} className="col-span-1 text-center">
+                    R{idx + 1}
+                  </div>
+                ))}
+                {/* Fill remaining columns */}
+                {Array(Math.max(0, 4 - rounds.length)).fill(0).map((_, idx) => (
+                  <div key={`empty-${idx}`} className="col-span-1"></div>
+                ))}
+                <div className="col-span-1 text-center">Total</div>
+                <div className="col-span-1 text-center text-[#D4AF37]">Avg</div>
+              </div>
+
+              <CardContent className="p-0">
                 {leaderboard.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <div className="text-center py-12 text-muted-foreground bg-[#f5f5dc]">
                     <Trophy className="w-12 h-12 mx-auto mb-4 opacity-30" />
                     <p>No scores yet. Add rounds and enter scores to see the leaderboard.</p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12 uppercase text-xs tracking-wider">Pos</TableHead>
-                        <TableHead className="w-10 uppercase text-xs tracking-wider"></TableHead>
-                        <TableHead className="uppercase text-xs tracking-wider">Player</TableHead>
-                        <TableHead className="uppercase text-xs tracking-wider text-center">HCP</TableHead>
-                        {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round) => (
-                          <TableHead key={round.id} className="uppercase text-xs tracking-wider text-center">
-                            {new Date(round.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                          </TableHead>
-                        ))}
-                        <TableHead className="uppercase text-xs tracking-wider text-center">Total</TableHead>
-                        <TableHead className="uppercase text-xs tracking-wider text-right">Avg</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {leaderboard.map((entry, index) => (
-                        <TableRow
+                  <div className="divide-y divide-gray-200">
+                    {leaderboard.map((entry, index) => {
+                      const isLeader = index === 0;
+                      const isTop3 = index < 3;
+                      return (
+                        <div
                           key={entry.player_id}
                           data-testid={`leaderboard-row-${entry.player_id}`}
-                          className={index === 0 ? "bg-[#D4AF37]/10" : ""}
+                          className={`grid grid-cols-12 gap-2 items-center px-6 py-4 transition-colors ${
+                            isLeader 
+                              ? 'bg-[#D4AF37]/20 border-l-4 border-l-[#D4AF37]' 
+                              : isTop3 
+                                ? 'bg-[#f5f5dc]' 
+                                : 'bg-white hover:bg-gray-50'
+                          }`}
                         >
-                          <TableCell className="font-mono text-lg">
-                            <div className="flex items-center gap-2">
-                              {getMedalIcon(index)}
+                          {/* Position */}
+                          <div className="col-span-1 text-center">
+                            <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${
+                              isLeader 
+                                ? 'bg-[#D4AF37] text-black' 
+                                : isTop3 
+                                  ? 'bg-[#1a1a1a] text-white' 
+                                  : 'bg-gray-200 text-gray-700'
+                            }`}>
                               {index + 1}
-                            </div>
-                          </TableCell>
-                          <TableCell>
+                            </span>
+                          </div>
+                          
+                          {/* Player Name & Team */}
+                          <div className="col-span-3 flex items-center gap-3">
                             {entry.player_team_logo ? (
                               <img src={entry.player_team_logo} alt="Team" className="w-6 h-6 object-contain" />
                             ) : (
                               <div className="w-6 h-6" />
                             )}
-                          </TableCell>
-                          <TableCell className="font-medium">{entry.player_username}</TableCell>
-                          <TableCell className="text-center font-mono text-sm">
+                            <span className={`font-semibold uppercase tracking-wide ${isLeader ? 'text-lg' : ''}`}>
+                              {entry.player_username}
+                            </span>
+                          </div>
+                          
+                          {/* Handicap */}
+                          <div className="col-span-1 text-center font-mono text-sm text-gray-500">
                             {entry.player_handicap.toFixed(1)}
-                          </TableCell>
+                          </div>
+                          
+                          {/* Round Scores */}
                           {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round, idx) => (
-                            <TableCell key={round.id} className="text-center font-mono">
-                              {entry.round_scores[idx] !== undefined && entry.round_scores[idx] >= 0 ? entry.round_scores[idx] : "-"}
-                            </TableCell>
+                            <div key={round.id} className="col-span-1 text-center font-mono">
+                              {entry.round_scores[idx] !== undefined && entry.round_scores[idx] >= 0 
+                                ? entry.round_scores[idx] 
+                                : <span className="text-gray-300">-</span>}
+                            </div>
                           ))}
-                          <TableCell className="text-center font-mono font-semibold">
+                          
+                          {/* Empty columns to fill space */}
+                          {Array(Math.max(0, 4 - rounds.length)).fill(0).map((_, idx) => (
+                            <div key={`empty-${idx}`} className="col-span-1"></div>
+                          ))}
+                          
+                          {/* Total */}
+                          <div className="col-span-1 text-center font-mono font-bold text-lg">
                             {entry.total_stableford}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="font-mono text-xl font-bold text-primary">
+                          </div>
+                          
+                          {/* Average - Highlighted */}
+                          <div className="col-span-1 text-center">
+                            <span className={`inline-block px-3 py-1 rounded font-mono font-bold text-lg ${
+                              isLeader 
+                                ? 'bg-[#D4AF37] text-black' 
+                                : 'bg-[#1a1a1a] text-[#D4AF37]'
+                            }`}>
                               {entry.average_stableford.toFixed(1)}
                             </span>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </CardContent>
+              
+              {/* Footer */}
+              <div className="bg-[#1a1a1a] text-white px-6 py-3 flex justify-between items-center text-xs uppercase tracking-wider">
+                <span className="text-gray-400">Stableford Points</span>
+                <span className="text-[#D4AF37]">{competition.num_holes} Holes</span>
+              </div>
             </Card>
           </TabsContent>
 
