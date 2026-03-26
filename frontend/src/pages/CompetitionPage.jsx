@@ -355,9 +355,9 @@ export default function CompetitionPage() {
                 <div className="col-span-1 text-center">Hcp</div>
                 <div className="col-span-1 text-center">Played</div>
                 <div className="col-span-1 text-center text-green-400">Qual</div>
-                <div className="col-span-3 text-center">Recent Rounds</div>
-                <div className="col-span-1 text-center">Total</div>
-                <div className="col-span-2 text-center text-[#D4AF37]">Avg</div>
+                <div className="col-span-3 text-center">Recent Pts</div>
+                <div className="col-span-1 text-center">Total Pts</div>
+                <div className="col-span-2 text-center text-[#D4AF37]">Avg Pts</div>
               </div>
 
               <CardContent className="p-0">
@@ -439,10 +439,10 @@ export default function CompetitionPage() {
                             )}
                           </div>
                           
-                          {/* Recent Round Scores */}
+                          {/* Recent Round Scores - Stableford Points */}
                           <div className="col-span-3 flex items-center justify-center gap-1">
                             {recentScores.length > 0 ? recentScores.map((score, idx) => (
-                              <span key={idx} className="inline-block w-8 h-8 rounded bg-gray-100 text-center leading-8 font-mono text-sm">
+                              <span key={idx} className="inline-flex items-center justify-center w-9 h-8 rounded bg-[#1a1a1a] text-white text-center font-mono text-sm font-bold">
                                 {score}
                               </span>
                             )) : (
@@ -450,12 +450,12 @@ export default function CompetitionPage() {
                             )}
                           </div>
                           
-                          {/* Total */}
+                          {/* Total Points */}
                           <div className="col-span-1 text-center font-mono font-bold text-lg">
                             {entry.total_stableford}
                           </div>
                           
-                          {/* Average - Highlighted */}
+                          {/* Average Points - Highlighted */}
                           <div className="col-span-2 text-center">
                             <span className={`inline-block px-4 py-1 rounded font-mono font-bold text-lg ${
                               isLeader 
@@ -464,7 +464,7 @@ export default function CompetitionPage() {
                                   ? 'bg-[#1a1a1a] text-[#D4AF37]'
                                   : 'bg-gray-400 text-white'
                             }`}>
-                              {entry.average_stableford.toFixed(1)}
+                              {entry.average_stableford.toFixed(1)} <span className="text-xs font-normal">pts</span>
                             </span>
                           </div>
                         </div>
