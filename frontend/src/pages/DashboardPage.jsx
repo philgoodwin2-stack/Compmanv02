@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trophy, Users, LogOut, Flag, Calendar, ChevronRight, CalendarIcon } from "lucide-react";
+import { Plus, Trophy, Users, LogOut, Flag, Calendar, ChevronRight, CalendarIcon, Trash2 } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -88,6 +88,19 @@ export default function DashboardPage() {
         return "bg-gray-500 text-white";
       default:
         return "bg-[#D4AF37] text-black";
+    }
+  };
+
+  const handleDeleteCompetition = async (e, competitionId) => {
+    e.stopPropagation();
+    if (!window.confirm("Delete this competition and all its rounds and scores?")) return;
+
+    try {
+      await axios.delete(`${API}/competitions/${competitionId}`);
+      toast.success("Competition deleted");
+      fetchCompetitions();
+    } catch (error) {
+      toast.error("Failed to delete competition");
     }
   };
 
@@ -314,12 +327,21 @@ export default function DashboardPage() {
               <Card
                 key={competition.id}
                 data-testid={`competition-card-${competition.id}`}
-                className="hover-lift cursor-pointer border-l-4 border-l-primary group"
+                className="hover-lift cursor-pointer border-l-4 border-l-primary group relative"
                 onClick={() => navigate(`/competition/${competition.id}`)}
               >
+                <Button
+                  data-testid={`delete-competition-${competition.id}`}
+                  variant="destructive"
+                  size="sm"
+                  onClick={(e) => handleDeleteCompetition(e, competition.id)}
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl font-bold uppercase tracking-tight">
+                    <CardTitle className="text-xl font-bold uppercase tracking-tight pr-8">
                       {competition.name}
                     </CardTitle>
                     <Badge className={`${getStatusColor(competition.status)} uppercase text-xs font-bold`}>
