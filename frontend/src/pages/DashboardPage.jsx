@@ -330,23 +330,24 @@ export default function DashboardPage() {
                 className="hover-lift cursor-pointer border-l-4 border-l-primary group relative"
                 onClick={() => navigate(`/competition/${competition.id}`)}
               >
-                <Button
-                  data-testid={`delete-competition-${competition.id}`}
-                  variant="destructive"
-                  size="sm"
-                  onClick={(e) => handleDeleteCompetition(e, competition.id)}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl font-bold uppercase tracking-tight pr-8">
+                    <CardTitle className="text-xl font-bold uppercase tracking-tight pr-16">
                       {competition.name}
                     </CardTitle>
-                    <Badge className={`${getStatusColor(competition.status)} uppercase text-xs font-bold`}>
-                      {competition.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge className={`${getStatusColor(competition.status)} uppercase text-xs font-bold`}>
+                        {competition.status}
+                      </Badge>
+                      <Button
+                        data-testid={`delete-competition-${competition.id}`}
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => handleDeleteCompetition(e, competition.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                   {competition.description && (
                     <CardDescription className="line-clamp-2">
