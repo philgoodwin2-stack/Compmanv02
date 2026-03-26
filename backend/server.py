@@ -117,6 +117,9 @@ class ScoreCreate(BaseModel):
 class ScoreUpdate(BaseModel):
     holes: Optional[List[HoleScore]] = None
 
+class ScorePointsUpdate(BaseModel):
+    total_stableford: int
+
 class Score(ScoreBase):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -416,6 +419,25 @@ async def update_score_holes(score_id: str, holes_data: List[HoleScore]):
             "holes": updated_holes,
             "total_strokes": total_strokes,
             "total_stableford": total_stableford
+        }}
+    )
+    
+    updated_score = await db.scores.find_one({"id": score_id}, {"_id": 0})
+    return updated_score
+
+@api_router.put("/scores/{score_id}/points", response_model=Score)
+async def update_score_points(score_id: str, points_data: ScorePointsUpdate):
+    """Update score with just total Stableford points (simplified entry)"""
+    score = await db.scores.find_one({"id": score_id})
+    if not score:
+        raise HTTPException(status_code=404, detail="Score not found")
+    
+    await db.scores.update_one(
+        {"id": score_id},
+        {"$set": {
+            "total_stableford": points_data.total_stableford,
+            "holes": [],  # Clear hole-by-hole data when using simple entry
+            "total_strokes": 0
         }}
     )
     
