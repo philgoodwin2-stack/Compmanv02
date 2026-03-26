@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -91,22 +92,29 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDeleteCompetition = async (e, competitionId) => {
-    e.stopPropagation();
-    e.preventDefault();
-    
-    // Use a more visible confirmation
-    const confirmed = window.confirm("DELETE this competition?\n\nThis will remove all rounds and scores permanently.");
-    if (!confirmed) return;
+  const [deleteCompId, setDeleteCompId] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const handleDeleteCompetition = async () => {
+    if (!deleteCompId) return;
 
     try {
-      await axios.delete(`${API}/competitions/${competitionId}`);
+      await axios.delete(`${API}/competitions/${deleteCompId}`);
       toast.success("Competition deleted");
+      setShowDeleteDialog(false);
+      setDeleteCompId(null);
       fetchCompetitions();
     } catch (error) {
       toast.error("Failed to delete competition");
       console.error("Delete error:", error);
     }
+  };
+
+  const openDeleteDialog = (e, competitionId) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setDeleteCompId(competitionId);
+    setShowDeleteDialog(true);
   };
 
   return (
@@ -348,7 +356,7 @@ export default function DashboardPage() {
                         data-testid={`delete-competition-${competition.id}`}
                         variant="destructive"
                         size="sm"
-                        onClick={(e) => handleDeleteCompetition(e, competition.id)}
+                        onClick={(e) => openDeleteDialog(e, competition.id)}
                         className="h-8 px-3"
                       >
                         <Trash2 className="w-4 h-4 mr-1" />
@@ -391,6 +399,43 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold uppercase tracking-tight text-destructive">
+              Delete Competition?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-muted-foreground">
+              This will permanently delete this competition and all its rounds and scores.
+            </p>
+            <p className="text-destructive font-semibold mt-2">
+              This action cannot be undone.
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              className="rounded-none"
+            >
+              Cancel
+            </Button>
+            <Button
+              data-testid="confirm-delete-competition"
+              variant="destructive"
+              onClick={handleDeleteCompetition}
+              className="rounded-none"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Competition
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
