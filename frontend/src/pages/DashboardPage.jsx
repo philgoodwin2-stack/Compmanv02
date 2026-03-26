@@ -93,7 +93,11 @@ export default function DashboardPage() {
 
   const handleDeleteCompetition = async (e, competitionId) => {
     e.stopPropagation();
-    if (!window.confirm("Delete this competition and all its rounds and scores?")) return;
+    e.preventDefault();
+    
+    // Use a more visible confirmation
+    const confirmed = window.confirm("DELETE this competition?\n\nThis will remove all rounds and scores permanently.");
+    if (!confirmed) return;
 
     try {
       await axios.delete(`${API}/competitions/${competitionId}`);
@@ -101,6 +105,7 @@ export default function DashboardPage() {
       fetchCompetitions();
     } catch (error) {
       toast.error("Failed to delete competition");
+      console.error("Delete error:", error);
     }
   };
 
@@ -344,8 +349,10 @@ export default function DashboardPage() {
                         variant="destructive"
                         size="sm"
                         onClick={(e) => handleDeleteCompetition(e, competition.id)}
+                        className="h-8 px-3"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Delete
                       </Button>
                     </div>
                   </div>
