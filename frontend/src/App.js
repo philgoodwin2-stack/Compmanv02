@@ -10,6 +10,7 @@ import DashboardPage from "@/pages/DashboardPage";
 import PlayersPage from "@/pages/PlayersPage";
 import CompetitionPage from "@/pages/CompetitionPage";
 import ScoreEntryPage from "@/pages/ScoreEntryPage";
+import HandicapTrackingPage from "@/pages/HandicapTrackingPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
@@ -77,6 +78,10 @@ function App() {
             <Route
               path="/score/:roundId/:playerId"
               element={user ? <ScoreEntryPage /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/handicaps"
+              element={user ? <HandicapTrackingPage /> : <Navigate to="/" />}
             />
           </Routes>
         </BrowserRouter>
