@@ -42,10 +42,22 @@ class PlayerUpdate(BaseModel):
     is_active: Optional[bool] = None
     team_logo: Optional[str] = None
 
+class HandicapRecord(BaseModel):
+    date: str
+    round_id: str
+    course_name: str
+    score: int  # Stableford points
+    course_rating: float = 72.0
+    slope_rating: int = 113
+    score_differential: float
+    handicap_before: float
+    handicap_after: float
+
 class Player(PlayerBase):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    handicap_history: List[HandicapRecord] = []
 
 class CompetitionStatus(str, Enum):
     UPCOMING = "upcoming"
@@ -168,6 +180,83 @@ def distribute_handicap_strokes(handicap: float, num_holes: int = 18) -> List[in
         strokes_per_hole[i] += 1
     return strokes_per_hole
 
+def calculate_score_differential(stableford_points: int, course_rating: float, slope_rating: int, par: int = 72) -> float:
+    """
+    Calculate score differential based on World Handicap System.
+    For Stableford: Convert points to approximate gross score, then calculate differential.
+    36 points = playing to handicap (par net)
+    Each point above/below 36 = 1 stroke better/worse than handicap
+    """
+    # Convert Stableford to approximate strokes relative to par
+    # 36 points = par (for a scratch golfer playing to their handicap)
+    points_diff = stableford_points - 36
+    # Approximate gross score (lower is better, so subtract points diff)
+    approx_gross = par - points_diff
+    
+    # Score Differential = (Adjusted Gross Score - Course Rating) × (113 / Slope Rating)
+    differential = (approx_gross - course_rating) * (113 / slope_rating)
+    return round(differential, 1)
+
+def calculate_handicap_index(differentials: List[float]) -> float:
+    """
+    Calculate handicap index based on World Handicap System.
+    Uses the best differentials from the most recent rounds.
+    """
+    if not differentials:
+        return 18.0  # Default handicap
+    
+    num_scores = len(differentials)
+    
+    # WHS table for number of differentials to use
+    if num_scores == 1:
+        # Use lowest - 2.0 adjustment (per WHS for 1 score)
+        best = sorted(differentials)[:1]
+        adjustment = -2.0
+    elif num_scores == 2:
+        best = sorted(differentials)[:1]
+        adjustment = -2.0
+    elif num_scores == 3:
+        best = sorted(differentials)[:1]
+        adjustment = -2.0
+    elif num_scores == 4:
+        best = sorted(differentials)[:1]
+        adjustment = -1.0
+    elif num_scores == 5:
+        best = sorted(differentials)[:1]
+        adjustment = 0.0
+    elif num_scores == 6:
+        best = sorted(differentials)[:2]
+        adjustment = -1.0
+    elif num_scores in [7, 8]:
+        best = sorted(differentials)[:2]
+        adjustment = 0.0
+    elif num_scores in [9, 10, 11]:
+        best = sorted(differentials)[:3]
+        adjustment = 0.0
+    elif num_scores in [12, 13, 14]:
+        best = sorted(differentials)[:4]
+        adjustment = 0.0
+    elif num_scores in [15, 16]:
+        best = sorted(differentials)[:5]
+        adjustment = 0.0
+    elif num_scores in [17, 18]:
+        best = sorted(differentials)[:6]
+        adjustment = 0.0
+    elif num_scores == 19:
+        best = sorted(differentials)[:7]
+        adjustment = 0.0
+    else:  # 20 or more
+        # Use best 8 of last 20
+        recent_20 = differentials[-20:]
+        best = sorted(recent_20)[:8]
+        adjustment = 0.0
+    
+    avg = sum(best) / len(best) if best else 18.0
+    handicap = avg + adjustment
+    
+    # Cap at 54.0 (max handicap in WHS) and minimum 0.0
+    return round(min(max(handicap, 0.0), 54.0), 1)
+
 # ============= PLAYER ENDPOINTS =============
 
 @api_router.get("/players", response_model=List[Player])
@@ -214,6 +303,20 @@ async def delete_player(player_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Player not found")
     return {"message": "Player deleted"}
+
+@api_router.get("/players/{player_id}/handicap-history")
+async def get_player_handicap_history(player_id: str):
+    """Get the handicap history for a player"""
+    player = await db.players.find_one({"id": player_id}, {"_id": 0})
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    return {
+        "player_id": player_id,
+        "username": player.get("username"),
+        "current_handicap": player.get("handicap", 18.0),
+        "history": player.get("handicap_history", [])
+    }
 
 # ============= COMPETITION ENDPOINTS =============
 
@@ -435,12 +538,89 @@ async def update_score_points(score_id: str, points_data: ScorePointsUpdate):
     if not score:
         raise HTTPException(status_code=404, detail="Score not found")
     
+    # Get round info for course details
+    round_doc = await db.rounds.find_one({"id": score["round_id"]})
+    if not round_doc:
+        raise HTTPException(status_code=404, detail="Round not found")
+    
+    # Get player for handicap update
+    player = await db.players.find_one({"id": score["player_id"]})
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    # Update the score
     await db.scores.update_one(
         {"id": score_id},
         {"$set": {
             "total_stableford": points_data.total_stableford,
-            "holes": [],  # Clear hole-by-hole data when using simple entry
+            "holes": [],
             "total_strokes": 0
+        }}
+    )
+    
+    # Calculate score differential and update handicap (WHS)
+    course_rating = round_doc.get("course_par", 72)  # Use par as course rating approximation
+    slope_rating = round_doc.get("slope_rating", 113)
+    course_name = round_doc.get("course_name", "Unknown Course")
+    round_date = round_doc.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+    
+    score_differential = calculate_score_differential(
+        points_data.total_stableford,
+        course_rating,
+        slope_rating,
+        round_doc.get("course_par", 72)
+    )
+    
+    # Get existing handicap history
+    handicap_history = player.get("handicap_history", [])
+    current_handicap = player.get("handicap", 18.0)
+    
+    # Check if we already have a record for this round (update instead of add)
+    existing_record_idx = None
+    for idx, record in enumerate(handicap_history):
+        if record.get("round_id") == score["round_id"]:
+            existing_record_idx = idx
+            break
+    
+    # Get all differentials for calculation
+    all_differentials = [r.get("score_differential", 0) for r in handicap_history]
+    
+    if existing_record_idx is not None:
+        # Update existing differential
+        all_differentials[existing_record_idx] = score_differential
+    else:
+        # Add new differential
+        all_differentials.append(score_differential)
+    
+    # Calculate new handicap
+    new_handicap = calculate_handicap_index(all_differentials)
+    
+    # Create handicap record
+    handicap_record = {
+        "date": round_date,
+        "round_id": score["round_id"],
+        "course_name": course_name,
+        "score": points_data.total_stableford,
+        "course_rating": course_rating,
+        "slope_rating": slope_rating,
+        "score_differential": score_differential,
+        "handicap_before": current_handicap,
+        "handicap_after": new_handicap
+    }
+    
+    if existing_record_idx is not None:
+        # Update existing record
+        handicap_history[existing_record_idx] = handicap_record
+    else:
+        # Add new record
+        handicap_history.append(handicap_record)
+    
+    # Update player with new handicap and history
+    await db.players.update_one(
+        {"id": score["player_id"]},
+        {"$set": {
+            "handicap": new_handicap,
+            "handicap_history": handicap_history
         }}
     )
     

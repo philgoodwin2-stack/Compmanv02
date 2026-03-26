@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag, History, TrendingDown, TrendingUp } from "lucide-react";
 
 // Sports team logos - Football, Rugby, GAA and more
 const TEAM_LOGOS = [
@@ -190,6 +190,8 @@ export default function PlayersPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(null);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [historyData, setHistoryData] = useState(null);
   const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "" });
 
   useEffect(() => {
@@ -274,6 +276,16 @@ export default function PlayersPage() {
   const openEditDialog = (player) => {
     setEditingPlayer({ ...player });
     setShowEditDialog(true);
+  };
+
+  const openHistoryDialog = async (player) => {
+    try {
+      const response = await axios.get(`${API}/players/${player.id}/handicap-history`);
+      setHistoryData(response.data);
+      setShowHistoryDialog(true);
+    } catch (error) {
+      toast.error("Failed to load handicap history");
+    }
   };
 
   return (
@@ -470,6 +482,16 @@ export default function PlayersPage() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
+                          data-testid={`history-player-${player.id}`}
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openHistoryDialog(player)}
+                          className="hover:bg-primary/10"
+                          title="Handicap History"
+                        >
+                          <History className="w-4 h-4" />
+                        </Button>
+                        <Button
                           data-testid={`edit-player-${player.id}`}
                           variant="ghost"
                           size="sm"
@@ -570,6 +592,86 @@ export default function PlayersPage() {
                 Save Changes
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Handicap History Dialog */}
+        <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold uppercase tracking-tight flex items-center gap-2">
+                <History className="w-6 h-6 text-primary" />
+                Handicap History
+              </DialogTitle>
+              {historyData && (
+                <p className="text-muted-foreground">
+                  {historyData.username} - Current Handicap: <span className="font-mono font-bold text-primary">{historyData.current_handicap?.toFixed(1)}</span>
+                </p>
+              )}
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto py-4">
+              {historyData?.history?.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="uppercase text-xs tracking-wider">Date</TableHead>
+                      <TableHead className="uppercase text-xs tracking-wider">Course</TableHead>
+                      <TableHead className="uppercase text-xs tracking-wider text-center">Score</TableHead>
+                      <TableHead className="uppercase text-xs tracking-wider text-center">Slope</TableHead>
+                      <TableHead className="uppercase text-xs tracking-wider text-center">Diff</TableHead>
+                      <TableHead className="uppercase text-xs tracking-wider text-right">Handicap</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {historyData.history.slice().reverse().map((record, idx) => {
+                      const handicapChange = record.handicap_after - record.handicap_before;
+                      return (
+                        <TableRow key={idx}>
+                          <TableCell className="font-mono text-sm">
+                            {new Date(record.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {record.course_name || "Unknown"}
+                          </TableCell>
+                          <TableCell className="text-center font-mono font-bold">
+                            {record.score} pts
+                          </TableCell>
+                          <TableCell className="text-center font-mono text-sm text-muted-foreground">
+                            {record.slope_rating}
+                          </TableCell>
+                          <TableCell className="text-center font-mono text-sm">
+                            {record.score_differential?.toFixed(1)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="font-mono font-bold">{record.handicap_after?.toFixed(1)}</span>
+                              {handicapChange !== 0 && (
+                                <span className={`flex items-center text-xs ${handicapChange < 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                  {handicapChange < 0 ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+                                  {Math.abs(handicapChange).toFixed(1)}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <History className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                  <p>No handicap history yet.</p>
+                  <p className="text-sm mt-1">Handicap will update after each round.</p>
+                </div>
+              )}
+            </div>
+            <div className="pt-4 border-t bg-secondary/30 -mx-6 -mb-6 px-6 py-4">
+              <p className="text-xs text-muted-foreground">
+                <strong>World Handicap System:</strong> Handicap calculated from best 8 of last 20 score differentials.
+                Differential = (Score - Course Rating) × (113 / Slope Rating)
+              </p>
+            </div>
           </DialogContent>
         </Dialog>
       </main>
