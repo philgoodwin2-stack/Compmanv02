@@ -23,7 +23,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trophy, Users, LogOut, Flag, Calendar, ChevronRight } from "lucide-react";
+import { Plus, Trophy, Users, LogOut, Flag, Calendar, ChevronRight, CalendarIcon } from "lucide-react";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -35,6 +38,9 @@ export default function DashboardPage() {
     name: "",
     description: "",
     num_holes: 18,
+    start_date: null,
+    end_date: null,
+    min_rounds: 13,
   });
 
   useEffect(() => {
@@ -59,10 +65,15 @@ export default function DashboardPage() {
     }
 
     try {
-      await axios.post(`${API}/competitions`, newCompetition);
+      const payload = {
+        ...newCompetition,
+        start_date: newCompetition.start_date ? format(newCompetition.start_date, "yyyy-MM-dd") : null,
+        end_date: newCompetition.end_date ? format(newCompetition.end_date, "yyyy-MM-dd") : null,
+      };
+      await axios.post(`${API}/competitions`, payload);
       toast.success("Competition created!");
       setShowCreateDialog(false);
-      setNewCompetition({ name: "", description: "", num_holes: 18 });
+      setNewCompetition({ name: "", description: "", num_holes: 18, start_date: null, end_date: null, min_rounds: 13 });
       fetchCompetitions();
     } catch (error) {
       toast.error("Failed to create competition");
@@ -214,6 +225,65 @@ export default function DashboardPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Competition Period</Label>
+                  <div className="flex gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          data-testid="start-date-btn"
+                          variant="outline"
+                          className="flex-1 justify-start text-left font-normal rounded-none"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {newCompetition.start_date ? format(newCompetition.start_date, "dd MMM yyyy") : "Start Date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={newCompetition.start_date}
+                          onSelect={(date) => setNewCompetition({ ...newCompetition, start_date: date })}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          data-testid="end-date-btn"
+                          variant="outline"
+                          className="flex-1 justify-start text-left font-normal rounded-none"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {newCompetition.end_date ? format(newCompetition.end_date, "dd MMM yyyy") : "End Date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={newCompetition.end_date}
+                          onSelect={(date) => setNewCompetition({ ...newCompetition, end_date: date })}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="min_rounds">Minimum Rounds Required</Label>
+                  <Input
+                    data-testid="min-rounds-input"
+                    id="min_rounds"
+                    type="number"
+                    min="1"
+                    max="52"
+                    value={newCompetition.min_rounds}
+                    onChange={(e) => setNewCompetition({ ...newCompetition, min_rounds: parseInt(e.target.value) || 13 })}
+                    className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
+                  />
+                  <p className="text-xs text-muted-foreground">Players must complete at least this many rounds to qualify</p>
+                </div>
               </div>
               <DialogFooter>
                 <Button
@@ -276,6 +346,15 @@ export default function DashboardPage() {
                     </div>
                     <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </div>
+                  {(competition.start_date || competition.end_date) && (
+                    <div className="mt-2 pt-2 border-t border-border/40 text-xs text-muted-foreground flex items-center gap-2">
+                      <CalendarIcon className="w-3 h-3" />
+                      {competition.start_date && new Date(competition.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {competition.start_date && competition.end_date && " - "}
+                      {competition.end_date && new Date(competition.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <span className="ml-auto">Min {competition.min_rounds || 13} rounds</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

@@ -57,6 +57,9 @@ class CompetitionBase(BaseModel):
     description: Optional[str] = ""
     num_holes: int = 18
     status: CompetitionStatus = CompetitionStatus.UPCOMING
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    min_rounds: int = 13
 
 class CompetitionCreate(CompetitionBase):
     pass
@@ -65,12 +68,18 @@ class CompetitionUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     status: Optional[CompetitionStatus] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    min_rounds: Optional[int] = None
 
 class Competition(CompetitionBase):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     player_ids: List[str] = []
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    min_rounds: int = 13
 
 class RoundBase(BaseModel):
     competition_id: str
@@ -122,6 +131,7 @@ class LeaderboardEntry(BaseModel):
     total_stableford: int
     average_stableford: float = 0.0
     round_scores: List[int] = []
+    qualified: bool = False
 
 # ============= HELPER FUNCTIONS =============
 
@@ -420,6 +430,8 @@ async def get_leaderboard(competition_id: str):
     if not competition:
         raise HTTPException(status_code=404, detail="Competition not found")
     
+    min_rounds = competition.get("min_rounds", 13)
+    
     # Get all rounds for this competition, sorted by date
     rounds = await db.rounds.find({"competition_id": competition_id}, {"_id": 0}).to_list(1000)
     rounds.sort(key=lambda r: r.get("date", ""))
@@ -455,6 +467,7 @@ async def get_leaderboard(competition_id: str):
             avg_stableford = data["total_stableford"] / data["rounds_played"] if data["rounds_played"] > 0 else 0.0
             # Convert None to -1 or keep as list with actual values
             round_scores = [s if s is not None else -1 for s in data["round_scores"]]
+            qualified = data["rounds_played"] >= min_rounds
             leaderboard.append(LeaderboardEntry(
                 player_id=pid,
                 player_username=player["username"],
@@ -463,7 +476,8 @@ async def get_leaderboard(competition_id: str):
                 rounds_played=data["rounds_played"],
                 total_stableford=data["total_stableford"],
                 average_stableford=round(avg_stableford, 1),
-                round_scores=round_scores
+                round_scores=round_scores,
+                qualified=qualified
             ))
     
     # Sort by average stableford (descending)

@@ -54,6 +54,8 @@ import {
   CheckCircle,
   ChevronRight,
   Medal,
+  Check,
+  X,
 } from "lucide-react";
 
 export default function CompetitionPage() {
@@ -230,6 +232,15 @@ export default function CompetitionPage() {
                 {competition.description && (
                   <p className="text-white/70">{competition.description}</p>
                 )}
+                {(competition.start_date || competition.end_date) && (
+                  <p className="text-white/60 text-sm mt-1 flex items-center gap-2">
+                    <CalendarIcon className="w-4 h-4" />
+                    {competition.start_date && new Date(competition.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {competition.start_date && competition.end_date && " - "}
+                    {competition.end_date && new Date(competition.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    <span className="ml-2 px-2 py-0.5 bg-white/20 rounded text-xs">Min {competition.min_rounds || 13} rounds</span>
+                  </p>
+                )}
               </div>
             </div>
             <DropdownMenu>
@@ -340,19 +351,13 @@ export default function CompetitionPage() {
               {/* Column Headers - The Open Style */}
               <div className="bg-[#2d2d2d] text-white px-6 py-3 grid grid-cols-12 gap-2 items-center text-xs uppercase tracking-wider font-semibold">
                 <div className="col-span-1 text-center">Pos</div>
-                <div className="col-span-3">Player</div>
+                <div className="col-span-2">Player</div>
                 <div className="col-span-1 text-center">Hcp</div>
-                {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round, idx) => (
-                  <div key={round.id} className="col-span-1 text-center">
-                    R{idx + 1}
-                  </div>
-                ))}
-                {/* Fill remaining columns */}
-                {Array(Math.max(0, 4 - rounds.length)).fill(0).map((_, idx) => (
-                  <div key={`empty-${idx}`} className="col-span-1"></div>
-                ))}
+                <div className="col-span-1 text-center">Played</div>
+                <div className="col-span-1 text-center text-green-400">Qual</div>
+                <div className="col-span-3 text-center">Recent Rounds</div>
                 <div className="col-span-1 text-center">Total</div>
-                <div className="col-span-1 text-center text-[#D4AF37]">Avg</div>
+                <div className="col-span-2 text-center text-[#D4AF37]">Avg</div>
               </div>
 
               <CardContent className="p-0">
@@ -364,8 +369,10 @@ export default function CompetitionPage() {
                 ) : (
                   <div className="divide-y divide-gray-200">
                     {leaderboard.map((entry, index) => {
-                      const isLeader = index === 0;
-                      const isTop3 = index < 3;
+                      const isLeader = index === 0 && entry.qualified;
+                      const isTop3 = index < 3 && entry.qualified;
+                      const minRounds = competition.min_rounds || 13;
+                      const recentScores = entry.round_scores.filter(s => s >= 0).slice(-5);
                       return (
                         <div
                           key={entry.player_id}
@@ -375,7 +382,9 @@ export default function CompetitionPage() {
                               ? 'bg-[#D4AF37]/20 border-l-4 border-l-[#D4AF37]' 
                               : isTop3 
                                 ? 'bg-[#f5f5dc]' 
-                                : 'bg-white hover:bg-gray-50'
+                                : entry.qualified 
+                                  ? 'bg-white hover:bg-gray-50'
+                                  : 'bg-gray-100 opacity-70'
                           }`}
                         >
                           {/* Position */}
@@ -385,20 +394,22 @@ export default function CompetitionPage() {
                                 ? 'bg-[#D4AF37] text-black' 
                                 : isTop3 
                                   ? 'bg-[#1a1a1a] text-white' 
-                                  : 'bg-gray-200 text-gray-700'
+                                  : entry.qualified
+                                    ? 'bg-gray-200 text-gray-700'
+                                    : 'bg-gray-300 text-gray-500'
                             }`}>
                               {index + 1}
                             </span>
                           </div>
                           
                           {/* Player Name & Team */}
-                          <div className="col-span-3 flex items-center gap-3">
+                          <div className="col-span-2 flex items-center gap-2">
                             {entry.player_team_logo ? (
                               <img src={entry.player_team_logo} alt="Team" className="w-6 h-6 object-contain" />
                             ) : (
                               <div className="w-6 h-6" />
                             )}
-                            <span className={`font-semibold uppercase tracking-wide ${isLeader ? 'text-lg' : ''}`}>
+                            <span className={`font-semibold uppercase tracking-wide ${isLeader ? 'text-lg' : ''} ${!entry.qualified ? 'text-gray-500' : ''}`}>
                               {entry.player_username}
                             </span>
                           </div>
@@ -408,19 +419,36 @@ export default function CompetitionPage() {
                             {entry.player_handicap.toFixed(1)}
                           </div>
                           
-                          {/* Round Scores */}
-                          {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round, idx) => (
-                            <div key={round.id} className="col-span-1 text-center font-mono">
-                              {entry.round_scores[idx] !== undefined && entry.round_scores[idx] >= 0 
-                                ? entry.round_scores[idx] 
-                                : <span className="text-gray-300">-</span>}
-                            </div>
-                          ))}
+                          {/* Rounds Played */}
+                          <div className="col-span-1 text-center">
+                            <span className={`font-mono font-bold ${entry.rounds_played >= minRounds ? 'text-green-600' : 'text-orange-500'}`}>
+                              {entry.rounds_played}/{minRounds}
+                            </span>
+                          </div>
                           
-                          {/* Empty columns to fill space */}
-                          {Array(Math.max(0, 4 - rounds.length)).fill(0).map((_, idx) => (
-                            <div key={`empty-${idx}`} className="col-span-1"></div>
-                          ))}
+                          {/* Qualified Status */}
+                          <div className="col-span-1 text-center">
+                            {entry.qualified ? (
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500 text-white">
+                                <Check className="w-4 h-4" />
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-300 text-gray-500">
+                                <X className="w-4 h-4" />
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Recent Round Scores */}
+                          <div className="col-span-3 flex items-center justify-center gap-1">
+                            {recentScores.length > 0 ? recentScores.map((score, idx) => (
+                              <span key={idx} className="inline-block w-8 h-8 rounded bg-gray-100 text-center leading-8 font-mono text-sm">
+                                {score}
+                              </span>
+                            )) : (
+                              <span className="text-gray-400 text-sm">No rounds</span>
+                            )}
+                          </div>
                           
                           {/* Total */}
                           <div className="col-span-1 text-center font-mono font-bold text-lg">
@@ -428,11 +456,13 @@ export default function CompetitionPage() {
                           </div>
                           
                           {/* Average - Highlighted */}
-                          <div className="col-span-1 text-center">
-                            <span className={`inline-block px-3 py-1 rounded font-mono font-bold text-lg ${
+                          <div className="col-span-2 text-center">
+                            <span className={`inline-block px-4 py-1 rounded font-mono font-bold text-lg ${
                               isLeader 
                                 ? 'bg-[#D4AF37] text-black' 
-                                : 'bg-[#1a1a1a] text-[#D4AF37]'
+                                : entry.qualified
+                                  ? 'bg-[#1a1a1a] text-[#D4AF37]'
+                                  : 'bg-gray-400 text-white'
                             }`}>
                               {entry.average_stableford.toFixed(1)}
                             </span>
