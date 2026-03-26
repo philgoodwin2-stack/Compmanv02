@@ -86,6 +86,9 @@ class RoundBase(BaseModel):
     round_number: int
     name: Optional[str] = ""
     date: Optional[str] = None
+    course_name: Optional[str] = ""
+    tee: Optional[str] = ""
+    slope_rating: Optional[int] = 113
     course_par: int = 72
 
 class RoundCreate(RoundBase):

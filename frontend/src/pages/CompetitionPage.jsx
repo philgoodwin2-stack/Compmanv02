@@ -72,7 +72,13 @@ export default function CompetitionPage() {
   const [showAddRoundDialog, setShowAddRoundDialog] = useState(false);
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [newRound, setNewRound] = useState({ name: "", course_par: 72 });
+  const [newRound, setNewRound] = useState({ 
+    name: "", 
+    course_name: "",
+    tee: "White",
+    slope_rating: 113,
+    course_par: 72 
+  });
 
   useEffect(() => {
     fetchData();
@@ -108,11 +114,14 @@ export default function CompetitionPage() {
         round_number: roundNumber,
         name: roundName,
         date: format(selectedDate, "yyyy-MM-dd"),
+        course_name: newRound.course_name,
+        tee: newRound.tee,
+        slope_rating: newRound.slope_rating,
         course_par: newRound.course_par,
       });
       toast.success("Round added!");
       setShowAddRoundDialog(false);
-      setNewRound({ name: "", course_par: 72 });
+      setNewRound({ name: "", course_name: "", tee: "White", slope_rating: 113, course_par: 72 });
       fetchData();
     } catch (error) {
       toast.error("Failed to add round");
@@ -514,6 +523,49 @@ export default function CompetitionPage() {
                       />
                     </div>
                     <div className="space-y-2">
+                      <Label>Course Name</Label>
+                      <Input
+                        data-testid="course-name-input"
+                        value={newRound.course_name}
+                        onChange={(e) => setNewRound({ ...newRound, course_name: e.target.value })}
+                        placeholder="e.g., Royal Portrush"
+                        className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Tee</Label>
+                        <Select
+                          value={newRound.tee}
+                          onValueChange={(val) => setNewRound({ ...newRound, tee: val })}
+                        >
+                          <SelectTrigger data-testid="tee-select" className="rounded-none">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Black">Black</SelectItem>
+                            <SelectItem value="Blue">Blue</SelectItem>
+                            <SelectItem value="White">White</SelectItem>
+                            <SelectItem value="Yellow">Yellow</SelectItem>
+                            <SelectItem value="Red">Red</SelectItem>
+                            <SelectItem value="Green">Green</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Slope Rating</Label>
+                        <Input
+                          data-testid="slope-rating-input"
+                          type="number"
+                          min="55"
+                          max="155"
+                          value={newRound.slope_rating}
+                          onChange={(e) => setNewRound({ ...newRound, slope_rating: parseInt(e.target.value) || 113 })}
+                          className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
                       <Label>Date</Label>
                       <Popover>
                         <PopoverTrigger asChild>
@@ -747,8 +799,16 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
             <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
               <CalendarIcon className="w-4 h-4" />
               {round.date}
-              <span className="mx-2">•</span>
+            </p>
+            {round.course_name && (
+              <p className="text-sm font-medium mt-1">
+                {round.course_name}
+                {round.tee && <span className="text-muted-foreground"> • {round.tee} Tees</span>}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
               Par {round.course_par}
+              {round.slope_rating && <span> • Slope {round.slope_rating}</span>}
             </p>
           </div>
           <Button
