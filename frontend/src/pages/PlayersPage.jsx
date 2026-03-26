@@ -27,15 +27,17 @@ import {
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag } from "lucide-react";
 
-// Sports team logos - popular teams
+// Sports team logos - Football, Rugby, GAA and more
 const TEAM_LOGOS = [
   { name: "None", logo: "" },
+  // Premier League
   { name: "Man United", logo: "https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg" },
   { name: "Liverpool", logo: "https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg" },
   { name: "Chelsea", logo: "https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg" },
   { name: "Arsenal", logo: "https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg" },
   { name: "Man City", logo: "https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg" },
   { name: "Tottenham", logo: "https://upload.wikimedia.org/wikipedia/en/b/b4/Tottenham_Hotspur.svg" },
+  // European Football
   { name: "Real Madrid", logo: "https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg" },
   { name: "Barcelona", logo: "https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg" },
   { name: "Bayern Munich", logo: "https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg" },
@@ -47,6 +49,41 @@ const TEAM_LOGOS = [
   { name: "Ajax", logo: "https://upload.wikimedia.org/wikipedia/en/7/79/Ajax_Amsterdam.svg" },
   { name: "Celtic", logo: "https://upload.wikimedia.org/wikipedia/en/3/35/Celtic_FC.svg" },
   { name: "Rangers", logo: "https://upload.wikimedia.org/wikipedia/en/4/43/Rangers_FC.svg" },
+  // Rugby - Six Nations & Champions Cup
+  { name: "Ireland Rugby", logo: "https://upload.wikimedia.org/wikipedia/en/7/79/Irish_Rugby_Football_Union_logo.svg" },
+  { name: "England Rugby", logo: "https://upload.wikimedia.org/wikipedia/en/c/cf/England_rugby_union_logo.svg" },
+  { name: "Wales Rugby", logo: "https://upload.wikimedia.org/wikipedia/en/a/af/Welsh_Rugby_Union_logo.svg" },
+  { name: "Scotland Rugby", logo: "https://upload.wikimedia.org/wikipedia/en/5/59/Scottish_Rugby_Union_logo.svg" },
+  { name: "France Rugby", logo: "https://upload.wikimedia.org/wikipedia/en/a/a9/France_national_rugby_union_team_logo.svg" },
+  { name: "Leinster", logo: "https://upload.wikimedia.org/wikipedia/en/5/54/Leinster_Rugby_logo.svg" },
+  { name: "Munster", logo: "https://upload.wikimedia.org/wikipedia/en/d/d3/Munster_Rugby_logo.svg" },
+  { name: "Ulster", logo: "https://upload.wikimedia.org/wikipedia/en/0/0f/Ulster_Rugby_Logo.svg" },
+  { name: "Connacht", logo: "https://upload.wikimedia.org/wikipedia/en/9/92/Connacht_Rugby_logo.svg" },
+  { name: "Saracens", logo: "https://upload.wikimedia.org/wikipedia/en/0/0c/Saracens_FC_logo.svg" },
+  { name: "Harlequins", logo: "https://upload.wikimedia.org/wikipedia/en/6/6c/Harlequin_FC_logo.svg" },
+  // GAA Football
+  { name: "Dublin GAA", logo: "https://upload.wikimedia.org/wikipedia/en/9/9c/Dublin_GAA_crest.svg" },
+  { name: "Kerry GAA", logo: "https://upload.wikimedia.org/wikipedia/en/6/6f/Kerry_GAA_crest.png" },
+  { name: "Mayo GAA", logo: "https://upload.wikimedia.org/wikipedia/en/e/e1/Mayo_GAA_crest.svg" },
+  { name: "Galway GAA", logo: "https://upload.wikimedia.org/wikipedia/en/c/c4/Galway_GAA_crest.svg" },
+  { name: "Tyrone GAA", logo: "https://upload.wikimedia.org/wikipedia/en/1/10/Tyrone_GAA_crest.png" },
+  { name: "Cork GAA", logo: "https://upload.wikimedia.org/wikipedia/en/d/dc/Cork_GAA_crest.png" },
+  { name: "Kilkenny GAA", logo: "https://upload.wikimedia.org/wikipedia/en/9/9c/Kilkenny_GAA_crest.svg" },
+  { name: "Limerick GAA", logo: "https://upload.wikimedia.org/wikipedia/en/3/31/Limerick_GAA_crest.svg" },
+  { name: "Armagh GAA", logo: "https://upload.wikimedia.org/wikipedia/en/6/64/Armagh_GAA_crest.svg" },
+  { name: "Donegal GAA", logo: "https://upload.wikimedia.org/wikipedia/en/2/28/Donegal_GAA_crest.png" },
+  { name: "Meath GAA", logo: "https://upload.wikimedia.org/wikipedia/en/0/0f/Meath_GAA_crest.png" },
+  { name: "Derry GAA", logo: "https://upload.wikimedia.org/wikipedia/en/6/63/Derry_GAA_crest.svg" },
+  // NFL
+  { name: "Dallas Cowboys", logo: "https://upload.wikimedia.org/wikipedia/commons/1/15/Dallas_Cowboys.svg" },
+  { name: "New England Patriots", logo: "https://upload.wikimedia.org/wikipedia/en/b/b9/New_England_Patriots_logo.svg" },
+  { name: "Green Bay Packers", logo: "https://upload.wikimedia.org/wikipedia/commons/5/50/Green_Bay_Packers_logo.svg" },
+  { name: "San Francisco 49ers", logo: "https://upload.wikimedia.org/wikipedia/commons/3/3a/San_Francisco_49ers_logo.svg" },
+  // NBA
+  { name: "LA Lakers", logo: "https://upload.wikimedia.org/wikipedia/commons/3/3c/Los_Angeles_Lakers_logo.svg" },
+  { name: "Boston Celtics", logo: "https://upload.wikimedia.org/wikipedia/en/8/8f/Boston_Celtics.svg" },
+  { name: "Chicago Bulls", logo: "https://upload.wikimedia.org/wikipedia/en/6/67/Chicago_Bulls_logo.svg" },
+  { name: "Golden State Warriors", logo: "https://upload.wikimedia.org/wikipedia/en/0/01/Golden_State_Warriors_logo.svg" },
 ];
 
 export default function PlayersPage() {
@@ -245,7 +282,7 @@ export default function PlayersPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Team Logo</Label>
-                  <div className="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto p-2 border rounded">
+                  <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto p-2 border rounded">
                     {TEAM_LOGOS.map((team) => (
                       <button
                         key={team.name}
@@ -406,7 +443,7 @@ export default function PlayersPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Team Logo</Label>
-                  <div className="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto p-2 border rounded">
+                  <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto p-2 border rounded">
                     {TEAM_LOGOS.map((team) => (
                       <button
                         key={team.name}
