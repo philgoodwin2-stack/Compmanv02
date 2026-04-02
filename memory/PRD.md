@@ -26,29 +26,35 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - Include/exclude players from competitions
 - Simple username-based access
 
-## What's Been Implemented (January 2026)
+## What's Been Implemented
 
 ### Backend Endpoints
 - `/api/login` - Simple username login (creates player if not exists)
 - `/api/players` - CRUD for player management with handicap
-- `/api/competitions` - CRUD for competitions
-- `/api/rounds` - Round management within competitions
-- `/api/scores` - Score entry with Stableford calculation
-- `/api/leaderboard/{competition_id}` - Ranked leaderboard
+- `/api/competitions` - CRUD for competitions with start/end dates, min_rounds
+- `/api/rounds` - Round management with course name, tee, slope rating
+- `/api/scores` - Simplified total Stableford points entry
+- `/api/leaderboard/{competition_id}` - Ranked leaderboard with round details
+- `/api/handicap-history` - WHS handicap tracking history
 
 ### Frontend Pages
 - **Login Page**: Username entry with auto player creation
 - **Dashboard**: Competition overview with stats
-- **Players Page**: Manage players, handicaps, active status
+- **Players Page**: Manage players, handicaps, 120+ team logos
 - **Competition Page**: Tabs for leaderboard, rounds, players
-- **Score Entry Page**: Mobile-friendly hole-by-hole input
+- **Score Entry Page**: Total Stableford points (simplified)
+- **Handicap Tracking Page**: Handicap changes history by date
 
 ### Features
 - Stableford points calculation based on handicap strokes
-- 9 or 18 hole competitions
+- 9 or 18 hole competitions with start/end dates
 - Competition status (upcoming → active → completed)
-- Visual score indicators (birdie, par, bogey, etc.)
-- Responsive design for mobile score entry
+- Spreadsheet-style leaderboard with color-coded scores (April 2026)
+- Round dates as columns with tee info
+- Custom delete dialogs (replaced browser popups)
+- WHS handicap tracking and history
+- 120+ sports team logos for players
+- Responsive design for mobile
 
 ## Prioritized Backlog
 

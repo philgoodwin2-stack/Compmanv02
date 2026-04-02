@@ -348,155 +348,173 @@ export default function CompetitionPage() {
           {/* Leaderboard Tab */}
           <TabsContent value="leaderboard">
             <Card className="relative overflow-hidden border-0 shadow-xl">
-              {/* The Open Style Header */}
-              <div className="bg-[#1a1a1a] text-white px-6 py-4">
+              {/* Header */}
+              <div className="bg-[#1a1a1a] text-white px-4 py-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Trophy className="w-8 h-8 text-[#D4AF37]" />
-                    <div>
-                      <h2 className="text-2xl font-bold uppercase tracking-wider" style={{ fontFamily: 'Barlow Condensed, sans-serif' }}>
-                        {competition.name}
-                      </h2>
-                      <p className="text-sm text-gray-400 uppercase tracking-widest">Leaderboard</p>
-                    </div>
+                    <Trophy className="w-6 h-6 text-[#D4AF37]" />
+                    <h2 className="text-xl font-bold uppercase tracking-wider">
+                      {competition.name}
+                    </h2>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-gray-400 uppercase tracking-wider">Rounds Played</p>
-                    <p className="text-2xl font-bold text-[#D4AF37]">{rounds.length}</p>
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="w-4 h-4 bg-gray-500 rounded"></span>
+                      <span>Round dropped</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-red-400 font-bold">Red</span>
+                      <span>= non-counting round</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              
-              {/* Column Headers - The Open Style */}
-              <div className="bg-[#2d2d2d] text-white px-6 py-3 grid grid-cols-12 gap-2 items-center text-xs uppercase tracking-wider font-semibold">
-                <div className="col-span-1 text-center">Pos</div>
-                <div className="col-span-2">Player</div>
-                <div className="col-span-1 text-center">Hcp</div>
-                <div className="col-span-1 text-center">Played</div>
-                <div className="col-span-1 text-center text-green-400">Qual</div>
-                <div className="col-span-3 text-center">Recent Pts</div>
-                <div className="col-span-1 text-center">Total Pts</div>
-                <div className="col-span-2 text-center text-[#D4AF37]">Avg Pts</div>
-              </div>
 
-              <CardContent className="p-0">
+              <CardContent className="p-0 overflow-x-auto">
                 {leaderboard.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground bg-[#f5f5dc]">
+                  <div className="text-center py-12 text-muted-foreground">
                     <Trophy className="w-12 h-12 mx-auto mb-4 opacity-30" />
                     <p>No scores yet. Add rounds and enter scores to see the leaderboard.</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-gray-200">
-                    {leaderboard.map((entry, index) => {
-                      const isLeader = index === 0 && entry.qualified;
-                      const isTop3 = index < 3 && entry.qualified;
-                      const minRounds = competition.min_rounds || 13;
-                      const recentScores = entry.round_scores.filter(s => s >= 0).slice(-5);
-                      return (
-                        <div
-                          key={entry.player_id}
-                          data-testid={`leaderboard-row-${entry.player_id}`}
-                          className={`grid grid-cols-12 gap-2 items-center px-6 py-4 transition-colors ${
-                            isLeader 
-                              ? 'bg-[#D4AF37]/20 border-l-4 border-l-[#D4AF37]' 
-                              : isTop3 
-                                ? 'bg-[#f5f5dc]' 
-                                : entry.qualified 
-                                  ? 'bg-white hover:bg-gray-50'
-                                  : 'bg-gray-100 opacity-70'
-                          }`}
-                        >
-                          {/* Position */}
-                          <div className="col-span-1 text-center">
-                            <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${
-                              isLeader 
-                                ? 'bg-[#D4AF37] text-black' 
-                                : isTop3 
-                                  ? 'bg-[#1a1a1a] text-white' 
-                                  : entry.qualified
-                                    ? 'bg-gray-200 text-gray-700'
-                                    : 'bg-gray-300 text-gray-500'
-                            }`}>
+                  <table className="w-full text-sm">
+                    {/* Round numbers row */}
+                    <thead>
+                      <tr className="bg-gray-100 border-b">
+                        <th className="px-2 py-1 text-left w-10"></th>
+                        <th className="px-2 py-1 text-left w-10"></th>
+                        <th className="px-2 py-1 text-left w-40"></th>
+                        <th className="px-2 py-1 text-center w-16 font-normal text-xs text-gray-500">Avg</th>
+                        <th className="px-2 py-1 text-center w-12 font-normal text-xs text-gray-500">Played</th>
+                        {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round, idx) => (
+                          <th key={round.id} className="px-1 py-1 text-center w-10 font-normal text-xs text-gray-500">
+                            {idx + 1}
+                          </th>
+                        ))}
+                      </tr>
+                      {/* Tee row */}
+                      <tr className="bg-gray-50 border-b">
+                        <th className="px-2 py-1"></th>
+                        <th className="px-2 py-1"></th>
+                        <th className="px-2 py-1 text-left text-xs font-semibold text-gray-600">TEE</th>
+                        <th className="px-2 py-1"></th>
+                        <th className="px-2 py-1"></th>
+                        {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round) => (
+                          <th key={round.id} className="px-1 py-1 text-center text-xs font-normal text-gray-500">
+                            {round.tee ? round.tee.substring(0, 2).toUpperCase() : 'WH'}
+                          </th>
+                        ))}
+                      </tr>
+                      {/* Date row */}
+                      <tr className="bg-gray-100 border-b-2 border-gray-300">
+                        <th className="px-2 py-1"></th>
+                        <th className="px-2 py-1"></th>
+                        <th className="px-2 py-1"></th>
+                        <th className="px-2 py-1"></th>
+                        <th className="px-2 py-1"></th>
+                        {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round) => (
+                          <th key={round.id} className="px-1 py-1 text-center text-xs font-normal text-gray-600" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', height: '50px' }}>
+                            {new Date(round.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaderboard.map((entry, index) => {
+                        const minRounds = competition.min_rounds || 13;
+                        const isQualified = entry.rounds_played >= minRounds;
+                        // Calculate which scores count (best 8 of last 20 for WHS-style)
+                        const validScores = entry.round_scores.filter(s => s >= 0);
+                        const sortedScores = [...validScores].sort((a, b) => b - a);
+                        const countingScores = sortedScores.slice(0, 8);
+                        
+                        return (
+                          <tr 
+                            key={entry.player_id}
+                            data-testid={`leaderboard-row-${entry.player_id}`}
+                            className={`border-b ${index % 2 === 0 ? 'bg-blue-50/50' : 'bg-white'} hover:bg-blue-100/50`}
+                          >
+                            {/* Position */}
+                            <td className="px-2 py-2 text-center font-bold text-gray-700">
                               {index + 1}
-                            </span>
-                          </div>
-                          
-                          {/* Player Name & Team */}
-                          <div className="col-span-2 flex items-center gap-2">
-                            {entry.player_team_logo ? (
-                              <img src={entry.player_team_logo} alt="Team" className="w-6 h-6 object-contain" />
-                            ) : (
-                              <div className="w-6 h-6" />
-                            )}
-                            <span className={`font-semibold uppercase tracking-wide ${isLeader ? 'text-lg' : ''} ${!entry.qualified ? 'text-gray-500' : ''}`}>
-                              {entry.player_username}
-                            </span>
-                          </div>
-                          
-                          {/* Handicap */}
-                          <div className="col-span-1 text-center font-mono text-sm text-gray-500">
-                            {entry.player_handicap.toFixed(1)}
-                          </div>
-                          
-                          {/* Rounds Played */}
-                          <div className="col-span-1 text-center">
-                            <span className={`font-mono font-bold ${entry.rounds_played >= minRounds ? 'text-green-600' : 'text-orange-500'}`}>
-                              {entry.rounds_played}/{minRounds}
-                            </span>
-                          </div>
-                          
-                          {/* Qualified Status */}
-                          <div className="col-span-1 text-center">
-                            {entry.qualified ? (
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500 text-white">
-                                <Check className="w-4 h-4" />
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-300 text-gray-500">
-                                <X className="w-4 h-4" />
-                              </span>
-                            )}
-                          </div>
-                          
-                          {/* Recent Round Scores - Stableford Points */}
-                          <div className="col-span-3 flex items-center justify-center gap-1">
-                            {recentScores.length > 0 ? recentScores.map((score, idx) => (
-                              <span key={idx} className="inline-flex items-center justify-center w-9 h-8 rounded bg-[#1a1a1a] text-white text-center font-mono text-sm font-bold">
-                                {score}
-                              </span>
-                            )) : (
-                              <span className="text-gray-400 text-sm">No rounds</span>
-                            )}
-                          </div>
-                          
-                          {/* Total Points */}
-                          <div className="col-span-1 text-center font-mono font-bold text-lg">
-                            {entry.total_stableford}
-                          </div>
-                          
-                          {/* Average Points - Highlighted */}
-                          <div className="col-span-2 text-center">
-                            <span className={`inline-block px-4 py-1 rounded font-mono font-bold text-lg ${
-                              isLeader 
-                                ? 'bg-[#D4AF37] text-black' 
-                                : entry.qualified
-                                  ? 'bg-[#1a1a1a] text-[#D4AF37]'
-                                  : 'bg-gray-400 text-white'
-                            }`}>
-                              {entry.average_stableford.toFixed(1)} <span className="text-xs font-normal">pts</span>
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                            </td>
+                            {/* Team Logo */}
+                            <td className="px-2 py-2">
+                              {entry.player_team_logo ? (
+                                <img src={entry.player_team_logo} alt="Team" className="w-6 h-6 object-contain" />
+                              ) : (
+                                <div className="w-6 h-6" />
+                              )}
+                            </td>
+                            {/* Player Name */}
+                            <td className="px-2 py-2 font-medium">
+                              {entry.player_username.split(' ').map((part, i, arr) => 
+                                i === arr.length - 1 ? part.toUpperCase() : part
+                              ).join(' ')}
+                            </td>
+                            {/* Average */}
+                            <td className="px-2 py-2 text-center font-mono font-bold text-lg">
+                              {entry.average_stableford.toFixed(2)}
+                            </td>
+                            {/* Played */}
+                            <td className="px-2 py-2 text-center font-mono text-sm text-gray-600">
+                              {entry.rounds_played}
+                            </td>
+                            {/* Round Scores */}
+                            {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round, idx) => {
+                              const score = entry.round_scores[idx];
+                              const hasScore = score !== undefined && score >= 0;
+                              const isCounting = hasScore && countingScores.includes(score);
+                              const isDropped = hasScore && !isCounting && validScores.length > 8;
+                              
+                              // Color coding based on score
+                              let bgColor = '';
+                              let textColor = 'text-gray-900';
+                              if (hasScore) {
+                                if (score >= 40) {
+                                  bgColor = 'bg-green-400';
+                                } else if (score >= 36) {
+                                  bgColor = 'bg-green-300';
+                                } else if (score >= 33) {
+                                  bgColor = 'bg-yellow-200';
+                                } else if (score >= 30) {
+                                  bgColor = 'bg-orange-300';
+                                } else if (score >= 27) {
+                                  bgColor = 'bg-orange-400';
+                                } else {
+                                  bgColor = 'bg-gray-400';
+                                  textColor = 'text-white';
+                                }
+                                if (isDropped) {
+                                  bgColor = 'bg-gray-400';
+                                  textColor = 'text-red-600';
+                                }
+                              }
+                              
+                              return (
+                                <td key={round.id} className="px-0 py-1 text-center">
+                                  {hasScore ? (
+                                    <span className={`inline-block w-8 h-7 leading-7 text-sm font-bold rounded ${bgColor} ${textColor}`}>
+                                      {score}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-300">-</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 )}
               </CardContent>
               
               {/* Footer */}
-              <div className="bg-[#1a1a1a] text-white px-6 py-3 flex justify-between items-center text-xs uppercase tracking-wider">
-                <span className="text-gray-400">Stableford Points</span>
-                <span className="text-[#D4AF37]">{competition.num_holes} Holes</span>
+              <div className="bg-[#1a1a1a] text-white px-4 py-2 flex justify-between items-center text-xs">
+                <span>Min {competition.min_rounds || 13} rounds to qualify</span>
+                <span className="text-[#D4AF37]">{competition.num_holes} Holes • Stableford Points</span>
               </div>
             </Card>
           </TabsContent>
