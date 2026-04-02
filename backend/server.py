@@ -99,6 +99,7 @@ class RoundBase(BaseModel):
     name: Optional[str] = ""
     date: Optional[str] = None
     course_name: Optional[str] = ""
+    course_id: Optional[str] = None  # Reference to a Course with stroke indices
     tee: Optional[str] = ""
     slope_rating: Optional[int] = 113
     course_par: int = 72
@@ -150,6 +151,37 @@ class LeaderboardEntry(BaseModel):
     average_stableford: float = 0.0
     round_scores: List[int] = []
     qualified: bool = False
+
+# Course Models
+class HoleInfo(BaseModel):
+    hole_number: int
+    par: int = 4
+    stroke_index: int  # 1-18, where 1 is hardest hole
+    yards: Optional[int] = None
+
+class CourseBase(BaseModel):
+    name: str
+    tee: str = "White"  # e.g., White, Yellow, Red, Blue
+    slope_rating: int = 113
+    course_rating: float = 72.0
+    total_par: int = 72
+    holes: List[HoleInfo] = []
+
+class CourseCreate(CourseBase):
+    pass
+
+class CourseUpdate(BaseModel):
+    name: Optional[str] = None
+    tee: Optional[str] = None
+    slope_rating: Optional[int] = None
+    course_rating: Optional[float] = None
+    total_par: Optional[int] = None
+    holes: Optional[List[HoleInfo]] = None
+
+class Course(CourseBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 # ============= HELPER FUNCTIONS =============
 
@@ -317,6 +349,69 @@ async def get_player_handicap_history(player_id: str):
         "current_handicap": player.get("handicap", 18.0),
         "history": player.get("handicap_history", [])
     }
+
+# ============= COURSE ENDPOINTS =============
+
+@api_router.get("/courses", response_model=List[Course])
+async def get_courses():
+    """Get all courses"""
+    courses = await db.courses.find({}, {"_id": 0}).to_list(1000)
+    return courses
+
+@api_router.get("/courses/{course_id}", response_model=Course)
+async def get_course(course_id: str):
+    """Get a specific course by ID"""
+    course = await db.courses.find_one({"id": course_id}, {"_id": 0})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return course
+
+@api_router.post("/courses", response_model=Course)
+async def create_course(course_data: CourseCreate):
+    """Create a new course with stroke indices"""
+    # Validate holes if provided
+    if course_data.holes:
+        # Check all 18 holes are present with unique stroke indices
+        hole_numbers = [h.hole_number for h in course_data.holes]
+        stroke_indices = [h.stroke_index for h in course_data.holes]
+        
+        if len(hole_numbers) != 18 or set(hole_numbers) != set(range(1, 19)):
+            raise HTTPException(status_code=400, detail="Must provide exactly 18 holes numbered 1-18")
+        
+        if len(stroke_indices) != 18 or set(stroke_indices) != set(range(1, 19)):
+            raise HTTPException(status_code=400, detail="Stroke indices must be unique values 1-18")
+    
+    course = Course(**course_data.model_dump())
+    doc = course.model_dump()
+    await db.courses.insert_one(doc)
+    return course
+
+@api_router.put("/courses/{course_id}", response_model=Course)
+async def update_course(course_id: str, course_data: CourseUpdate):
+    """Update an existing course"""
+    update_dict = {k: v for k, v in course_data.model_dump().items() if v is not None}
+    
+    # Convert holes to dict if present
+    if "holes" in update_dict and update_dict["holes"]:
+        update_dict["holes"] = [h.model_dump() if hasattr(h, 'model_dump') else h for h in update_dict["holes"]]
+    
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    result = await db.courses.update_one({"id": course_id}, {"$set": update_dict})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    course = await db.courses.find_one({"id": course_id}, {"_id": 0})
+    return course
+
+@api_router.delete("/courses/{course_id}")
+async def delete_course(course_id: str):
+    """Delete a course"""
+    result = await db.courses.delete_one({"id": course_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return {"message": "Course deleted"}
 
 # ============= COMPETITION ENDPOINTS =============
 

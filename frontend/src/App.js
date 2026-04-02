@@ -11,6 +11,7 @@ import PlayersPage from "@/pages/PlayersPage";
 import CompetitionPage from "@/pages/CompetitionPage";
 import ScoreEntryPage from "@/pages/ScoreEntryPage";
 import HandicapTrackingPage from "@/pages/HandicapTrackingPage";
+import CoursesPage from "@/pages/CoursesPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
@@ -82,6 +83,10 @@ function App() {
             <Route
               path="/handicaps"
               element={user ? <HandicapTrackingPage /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/courses"
+              element={user ? <CoursesPage /> : <Navigate to="/" />}
             />
           </Routes>
         </BrowserRouter>

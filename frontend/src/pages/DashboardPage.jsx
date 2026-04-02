@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trophy, Users, LogOut, Flag, Calendar, ChevronRight, CalendarIcon, Trash2, History } from "lucide-react";
+import { Plus, Trophy, Users, LogOut, Flag, Calendar, ChevronRight, CalendarIcon, Trash2, History, MapPin } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -130,6 +130,15 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <Button
+              data-testid="courses-nav-btn"
+              variant="ghost"
+              onClick={() => navigate("/courses")}
+              className="text-white hover:bg-white/10"
+            >
+              <MapPin className="w-5 h-5 mr-2" />
+              Courses
+            </Button>
             <Button
               data-testid="handicaps-nav-btn"
               variant="ghost"
