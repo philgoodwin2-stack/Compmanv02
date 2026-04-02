@@ -56,6 +56,8 @@ import {
   Medal,
   Check,
   X,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 
 export default function CompetitionPage() {
@@ -72,6 +74,7 @@ export default function CompetitionPage() {
   const [showAddRoundDialog, setShowAddRoundDialog] = useState(false);
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [leaderboardView, setLeaderboardView] = useState("detailed"); // "detailed" or "simple"
   const [newRound, setNewRound] = useState({ 
     name: "", 
     course_name: "",
@@ -357,15 +360,46 @@ export default function CompetitionPage() {
                       {competition.name}
                     </h2>
                   </div>
-                  <div className="flex items-center gap-4 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="w-4 h-4 bg-gray-500 rounded"></span>
-                      <span>Round dropped</span>
+                  <div className="flex items-center gap-4">
+                    {/* View Toggle */}
+                    <div className="flex items-center bg-[#2a2a2a] rounded overflow-hidden">
+                      <button
+                        data-testid="view-simple-btn"
+                        onClick={() => setLeaderboardView("simple")}
+                        className={`px-3 py-1.5 flex items-center gap-1.5 text-xs transition-colors ${
+                          leaderboardView === "simple" 
+                            ? "bg-[#D4AF37] text-black" 
+                            : "text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        <List className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Simple</span>
+                      </button>
+                      <button
+                        data-testid="view-detailed-btn"
+                        onClick={() => setLeaderboardView("detailed")}
+                        className={`px-3 py-1.5 flex items-center gap-1.5 text-xs transition-colors ${
+                          leaderboardView === "detailed" 
+                            ? "bg-[#D4AF37] text-black" 
+                            : "text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Detailed</span>
+                      </button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-red-400 font-bold">Red</span>
-                      <span>= non-counting round</span>
-                    </div>
+                    {leaderboardView === "detailed" && (
+                      <div className="hidden md:flex items-center gap-4 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="w-4 h-4 bg-gray-500 rounded"></span>
+                          <span>Round dropped</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-red-400 font-bold">Red</span>
+                          <span>= non-counting round</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -376,7 +410,68 @@ export default function CompetitionPage() {
                     <Trophy className="w-12 h-12 mx-auto mb-4 opacity-30" />
                     <p>No scores yet. Add rounds and enter scores to see the leaderboard.</p>
                   </div>
+                ) : leaderboardView === "simple" ? (
+                  /* Simple View - Clean mobile-friendly list */
+                  <div className="divide-y divide-gray-100">
+                    {leaderboard.map((entry, index) => {
+                      const minRounds = competition.min_rounds || 13;
+                      const isQualified = entry.rounds_played >= minRounds;
+                      const isLeader = index === 0;
+                      
+                      return (
+                        <div 
+                          key={entry.player_id}
+                          data-testid={`simple-row-${entry.player_id}`}
+                          className={`flex items-center px-4 py-3 ${index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'}`}
+                        >
+                          {/* Position */}
+                          <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-sm mr-3 ${
+                            isLeader ? 'bg-[#D4AF37] text-black' : 'bg-gray-200 text-gray-700'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          
+                          {/* Team Logo */}
+                          {entry.player_team_logo && (
+                            <img src={entry.player_team_logo} alt="Team" className="w-8 h-8 object-contain mr-3" />
+                          )}
+                          
+                          {/* Player Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-gray-900 truncate">
+                              {entry.player_username}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {entry.rounds_played} rounds • HCP {entry.player_handicap.toFixed(1)}
+                            </div>
+                          </div>
+                          
+                          {/* Average Score */}
+                          <div className="text-right">
+                            <div className={`text-xl font-bold font-mono ${isLeader ? 'text-[#D4AF37]' : 'text-gray-900'}`}>
+                              {entry.average_stableford.toFixed(1)}
+                            </div>
+                            <div className="text-xs text-gray-500">avg pts</div>
+                          </div>
+                          
+                          {/* Qualification Badge */}
+                          <div className="ml-3">
+                            {isQualified ? (
+                              <span className="w-6 h-6 flex items-center justify-center rounded-full bg-green-500 text-white">
+                                <Check className="w-4 h-4" />
+                              </span>
+                            ) : (
+                              <span className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-300 text-gray-500 text-xs font-bold">
+                                {minRounds - entry.rounds_played}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 ) : (
+                  /* Detailed View - Spreadsheet with all rounds */
                   <table className="w-full text-sm">
                     {/* Round numbers row */}
                     <thead>

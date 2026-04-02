@@ -49,6 +49,7 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - Stableford points calculation based on handicap strokes
 - 9 or 18 hole competitions with start/end dates
 - Competition status (upcoming → active → completed)
+- **Leaderboard toggle view** - Switch between Simple (mobile-friendly) and Detailed (spreadsheet) views
 - Spreadsheet-style leaderboard with color-coded scores (April 2026)
 - Round dates as columns with tee info
 - Custom delete dialogs (replaced browser popups)
