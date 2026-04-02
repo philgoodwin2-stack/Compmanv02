@@ -50,6 +50,7 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - 9 or 18 hole competitions with start/end dates
 - Competition status (upcoming → active → completed)
 - **Course Management with Stroke Index** - Create/edit courses with par and stroke index for each hole
+- **Course linking to rounds** - Select saved courses when adding rounds to auto-fill tee, slope, par
 - **Leaderboard toggle view** - Switch between Simple (mobile-friendly) and Detailed (spreadsheet) views
 - **Share leaderboard** - Copy link, copy full standings text, or native share on mobile
 - **Handicap progression spreadsheet** - Track handicaps over time with dates as columns (like Excel)

@@ -81,9 +81,11 @@ export default function CompetitionPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [leaderboardView, setLeaderboardView] = useState("detailed"); // "detailed" or "simple"
+  const [courses, setCourses] = useState([]);
   const [newRound, setNewRound] = useState({ 
     name: "", 
     course_name: "",
+    course_id: "",
     tee: "White",
     slope_rating: 113,
     course_par: 72 
@@ -95,21 +97,49 @@ export default function CompetitionPage() {
 
   const fetchData = async () => {
     try {
-      const [compRes, roundsRes, leaderboardRes, playersRes] = await Promise.all([
+      const [compRes, roundsRes, leaderboardRes, playersRes, coursesRes] = await Promise.all([
         axios.get(`${API}/competitions/${id}`),
         axios.get(`${API}/rounds?competition_id=${id}`),
         axios.get(`${API}/leaderboard/${id}`),
         axios.get(`${API}/players`),
+        axios.get(`${API}/courses`),
       ]);
       setCompetition(compRes.data);
       setRounds(roundsRes.data);
       setLeaderboard(leaderboardRes.data);
       setAllPlayers(playersRes.data);
+      setCourses(coursesRes.data);
     } catch (error) {
       toast.error("Failed to load competition");
       navigate("/dashboard");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCourseSelect = (courseId) => {
+    if (courseId === "manual") {
+      // Manual entry - reset to defaults
+      setNewRound({
+        ...newRound,
+        course_id: "",
+        course_name: "",
+        tee: "White",
+        slope_rating: 113,
+        course_par: 72
+      });
+    } else {
+      const course = courses.find(c => c.id === courseId);
+      if (course) {
+        setNewRound({
+          ...newRound,
+          course_id: course.id,
+          course_name: course.name,
+          tee: course.tee,
+          slope_rating: course.slope_rating,
+          course_par: course.total_par
+        });
+      }
     }
   };
 
@@ -124,13 +154,14 @@ export default function CompetitionPage() {
         name: roundName,
         date: format(selectedDate, "yyyy-MM-dd"),
         course_name: newRound.course_name,
+        course_id: newRound.course_id || null,
         tee: newRound.tee,
         slope_rating: newRound.slope_rating,
         course_par: newRound.course_par,
       });
       toast.success("Round added!");
       setShowAddRoundDialog(false);
-      setNewRound({ name: "", course_name: "", tee: "White", slope_rating: 113, course_par: 72 });
+      setNewRound({ name: "", course_name: "", course_id: "", tee: "White", slope_rating: 113, course_par: 72 });
       fetchData();
     } catch (error) {
       toast.error("Failed to add round");
@@ -719,24 +750,54 @@ export default function CompetitionPage() {
                         className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
                       />
                     </div>
+                    
+                    {/* Course Selection */}
                     <div className="space-y-2">
-                      <Label>Course Name</Label>
+                      <Label>Select Course</Label>
+                      <Select
+                        value={newRound.course_id || "manual"}
+                        onValueChange={handleCourseSelect}
+                      >
+                        <SelectTrigger data-testid="course-select" className="rounded-none">
+                          <SelectValue placeholder="Select a saved course or enter manually" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="manual">-- Enter Manually --</SelectItem>
+                          {courses.map((course) => (
+                            <SelectItem key={course.id} value={course.id}>
+                              {course.name} ({course.tee} • Par {course.total_par} • Slope {course.slope_rating})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {courses.length === 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          No saved courses. Add courses in Course Management to auto-fill details.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Course Name - editable or auto-filled */}
+                    <div className="space-y-2">
+                      <Label>Course Name {newRound.course_id && <span className="text-xs text-muted-foreground">(from saved course)</span>}</Label>
                       <Input
                         data-testid="course-name-input"
                         value={newRound.course_name}
                         onChange={(e) => setNewRound({ ...newRound, course_name: e.target.value })}
                         placeholder="e.g., Royal Portrush"
-                        className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
+                        className={`border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary ${newRound.course_id ? 'text-primary font-medium' : ''}`}
+                        readOnly={!!newRound.course_id}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Tee</Label>
+                        <Label>Tee {newRound.course_id && <span className="text-xs text-green-600">✓</span>}</Label>
                         <Select
                           value={newRound.tee}
                           onValueChange={(val) => setNewRound({ ...newRound, tee: val })}
+                          disabled={!!newRound.course_id}
                         >
-                          <SelectTrigger data-testid="tee-select" className="rounded-none">
+                          <SelectTrigger data-testid="tee-select" className={`rounded-none ${newRound.course_id ? 'bg-muted' : ''}`}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -750,7 +811,7 @@ export default function CompetitionPage() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label>Slope Rating</Label>
+                        <Label>Slope Rating {newRound.course_id && <span className="text-xs text-green-600">✓</span>}</Label>
                         <Input
                           data-testid="slope-rating-input"
                           type="number"
@@ -758,7 +819,8 @@ export default function CompetitionPage() {
                           max="155"
                           value={newRound.slope_rating}
                           onChange={(e) => setNewRound({ ...newRound, slope_rating: parseInt(e.target.value) || 113 })}
-                          className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
+                          className={`border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary ${newRound.course_id ? 'text-primary font-medium' : ''}`}
+                          readOnly={!!newRound.course_id}
                         />
                       </div>
                     </div>
@@ -786,12 +848,13 @@ export default function CompetitionPage() {
                       </Popover>
                     </div>
                     <div className="space-y-2">
-                      <Label>Course Par</Label>
+                      <Label>Course Par {newRound.course_id && <span className="text-xs text-green-600">✓</span>}</Label>
                       <Select
                         value={newRound.course_par.toString()}
                         onValueChange={(val) => setNewRound({ ...newRound, course_par: parseInt(val) })}
+                        disabled={!!newRound.course_id}
                       >
-                        <SelectTrigger data-testid="course-par-select" className="rounded-none">
+                        <SelectTrigger data-testid="course-par-select" className={`rounded-none ${newRound.course_id ? 'bg-muted' : ''}`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
