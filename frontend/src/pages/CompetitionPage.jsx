@@ -58,6 +58,10 @@ import {
   X,
   LayoutGrid,
   List,
+  Share2,
+  Copy,
+  Download,
+  CheckCircle2,
 } from "lucide-react";
 
 export default function CompetitionPage() {
@@ -73,6 +77,8 @@ export default function CompetitionPage() {
 
   const [showAddRoundDialog, setShowAddRoundDialog] = useState(false);
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [leaderboardView, setLeaderboardView] = useState("detailed"); // "detailed" or "simple"
   const [newRound, setNewRound] = useState({ 
@@ -215,6 +221,63 @@ export default function CompetitionPage() {
     if (position === 1) return <Medal className="w-5 h-5 text-gray-400" />;
     if (position === 2) return <Medal className="w-5 h-5 text-amber-700" />;
     return null;
+  };
+
+  const getShareUrl = () => {
+    return window.location.href;
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(getShareUrl());
+      setLinkCopied(true);
+      toast.success("Link copied to clipboard!");
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (error) {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        const topPlayers = leaderboard.slice(0, 3).map((e, i) => 
+          `${i + 1}. ${e.player_username} - ${e.average_stableford.toFixed(1)} pts`
+        ).join('\n');
+        
+        await navigator.share({
+          title: `${competition.name} Leaderboard`,
+          text: `Check out the ${competition.name} leaderboard!\n\nTop 3:\n${topPlayers}`,
+          url: getShareUrl(),
+        });
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          toast.error("Failed to share");
+        }
+      }
+    }
+  };
+
+  const generateLeaderboardText = () => {
+    const header = `🏆 ${competition.name.toUpperCase()} LEADERBOARD\n`;
+    const divider = '─'.repeat(35) + '\n';
+    const standings = leaderboard.map((e, i) => {
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+      return `${medal} ${e.player_username} - ${e.average_stableford.toFixed(1)} pts (${e.rounds_played} rounds)`;
+    }).join('\n');
+    const footer = `\n${divider}Min ${competition.min_rounds || 13} rounds to qualify\n${getShareUrl()}`;
+    
+    return header + divider + standings + footer;
+  };
+
+  const handleCopyLeaderboard = async () => {
+    try {
+      await navigator.clipboard.writeText(generateLeaderboardText());
+      toast.success("Leaderboard copied!");
+      setShowShareDialog(false);
+    } catch (error) {
+      toast.error("Failed to copy");
+    }
   };
 
   if (loading) {
@@ -388,6 +451,17 @@ export default function CompetitionPage() {
                         <span className="hidden sm:inline">Detailed</span>
                       </button>
                     </div>
+                    
+                    {/* Share Button */}
+                    <button
+                      data-testid="share-leaderboard-btn"
+                      onClick={() => setShowShareDialog(true)}
+                      className="px-3 py-1.5 flex items-center gap-1.5 text-xs bg-[#2a2a2a] rounded text-gray-400 hover:text-white hover:bg-[#3a3a3a] transition-colors"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Share</span>
+                    </button>
+                    
                     {leaderboardView === "detailed" && (
                       <div className="hidden md:flex items-center gap-4 text-xs">
                         <div className="flex items-center gap-2">
@@ -898,6 +972,76 @@ export default function CompetitionPage() {
                 Delete Round
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Share Leaderboard Dialog */}
+        <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold uppercase tracking-tight flex items-center gap-2">
+                <Share2 className="w-6 h-6 text-[#D4AF37]" />
+                Share Leaderboard
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              {/* Preview */}
+              <div className="bg-[#1a1a1a] text-white p-4 rounded-lg text-sm font-mono">
+                <div className="text-[#D4AF37] font-bold mb-2">🏆 {competition.name.toUpperCase()}</div>
+                <div className="border-t border-gray-700 pt-2 space-y-1">
+                  {leaderboard.slice(0, 5).map((e, i) => (
+                    <div key={e.player_id} className="flex justify-between">
+                      <span>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`} {e.player_username}</span>
+                      <span className="text-[#D4AF37]">{e.average_stableford.toFixed(1)} pts</span>
+                    </div>
+                  ))}
+                  {leaderboard.length > 5 && (
+                    <div className="text-gray-500 text-xs mt-2">+{leaderboard.length - 5} more players...</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Share Options */}
+              <div className="grid gap-3">
+                {/* Copy Link */}
+                <Button
+                  data-testid="copy-link-btn"
+                  variant="outline"
+                  onClick={handleCopyLink}
+                  className="w-full justify-start gap-3 rounded-none h-12"
+                >
+                  {linkCopied ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <Copy className="w-5 h-5" />
+                  )}
+                  {linkCopied ? "Link Copied!" : "Copy Link"}
+                </Button>
+
+                {/* Copy Full Leaderboard */}
+                <Button
+                  data-testid="copy-leaderboard-btn"
+                  variant="outline"
+                  onClick={handleCopyLeaderboard}
+                  className="w-full justify-start gap-3 rounded-none h-12"
+                >
+                  <Download className="w-5 h-5" />
+                  Copy Full Leaderboard Text
+                </Button>
+
+                {/* Native Share (mobile) */}
+                {typeof navigator !== 'undefined' && navigator.share && (
+                  <Button
+                    data-testid="native-share-btn"
+                    onClick={handleNativeShare}
+                    className="w-full justify-start gap-3 rounded-none h-12 bg-[#D4AF37] text-black hover:bg-[#c4a030]"
+                  >
+                    <Share2 className="w-5 h-5" />
+                    Share via...
+                  </Button>
+                )}
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </main>
