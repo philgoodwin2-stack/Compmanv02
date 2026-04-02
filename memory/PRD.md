@@ -51,6 +51,7 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - Competition status (upcoming → active → completed)
 - **Leaderboard toggle view** - Switch between Simple (mobile-friendly) and Detailed (spreadsheet) views
 - **Share leaderboard** - Copy link, copy full standings text, or native share on mobile
+- **Handicap progression spreadsheet** - Track handicaps over time with dates as columns (like Excel)
 - Spreadsheet-style leaderboard with color-coded scores (April 2026)
 - Round dates as columns with tee info
 - Custom delete dialogs (replaced browser popups)
