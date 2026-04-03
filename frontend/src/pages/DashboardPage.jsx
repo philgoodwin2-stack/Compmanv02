@@ -272,46 +272,98 @@ export default function DashboardPage() {
                 <div className="space-y-2">
                   <Label>Competition Period</Label>
                   <div className="flex gap-2">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          data-testid="start-date-btn"
-                          variant="outline"
-                          className="flex-1 justify-start text-left font-normal rounded-none"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {newCompetition.start_date ? format(newCompetition.start_date, "dd MMM yyyy") : "Start Date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={newCompetition.start_date}
-                          onSelect={(date) => setNewCompetition({ ...newCompetition, start_date: date })}
-                          initialFocus
+                    <div className="flex-1">
+                      <div className="flex">
+                        <Input
+                          data-testid="start-date-input"
+                          type="text"
+                          placeholder="DD/MM/YYYY"
+                          value={newCompetition.start_date ? format(newCompetition.start_date, "dd/MM/yyyy") : ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            // Try to parse DD/MM/YYYY format
+                            const parts = val.split('/');
+                            if (parts.length === 3) {
+                              const day = parseInt(parts[0]);
+                              const month = parseInt(parts[1]) - 1;
+                              const year = parseInt(parts[2]);
+                              if (day && month >= 0 && year) {
+                                const date = new Date(year, month, day);
+                                if (!isNaN(date.getTime())) {
+                                  setNewCompetition({ ...newCompetition, start_date: date });
+                                }
+                              }
+                            }
+                          }}
+                          className="flex-1 rounded-none rounded-l border-r-0"
                         />
-                      </PopoverContent>
-                    </Popover>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          data-testid="end-date-btn"
-                          variant="outline"
-                          className="flex-1 justify-start text-left font-normal rounded-none"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {newCompetition.end_date ? format(newCompetition.end_date, "dd MMM yyyy") : "End Date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={newCompetition.end_date}
-                          onSelect={(date) => setNewCompetition({ ...newCompetition, end_date: date })}
-                          initialFocus
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="rounded-none rounded-r px-2"
+                            >
+                              <CalendarIcon className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={newCompetition.start_date}
+                              onSelect={(date) => setNewCompetition({ ...newCompetition, start_date: date })}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Start Date</p>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex">
+                        <Input
+                          data-testid="end-date-input"
+                          type="text"
+                          placeholder="DD/MM/YYYY"
+                          value={newCompetition.end_date ? format(newCompetition.end_date, "dd/MM/yyyy") : ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            // Try to parse DD/MM/YYYY format
+                            const parts = val.split('/');
+                            if (parts.length === 3) {
+                              const day = parseInt(parts[0]);
+                              const month = parseInt(parts[1]) - 1;
+                              const year = parseInt(parts[2]);
+                              if (day && month >= 0 && year) {
+                                const date = new Date(year, month, day);
+                                if (!isNaN(date.getTime())) {
+                                  setNewCompetition({ ...newCompetition, end_date: date });
+                                }
+                              }
+                            }
+                          }}
+                          className="flex-1 rounded-none rounded-l border-r-0"
                         />
-                      </PopoverContent>
-                    </Popover>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="rounded-none rounded-r px-2"
+                            >
+                              <CalendarIcon className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={newCompetition.end_date}
+                              onSelect={(date) => setNewCompetition({ ...newCompetition, end_date: date })}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">End Date</p>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">
