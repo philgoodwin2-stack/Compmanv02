@@ -413,7 +413,7 @@ async def get_player_handicap_history(player_id: str):
 
 @api_router.post("/players/{player_id}/recalculate-handicap")
 async def recalculate_handicap(player_id: str):
-    """Recalculate a player's handicap from their history"""
+    """Recalculate a player's handicap from their history, updating differentials from round data"""
     player = await db.players.find_one({"id": player_id}, {"_id": 0})
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -426,6 +426,55 @@ async def recalculate_handicap(player_id: str):
     # Sort by date and recalculate
     sorted_history = sorted(history, key=lambda x: x.get("date", ""))
     
+    # Recalculate each differential using round data where available
+    for record in sorted_history:
+        round_id = record.get("round_id", "")
+        
+        # Skip imported records (they start with "imported-")
+        if round_id.startswith("imported-"):
+            continue
+            
+        # Look up the round to get correct course_rating
+        round_doc = await db.rounds.find_one({"id": round_id}, {"_id": 0})
+        if round_doc:
+            course_rating = round_doc.get("course_rating", round_doc.get("course_par", 72))
+            slope_rating = round_doc.get("slope_rating", 113)
+            course_par = round_doc.get("course_par", 72)
+            
+            # Get the score
+            score_doc = await db.scores.find_one({"round_id": round_id, "player_id": player_id}, {"_id": 0})
+            if score_doc:
+                stableford_pts = score_doc.get("total_stableford", record.get("score", 0))
+                
+                # Use stored playing_handicap or calculate
+                playing_hcp = record.get("playing_handicap")
+                if playing_hcp is None:
+                    hcp_before = record.get("handicap_before", 18.0)
+                    course_hcp = hcp_before * (slope_rating / 113)
+                    playing_hcp = round(course_hcp * 0.95)
+                
+                # Recalculate differential with correct course rating
+                new_diff = calculate_score_differential(
+                    stableford_pts,
+                    course_rating,
+                    slope_rating,
+                    course_par,
+                    record.get("handicap_before", 18.0),
+                    playing_hcp
+                )
+                
+                # Calculate gross score
+                points_diff = stableford_pts - 36
+                gross_score = course_par + playing_hcp - points_diff
+                
+                # Update record
+                record["score_differential"] = new_diff
+                record["course_rating"] = course_rating
+                record["gross_score"] = gross_score
+                record["playing_handicap"] = playing_hcp
+                record["score"] = stableford_pts
+    
+    # Now recalculate handicaps
     for i, record in enumerate(sorted_history):
         available_diffs = [r["score_differential"] for r in sorted_history[:i+1]]
         
@@ -475,7 +524,7 @@ async def recalculate_handicap(player_id: str):
     )
     
     return {
-        "message": "Handicap recalculated",
+        "message": "Handicap recalculated with updated differentials",
         "new_handicap": final_handicap,
         "rounds_used": len(sorted_history)
     }
@@ -575,11 +624,15 @@ async def import_score_differentials(player_id: str, request: ImportDifferential
 
 class UpdateDifferentialRequest(BaseModel):
     date: str
-    new_differential: float
+    new_differential: Optional[float] = None
+    course_rating: Optional[float] = None
+    gross_score: Optional[int] = None
+    playing_handicap: Optional[int] = None
+    stableford_points: Optional[int] = None
 
 @api_router.put("/players/{player_id}/update-differential")
 async def update_score_differential(player_id: str, request: UpdateDifferentialRequest):
-    """Update a specific score differential and recalculate handicap"""
+    """Update a specific score differential and/or course details, then recalculate handicap"""
     player = await db.players.find_one({"id": player_id}, {"_id": 0})
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -596,8 +649,33 @@ async def update_score_differential(player_id: str, request: UpdateDifferentialR
     if record_idx is None:
         raise HTTPException(status_code=404, detail="Record not found for this date")
     
-    # Update the differential
-    handicap_history[record_idx]["score_differential"] = request.new_differential
+    # Update the fields that were provided
+    if request.new_differential is not None:
+        handicap_history[record_idx]["score_differential"] = request.new_differential
+    if request.course_rating is not None:
+        handicap_history[record_idx]["course_rating"] = request.course_rating
+    if request.gross_score is not None:
+        handicap_history[record_idx]["gross_score"] = request.gross_score
+    if request.playing_handicap is not None:
+        handicap_history[record_idx]["playing_handicap"] = request.playing_handicap
+    if request.stableford_points is not None:
+        handicap_history[record_idx]["score"] = request.stableford_points
+    
+    # If course_rating and stableford were provided, recalculate the differential
+    record = handicap_history[record_idx]
+    if request.course_rating is not None and (request.stableford_points is not None or record.get("score")):
+        pts = request.stableford_points if request.stableford_points is not None else record.get("score", 0)
+        slope = record.get("slope_rating", 113)
+        par = 72  # Default, could be stored in record
+        playing_hcp = request.playing_handicap if request.playing_handicap is not None else record.get("playing_handicap", 18)
+        
+        if pts and playing_hcp is not None:
+            # Recalculate differential
+            points_diff = pts - 36
+            gross = par + playing_hcp - points_diff
+            diff = (gross - request.course_rating) * (113 / slope)
+            handicap_history[record_idx]["score_differential"] = round_half_up(diff, 1)
+            handicap_history[record_idx]["gross_score"] = gross
     
     # Recalculate all handicaps from this point forward
     # Sort by date to process in order

@@ -200,6 +200,9 @@ export default function PlayersPage() {
   const [importDifferentials, setImportDifferentials] = useState("");
   const [editingDiffDate, setEditingDiffDate] = useState(null);
   const [editingDiffValue, setEditingDiffValue] = useState("");
+  const [editingRating, setEditingRating] = useState("");
+  const [editingGross, setEditingGross] = useState("");
+  const [editingPlayingHcp, setEditingPlayingHcp] = useState("");
   const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "" });
 
   useEffect(() => {
@@ -329,34 +332,44 @@ export default function PlayersPage() {
     }
   };
 
-  const startEditDifferential = (date, currentValue) => {
+  const startEditDifferential = (date, record) => {
     setEditingDiffDate(date);
-    setEditingDiffValue(currentValue?.toFixed(1) || "0");
+    setEditingDiffValue(record.score_differential?.toFixed(1) || "0");
+    setEditingRating(record.course_rating?.toString() || "72");
+    setEditingGross(record.gross_score?.toString() || "");
+    setEditingPlayingHcp(record.playing_handicap?.toString() || "");
   };
 
   const cancelEditDifferential = () => {
     setEditingDiffDate(null);
     setEditingDiffValue("");
+    setEditingRating("");
+    setEditingGross("");
+    setEditingPlayingHcp("");
   };
 
   const saveEditDifferential = async () => {
     if (!historyData?.player_id || !editingDiffDate) return;
 
     try {
-      const response = await axios.put(`${API}/players/${historyData.player_id}/update-differential`, {
+      const payload = {
         date: editingDiffDate,
-        new_differential: parseFloat(editingDiffValue)
-      });
-      toast.success(`Differential updated. New handicap: ${response.data.new_handicap}`);
+        new_differential: parseFloat(editingDiffValue),
+        course_rating: editingRating ? parseFloat(editingRating) : null,
+        gross_score: editingGross ? parseInt(editingGross) : null,
+        playing_handicap: editingPlayingHcp ? parseInt(editingPlayingHcp) : null,
+      };
+      
+      const response = await axios.put(`${API}/players/${historyData.player_id}/update-differential`, payload);
+      toast.success(`Updated. New handicap: ${response.data.new_handicap}`);
       
       // Refresh history data
       const historyResponse = await axios.get(`${API}/players/${historyData.player_id}/handicap-history`);
       setHistoryData(historyResponse.data);
-      setEditingDiffDate(null);
-      setEditingDiffValue("");
+      cancelEditDifferential();
       fetchPlayers();
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Failed to update differential");
+      toast.error(error.response?.data?.detail || "Failed to update");
     }
   };
 
@@ -789,10 +802,31 @@ export default function PlayersPage() {
                             {record.score || "-"}
                           </TableCell>
                           <TableCell className="text-center font-mono text-sm">
-                            {grossScore || "-"}
+                            {isEditing ? (
+                              <Input
+                                type="number"
+                                value={editingGross}
+                                onChange={(e) => setEditingGross(e.target.value)}
+                                className="w-14 h-7 text-center font-mono text-sm rounded-none"
+                                placeholder="-"
+                              />
+                            ) : (
+                              grossScore || "-"
+                            )}
                           </TableCell>
                           <TableCell className="text-center font-mono text-sm text-muted-foreground">
-                            {record.course_rating?.toFixed(1) || "-"}
+                            {isEditing ? (
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={editingRating}
+                                onChange={(e) => setEditingRating(e.target.value)}
+                                className="w-14 h-7 text-center font-mono text-sm rounded-none"
+                                placeholder="72.0"
+                              />
+                            ) : (
+                              record.course_rating?.toFixed(1) || "-"
+                            )}
                           </TableCell>
                           <TableCell className="text-center font-mono text-sm text-muted-foreground">
                             {record.slope_rating}
@@ -804,7 +838,7 @@ export default function PlayersPage() {
                                 step="0.1"
                                 value={editingDiffValue}
                                 onChange={(e) => setEditingDiffValue(e.target.value)}
-                                className="w-16 h-7 text-center font-mono text-sm rounded-none"
+                                className="w-14 h-7 text-center font-mono text-sm rounded-none"
                                 autoFocus
                               />
                             ) : (
@@ -847,9 +881,9 @@ export default function PlayersPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => startEditDifferential(record.date, record.score_differential)}
+                                  onClick={() => startEditDifferential(record.date, record)}
                                   className="h-7 w-7 p-0 text-blue-600 hover:bg-blue-100"
-                                  title="Edit differential"
+                                  title="Edit record"
                                 >
                                   <Pencil className="w-3.5 h-3.5" />
                                 </Button>
