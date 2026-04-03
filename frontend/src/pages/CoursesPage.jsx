@@ -181,20 +181,20 @@ export default function CoursesPage() {
       {/* Header */}
       <header className="golf-header text-white py-6 px-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Button
               data-testid="back-btn"
               variant="ghost"
               onClick={() => navigate("/dashboard")}
-              className="text-white hover:bg-white/10 p-2"
+              className="text-white hover:bg-white/10 p-2 flex-shrink-0"
             >
-              <ArrowLeft className="w-6 h-6" />
+              <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
             </Button>
-            <div className="flex items-center gap-3">
-              <MapPin className="w-8 h-8 text-[#D4AF37]" />
-              <div>
-                <h1 className="text-2xl font-bold uppercase tracking-tight">Course Management</h1>
-                <p className="text-white/70 text-sm">Manage courses with stroke indices</p>
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <MapPin className="w-6 h-6 sm:w-8 sm:h-8 text-[#D4AF37] flex-shrink-0" />
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold uppercase tracking-tight truncate">Courses</h1>
+                <p className="text-white/70 text-xs sm:text-sm hidden sm:block">Manage courses with stroke indices</p>
               </div>
             </div>
           </div>
@@ -203,10 +203,10 @@ export default function CoursesPage() {
               <DialogTrigger asChild>
                 <Button
                   data-testid="add-course-btn"
-                  className="bg-[#D4AF37] text-black hover:bg-[#c4a030] rounded-none uppercase font-bold tracking-widest"
+                  className="bg-[#D4AF37] text-black hover:bg-[#c4a030] rounded-none uppercase font-bold tracking-widest text-xs sm:text-sm px-2 sm:px-4 flex-shrink-0"
                 >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add Course
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2" />
+                  <span className="hidden sm:inline">Add Course</span>
                 </Button>
               </DialogTrigger>
             <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
