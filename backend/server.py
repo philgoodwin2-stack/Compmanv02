@@ -113,6 +113,7 @@ class RoundBase(BaseModel):
     slope_rating: Optional[int] = 113
     course_rating: Optional[float] = 72.0  # Course Rating for differential calculation
     course_par: int = 72
+    is_included: bool = True  # Whether this round counts towards competition
 
 class RoundCreate(RoundBase):
     pass
@@ -962,6 +963,25 @@ async def delete_round(round_id: str):
     await db.scores.delete_many({"round_id": round_id})
     return {"message": "Round and associated scores deleted"}
 
+
+@api_router.put("/rounds/{round_id}/toggle-inclusion")
+async def toggle_round_inclusion(round_id: str):
+    """Toggle whether a round is included in the competition"""
+    round_doc = await db.rounds.find_one({"id": round_id})
+    if not round_doc:
+        raise HTTPException(status_code=404, detail="Round not found")
+    
+    current_status = round_doc.get("is_included", True)
+    new_status = not current_status
+    
+    await db.rounds.update_one(
+        {"id": round_id},
+        {"$set": {"is_included": new_status}}
+    )
+    
+    return {"message": f"Round {'included' if new_status else 'excluded'}", "is_included": new_status}
+
+
 # ============= SCORE ENDPOINTS =============
 
 @api_router.get("/scores", response_model=List[Score])
@@ -1186,16 +1206,19 @@ async def get_leaderboard(competition_id: str):
     
     min_rounds = competition.get("min_rounds", 13)
     
-    # Get all rounds for this competition, sorted by date
-    rounds = await db.rounds.find({"competition_id": competition_id}, {"_id": 0}).to_list(1000)
-    rounds.sort(key=lambda r: r.get("date", ""))
-    round_ids = [r["id"] for r in rounds]
+    # Get all rounds for this competition, sorted by date (only included rounds count for scores)
+    all_rounds = await db.rounds.find({"competition_id": competition_id}, {"_id": 0}).to_list(1000)
+    all_rounds.sort(key=lambda r: r.get("date", ""))
     
-    # Get all scores for these rounds
-    scores = await db.scores.find({"round_id": {"$in": round_ids}}, {"_id": 0}).to_list(1000)
+    # Filter to only included rounds for scoring
+    included_rounds = [r for r in all_rounds if r.get("is_included", True)]
+    included_round_ids = [r["id"] for r in included_rounds]
     
-    # Create a map of round_id to index for ordering
-    round_index_map = {r["id"]: idx for idx, r in enumerate(rounds)}
+    # Get all scores for included rounds only
+    scores = await db.scores.find({"round_id": {"$in": included_round_ids}}, {"_id": 0}).to_list(1000)
+    
+    # Create a map of round_id to index for ordering (using all rounds for display)
+    round_index_map = {r["id"]: idx for idx, r in enumerate(all_rounds)}
     
     # Aggregate by player
     player_scores = {}
@@ -1205,7 +1228,7 @@ async def get_leaderboard(competition_id: str):
             player_scores[pid] = {
                 "rounds_played": 0,
                 "total_stableford": 0,
-                "round_scores": [None] * len(rounds)  # Initialize with None for each round
+                "round_scores": [None] * len(all_rounds)  # Initialize with None for each round
             }
         round_idx = round_index_map.get(score["round_id"])
         if round_idx is not None:

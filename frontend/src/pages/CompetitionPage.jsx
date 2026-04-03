@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -1137,10 +1138,15 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
   const navigate = useNavigate();
   const [scores, setScores] = useState([]);
   const [loadingScores, setLoadingScores] = useState(true);
+  const [isIncluded, setIsIncluded] = useState(round.is_included !== false);
 
   useEffect(() => {
     fetchScores();
   }, [round.id]);
+
+  useEffect(() => {
+    setIsIncluded(round.is_included !== false);
+  }, [round.is_included]);
 
   const fetchScores = async () => {
     try {
@@ -1150,6 +1156,17 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
       console.error("Failed to load scores");
     } finally {
       setLoadingScores(false);
+    }
+  };
+
+  const handleToggleInclusion = async () => {
+    try {
+      const response = await axios.put(`${API}/rounds/${round.id}/toggle-inclusion`);
+      setIsIncluded(response.data.is_included);
+      toast.success(response.data.message);
+      onRefresh();
+    } catch (error) {
+      toast.error("Failed to toggle round inclusion");
     }
   };
 
@@ -1176,13 +1193,20 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
   };
 
   return (
-    <Card className="border-l-4 border-l-primary" data-testid={`round-card-${round.id}`}>
+    <Card className={`border-l-4 ${isIncluded ? 'border-l-primary' : 'border-l-gray-300 opacity-60'}`} data-testid={`round-card-${round.id}`}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle className="text-xl font-bold uppercase tracking-tight">
-              {round.name || `Round ${round.round_number}`}
-            </CardTitle>
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-xl font-bold uppercase tracking-tight">
+                {round.name || `Round ${round.round_number}`}
+              </CardTitle>
+              {!isIncluded && (
+                <Badge variant="outline" className="text-xs text-muted-foreground">
+                  Excluded
+                </Badge>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
               <CalendarIcon className="w-4 h-4" />
               {round.date}
@@ -1198,19 +1222,32 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
               {round.slope_rating && <span> • Slope {round.slope_rating}</span>}
             </p>
           </div>
-          <Button
-            data-testid={`delete-round-${round.id}`}
-            variant="destructive"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="hover:bg-destructive/90"
-          >
-            <Trash2 className="w-4 h-4 mr-1" />
-            Delete
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Label htmlFor={`include-${round.id}`} className="text-xs text-muted-foreground">
+                {isIncluded ? 'Included' : 'Excluded'}
+              </Label>
+              <Switch
+                id={`include-${round.id}`}
+                checked={isIncluded}
+                onCheckedChange={handleToggleInclusion}
+                data-testid={`toggle-round-${round.id}`}
+              />
+            </div>
+            <Button
+              data-testid={`delete-round-${round.id}`}
+              variant="destructive"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="hover:bg-destructive/90"
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Delete
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
