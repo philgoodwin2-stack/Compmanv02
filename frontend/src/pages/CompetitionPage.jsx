@@ -521,64 +521,109 @@ export default function CompetitionPage() {
                     <p>No scores yet. Add rounds and enter scores to see the leaderboard.</p>
                   </div>
                 ) : leaderboardView === "simple" ? (
-                  /* Simple View - Clean mobile-friendly list */
-                  <div className="divide-y divide-gray-100">
+                  /* The Open Championship Style Leaderboard */
+                  <div className="bg-[#1a1a1a]">
+                    {/* Header Row */}
+                    <div className="grid grid-cols-[60px_80px_1fr_100px] sm:grid-cols-[80px_100px_1fr_120px] bg-[#2a2a2a] border-b-2 border-[#D4AF37]">
+                      <div className="px-3 py-3 text-center text-white/70 text-xs font-semibold uppercase tracking-wider">
+                        Rounds
+                      </div>
+                      <div className="px-3 py-3 text-center text-white/70 text-xs font-semibold uppercase tracking-wider">
+                        Avg
+                      </div>
+                      <div className="px-3 py-3 text-white/70 text-xs font-semibold uppercase tracking-wider">
+                        Player
+                      </div>
+                      <div className="px-3 py-3 text-center text-white/70 text-xs font-semibold uppercase tracking-wider">
+                        Total
+                      </div>
+                    </div>
+                    
+                    {/* Player Rows */}
                     {leaderboard.map((entry, index) => {
                       const minRounds = competition.min_rounds || 13;
                       const isQualified = entry.rounds_played >= minRounds;
                       const isLeader = index === 0;
+                      const isTop3 = index < 3;
+                      
+                      // Calculate points relative to leader (for display like golf scoring)
+                      const leaderAvg = leaderboard[0]?.average_stableford || 0;
+                      const diffFromLeader = entry.average_stableford - leaderAvg;
                       
                       return (
                         <div 
                           key={entry.player_id}
                           data-testid={`simple-row-${entry.player_id}`}
-                          className={`flex items-center px-4 py-3 ${index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'}`}
+                          className={`grid grid-cols-[60px_80px_1fr_100px] sm:grid-cols-[80px_100px_1fr_120px] border-b border-[#3a3a3a] transition-colors ${
+                            isTop3 ? 'bg-[#D4A017]' : 'bg-[#E8B923]'
+                          } hover:brightness-105`}
                         >
-                          {/* Position */}
-                          <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-sm mr-3 ${
-                            isLeader ? 'bg-[#D4AF37] text-black' : 'bg-gray-200 text-gray-700'
-                          }`}>
-                            {index + 1}
+                          {/* Rounds Played */}
+                          <div className="px-3 py-4 flex items-center justify-center">
+                            <span className="text-xl sm:text-2xl font-bold font-mono text-[#1a1a1a]">
+                              {entry.rounds_played}
+                            </span>
                           </div>
                           
-                          {/* Team Logo */}
-                          {entry.player_team_logo && (
-                            <img src={entry.player_team_logo} alt="Team" className="w-8 h-8 object-contain mr-3" />
-                          )}
-                          
-                          {/* Player Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-gray-900 truncate">
-                              {entry.player_username}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {entry.rounds_played} rounds • HCP {entry.player_handicap.toFixed(1)}
+                          {/* Average / Diff from Leader */}
+                          <div className="px-3 py-4 flex items-center justify-center">
+                            <div className="flex items-center gap-1">
+                              {index === 0 ? (
+                                <span className="text-xl sm:text-2xl font-bold font-mono text-[#1a1a1a]">
+                                  {entry.average_stableford.toFixed(1)}
+                                </span>
+                              ) : (
+                                <span className={`text-xl sm:text-2xl font-bold font-mono ${
+                                  diffFromLeader >= 0 ? 'text-[#1a1a1a]' : 'text-red-700'
+                                }`}>
+                                  {diffFromLeader >= 0 ? '+' : ''}{diffFromLeader.toFixed(1)}
+                                </span>
+                              )}
                             </div>
                           </div>
                           
-                          {/* Average Score */}
-                          <div className="text-right">
-                            <div className={`text-xl font-bold font-mono ${isLeader ? 'text-[#D4AF37]' : 'text-gray-900'}`}>
-                              {entry.average_stableford.toFixed(1)}
-                            </div>
-                            <div className="text-xs text-gray-500">avg pts</div>
-                          </div>
-                          
-                          {/* Qualification Badge */}
-                          <div className="ml-3">
-                            {isQualified ? (
-                              <span className="w-6 h-6 flex items-center justify-center rounded-full bg-green-500 text-white">
-                                <Check className="w-4 h-4" />
-                              </span>
-                            ) : (
-                              <span className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-300 text-gray-500 text-xs font-bold">
-                                {minRounds - entry.rounds_played}
-                              </span>
+                          {/* Player Name */}
+                          <div className="px-3 py-4 flex items-center gap-3">
+                            {entry.player_team_logo && (
+                              <img 
+                                src={entry.player_team_logo} 
+                                alt="" 
+                                className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0"
+                              />
                             )}
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-lg sm:text-2xl font-bold uppercase tracking-wide text-[#1a1a1a] truncate">
+                                {entry.player_username}
+                              </span>
+                              {isLeader && (
+                                <span className="text-red-600 text-xl">★</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Total Points */}
+                          <div className="px-3 py-4 flex items-center justify-center">
+                            <span className="text-xl sm:text-2xl font-bold font-mono text-[#1a1a1a]">
+                              {entry.total_stableford}
+                            </span>
                           </div>
                         </div>
                       );
                     })}
+                    
+                    {/* Footer with Qualification Info */}
+                    <div className="bg-[#2a2a2a] px-4 py-3 flex items-center justify-between text-xs text-white/60">
+                      <div className="flex items-center gap-4">
+                        <span>★ = Leader</span>
+                        <span>Min {competition.min_rounds || 13} rounds to qualify</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-[#D4A017] rounded"></div>
+                        <span>Top 3</span>
+                        <div className="w-4 h-4 bg-[#E8B923] rounded ml-2"></div>
+                        <span>Others</span>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   /* Detailed View - Spreadsheet with all rounds */
