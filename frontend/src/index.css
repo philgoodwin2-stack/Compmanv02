@@ -139,3 +139,57 @@ code, .font-mono {
         border-bottom-color: inherit;
     }
 }
+
+
+/* Mobile PWA styles */
+@layer utilities {
+    .safe-area-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .safe-area-top {
+        padding-top: env(safe-area-inset-top);
+    }
+    
+    /* Add bottom padding for mobile nav */
+    .pb-mobile-nav {
+        padding-bottom: 4rem;
+    }
+    
+    @media (min-width: 768px) {
+        .pb-mobile-nav {
+            padding-bottom: 0;
+        }
+    }
+}
+
+/* Touch-friendly tap targets */
+@media (hover: none) and (pointer: coarse) {
+    button, a, input, select, textarea {
+        min-height: 44px;
+    }
+}
+
+/* Prevent text selection on buttons for mobile */
+button {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Hide scrollbar on mobile for cleaner look */
+@media (max-width: 768px) {
+    ::-webkit-scrollbar {
+        display: none;
+    }
+    
+    * {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}

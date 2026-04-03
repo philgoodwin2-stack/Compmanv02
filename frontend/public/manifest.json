@@ -1,0 +1,38 @@
+{
+  "short_name": "Golf Score",
+  "name": "Golf Stableford Competition",
+  "description": "Track golf scores, handicaps, and compete in Stableford competitions",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#1B4D3E",
+  "background_color": "#1B4D3E",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["sports", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Enter Score",
+      "url": "/score",
+      "description": "Quick score entry"
+    },
+    {
+      "name": "Leaderboard",
+      "url": "/dashboard",
+      "description": "View standings"
+    }
+  ]
+}

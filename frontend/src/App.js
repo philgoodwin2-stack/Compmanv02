@@ -3,6 +3,7 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
 import { Toaster } from "@/components/ui/sonner";
+import MobileNav from "@/components/MobileNav";
 
 // Pages
 import LoginPage from "@/pages/LoginPage";
@@ -81,6 +82,10 @@ function App() {
               element={user ? <ScoreEntryPage /> : <Navigate to="/" />}
             />
             <Route
+              path="/handicap-tracking"
+              element={user ? <HandicapTrackingPage /> : <Navigate to="/" />}
+            />
+            <Route
               path="/handicaps"
               element={user ? <HandicapTrackingPage /> : <Navigate to="/" />}
             />
@@ -89,6 +94,7 @@ function App() {
               element={user ? <CoursesPage /> : <Navigate to="/" />}
             />
           </Routes>
+          <MobileNav />
         </BrowserRouter>
         <Toaster position="top-center" richColors />
       </div>
