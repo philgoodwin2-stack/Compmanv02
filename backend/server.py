@@ -1049,12 +1049,24 @@ async def update_score_points(score_id: str, points_data: ScorePointsUpdate):
     # Calculate new handicap
     new_handicap = calculate_handicap_index(all_differentials)
     
+    # Calculate gross score for the record
+    if playing_hcp is not None:
+        actual_playing_hcp = playing_hcp
+    else:
+        course_hcp = current_handicap * (slope_rating / 113)
+        actual_playing_hcp = round(course_hcp * 0.95)
+    
+    points_diff = points_data.total_stableford - 36
+    gross_score = course_par + actual_playing_hcp - points_diff
+    
     # Create handicap record
     handicap_record = {
         "date": round_date,
         "round_id": score["round_id"],
         "course_name": course_name,
         "score": points_data.total_stableford,
+        "gross_score": gross_score,
+        "playing_handicap": actual_playing_hcp,
         "course_rating": course_rating,
         "slope_rating": slope_rating,
         "score_differential": score_differential,

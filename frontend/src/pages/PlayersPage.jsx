@@ -756,10 +756,12 @@ export default function PlayersPage() {
                       <TableHead className="uppercase text-xs tracking-wider w-8"></TableHead>
                       <TableHead className="uppercase text-xs tracking-wider">Date</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider">Course</TableHead>
-                      <TableHead className="uppercase text-xs tracking-wider text-center">Score</TableHead>
+                      <TableHead className="uppercase text-xs tracking-wider text-center">Pts</TableHead>
+                      <TableHead className="uppercase text-xs tracking-wider text-center">Gross</TableHead>
+                      <TableHead className="uppercase text-xs tracking-wider text-center">Rating</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Slope</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Diff</TableHead>
-                      <TableHead className="uppercase text-xs tracking-wider text-right">Handicap</TableHead>
+                      <TableHead className="uppercase text-xs tracking-wider text-right">HCP</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center w-20">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -768,6 +770,8 @@ export default function PlayersPage() {
                       const handicapChange = record.handicap_after - record.handicap_before;
                       const isEditing = editingDiffDate === record.date;
                       const isCounting = isUsedInCalculation(record.date);
+                      // Calculate gross score for display
+                      const grossScore = record.gross_score || null;
                       return (
                         <TableRow key={idx} className={isCounting ? "bg-amber-50" : ""}>
                           <TableCell className="text-center">
@@ -778,11 +782,17 @@ export default function PlayersPage() {
                           <TableCell className="font-mono text-sm">
                             {new Date(record.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                           </TableCell>
-                          <TableCell className="text-sm">
+                          <TableCell className="text-sm max-w-[100px] truncate" title={record.course_name}>
                             {record.course_name || "Unknown"}
                           </TableCell>
                           <TableCell className="text-center font-mono font-bold">
-                            {record.score || "-"} {record.score ? "pts" : ""}
+                            {record.score || "-"}
+                          </TableCell>
+                          <TableCell className="text-center font-mono text-sm">
+                            {grossScore || "-"}
+                          </TableCell>
+                          <TableCell className="text-center font-mono text-sm text-muted-foreground">
+                            {record.course_rating?.toFixed(1) || "-"}
                           </TableCell>
                           <TableCell className="text-center font-mono text-sm text-muted-foreground">
                             {record.slope_rating}
