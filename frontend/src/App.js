@@ -34,6 +34,25 @@ function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
+  // Refresh user data on app load to get latest is_admin status
+  useEffect(() => {
+    const refreshUser = async () => {
+      if (user?.username) {
+        try {
+          const response = await axios.post(`${API}/login`, { username: user.username });
+          const freshUser = response.data.player;
+          // Update if admin status changed
+          if (freshUser.is_admin !== user.is_admin) {
+            setUser(freshUser);
+          }
+        } catch (error) {
+          console.error("Failed to refresh user:", error);
+        }
+      }
+    };
+    refreshUser();
+  }, []);
+
   useEffect(() => {
     if (user) {
       localStorage.setItem("golfUser", JSON.stringify(user));
