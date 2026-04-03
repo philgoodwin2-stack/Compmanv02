@@ -21,7 +21,7 @@ export default function MobileNav() {
   }
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#1B4D3E] border-t border-[#2D5A4A] z-50 safe-area-bottom">
+    <nav className="xl:hidden fixed bottom-0 left-0 right-0 bg-[#1B4D3E] border-t border-[#2D5A4A] z-50 safe-area-bottom">
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path || 
