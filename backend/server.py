@@ -998,6 +998,86 @@ async def toggle_round_handicap(round_id: str):
         {"$set": {"counts_for_handicap": new_status}}
     )
     
+    # Get all scores for this round and update handicap histories
+    scores = await db.scores.find({"round_id": round_id}, {"_id": 0}).to_list(1000)
+    
+    for score in scores:
+        player_id = score.get("player_id")
+        player = await db.players.find_one({"id": player_id})
+        if not player:
+            continue
+        
+        handicap_history = player.get("handicap_history", [])
+        
+        if new_status:
+            # Turning ON - add round back to handicap history if score exists
+            # Check if record already exists
+            existing_idx = None
+            for idx, record in enumerate(handicap_history):
+                if record.get("round_id") == round_id:
+                    existing_idx = idx
+                    break
+            
+            if existing_idx is None and score.get("total_stableford"):
+                # Create handicap record for this round
+                course_rating = round_doc.get("course_rating", 72.0)
+                slope_rating = round_doc.get("slope_rating", 113)
+                course_par = round_doc.get("course_par", 72)
+                course_name = round_doc.get("course_name", "Unknown")
+                round_date = round_doc.get("date", "")
+                
+                stableford = score.get("total_stableford", 0)
+                hcp_before = player.get("handicap", 18.0)
+                
+                # Calculate playing handicap
+                course_hcp = round(hcp_before * (slope_rating / 113))
+                playing_hcp = round(course_hcp + (course_rating - course_par))
+                
+                # Calculate differential
+                points_diff = stableford - 36
+                gross_score = course_par + playing_hcp - points_diff
+                differential = round_half_up((gross_score - course_rating) * (113 / slope_rating), 1)
+                
+                handicap_record = {
+                    "date": round_date,
+                    "round_id": round_id,
+                    "course_name": course_name,
+                    "score": stableford,
+                    "gross_score": gross_score,
+                    "playing_handicap": playing_hcp,
+                    "par": course_par,
+                    "course_rating": course_rating,
+                    "slope_rating": slope_rating,
+                    "score_differential": differential,
+                    "handicap_before": hcp_before,
+                    "handicap_after": hcp_before  # Will be recalculated
+                }
+                handicap_history.append(handicap_record)
+        else:
+            # Turning OFF - remove round from handicap history
+            handicap_history = [r for r in handicap_history if r.get("round_id") != round_id]
+        
+        # Recalculate handicap from remaining differentials
+        all_differentials = [r.get("score_differential", 0) for r in handicap_history]
+        new_handicap = calculate_handicap_index(all_differentials) if all_differentials else player.get("handicap", 18.0)
+        
+        # Update handicap_after for the last record if history exists
+        if handicap_history:
+            # Sort by date and update handicap_after values
+            sorted_history = sorted(handicap_history, key=lambda x: x.get("date", ""))
+            for i, record in enumerate(sorted_history):
+                diffs_up_to_now = [r.get("score_differential", 0) for r in sorted_history[:i+1]]
+                record["handicap_after"] = calculate_handicap_index(diffs_up_to_now)
+            handicap_history = sorted_history
+        
+        await db.players.update_one(
+            {"id": player_id},
+            {"$set": {
+                "handicap": new_handicap,
+                "handicap_history": handicap_history
+            }}
+        )
+    
     return {"message": f"Round {'counts' if new_status else 'excluded'} for handicap", "counts_for_handicap": new_status}
 
 
