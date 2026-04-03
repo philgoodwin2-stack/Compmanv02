@@ -118,7 +118,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0">
+    <div className="min-h-screen bg-background pb-20 lg:pb-0">
       {/* Header */}
       <header className="golf-header text-white py-6 px-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
@@ -129,7 +129,7 @@ export default function DashboardPage() {
               <p className="text-white/70 text-sm">Welcome, {user?.username}</p>
             </div>
           </div>
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             <Button
               data-testid="courses-nav-btn"
               variant="ghost"
@@ -166,8 +166,8 @@ export default function DashboardPage() {
               <LogOut className="w-5 h-5" />
             </Button>
           </div>
-          {/* Mobile logout only */}
-          <div className="md:hidden">
+          {/* Mobile/Tablet logout only */}
+          <div className="lg:hidden">
             <Button
               data-testid="logout-btn-mobile"
               variant="ghost"
