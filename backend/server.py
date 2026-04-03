@@ -10,6 +10,12 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 from enum import Enum
+from decimal import Decimal, ROUND_HALF_UP
+
+def round_half_up(value: float, decimals: int = 1) -> float:
+    """Round using standard rounding (round half up) instead of Python's banker's rounding"""
+    d = Decimal(str(value))
+    return float(d.quantize(Decimal(10) ** -decimals, rounding=ROUND_HALF_UP))
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -236,7 +242,7 @@ def calculate_score_differential(stableford_points: int, course_rating: float, s
     
     # Score Differential = (Adjusted Gross Score - Course Rating) × (113 / Slope Rating)
     differential = (approx_gross - course_rating) * (113 / slope_rating)
-    return round(differential, 1)
+    return round_half_up(differential, 1)
 
 def calculate_handicap_index(differentials: List[float]) -> float:
     """
@@ -296,7 +302,7 @@ def calculate_handicap_index(differentials: List[float]) -> float:
     handicap = avg + adjustment
     
     # Cap at 54.0 (max handicap in WHS) and minimum 0.0
-    return round(min(max(handicap, 0.0), 54.0), 1)
+    return round_half_up(min(max(handicap, 0.0), 54.0), 1)
 
 # ============= PLAYER ENDPOINTS =============
 
@@ -444,7 +450,7 @@ async def recalculate_handicap(player_id: str):
         
         sorted_diffs = sorted(available_diffs)[:num_to_use]
         avg_diff = sum(sorted_diffs) / len(sorted_diffs)
-        new_handicap = round(avg_diff , 1)
+        new_handicap = round_half_up(avg_diff, 1)
         
         record["handicap_after"] = new_handicap
         if i > 0:
@@ -532,11 +538,11 @@ async def import_score_differentials(player_id: str, request: ImportDifferential
             num_to_use = min(8, max(1, len(available_diffs) // 2))
             sorted_diffs = sorted(available_diffs)[:num_to_use]
             avg_diff = sum(sorted_diffs) / len(sorted_diffs)
-            new_handicap = round(avg_diff , 1)  # WHS: average of best differentials
+            new_handicap = round_half_up(avg_diff, 1)  # WHS: average of best differentials
         else:
             # Not enough rounds, use simple average
             avg_diff = sum(available_diffs) / len(available_diffs)
-            new_handicap = round(avg_diff, 1)
+            new_handicap = round_half_up(avg_diff, 1)
         
         record["handicap_after"] = new_handicap
         if i > 0:
@@ -603,10 +609,10 @@ async def update_score_differential(player_id: str, request: UpdateDifferentialR
             num_to_use = min(8, max(1, len(available_diffs) // 2))
             sorted_diffs = sorted(available_diffs)[:num_to_use]
             avg_diff = sum(sorted_diffs) / len(sorted_diffs)
-            new_handicap = round(avg_diff , 1)
+            new_handicap = round_half_up(avg_diff, 1)
         else:
             avg_diff = sum(available_diffs) / len(available_diffs)
-            new_handicap = round(avg_diff, 1)
+            new_handicap = round_half_up(avg_diff, 1)
         
         record["handicap_after"] = new_handicap
         if i > 0:
@@ -661,10 +667,10 @@ async def delete_score_differential(player_id: str, date: str):
                 num_to_use = min(8, max(1, len(available_diffs) // 2))
                 sorted_diffs = sorted(available_diffs)[:num_to_use]
                 avg_diff = sum(sorted_diffs) / len(sorted_diffs)
-                new_handicap = round(avg_diff , 1)
+                new_handicap = round_half_up(avg_diff, 1)
             else:
                 avg_diff = sum(available_diffs) / len(available_diffs)
-                new_handicap = round(avg_diff, 1)
+                new_handicap = round_half_up(avg_diff, 1)
             
             record["handicap_after"] = new_handicap
             if i > 0:
