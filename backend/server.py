@@ -435,7 +435,7 @@ async def recalculate_handicap(player_id: str):
         
         sorted_diffs = sorted(available_diffs)[:num_to_use]
         avg_diff = sum(sorted_diffs) / len(sorted_diffs)
-        new_handicap = round(avg_diff * 0.96, 1)
+        new_handicap = round(avg_diff , 1)
         
         record["handicap_after"] = new_handicap
         if i > 0:
@@ -523,7 +523,7 @@ async def import_score_differentials(player_id: str, request: ImportDifferential
             num_to_use = min(8, max(1, len(available_diffs) // 2))
             sorted_diffs = sorted(available_diffs)[:num_to_use]
             avg_diff = sum(sorted_diffs) / len(sorted_diffs)
-            new_handicap = round(avg_diff * 0.96, 1)  # 96% of average
+            new_handicap = round(avg_diff , 1)  # WHS: average of best differentials
         else:
             # Not enough rounds, use simple average
             avg_diff = sum(available_diffs) / len(available_diffs)
@@ -594,7 +594,7 @@ async def update_score_differential(player_id: str, request: UpdateDifferentialR
             num_to_use = min(8, max(1, len(available_diffs) // 2))
             sorted_diffs = sorted(available_diffs)[:num_to_use]
             avg_diff = sum(sorted_diffs) / len(sorted_diffs)
-            new_handicap = round(avg_diff * 0.96, 1)
+            new_handicap = round(avg_diff , 1)
         else:
             avg_diff = sum(available_diffs) / len(available_diffs)
             new_handicap = round(avg_diff, 1)
@@ -652,7 +652,7 @@ async def delete_score_differential(player_id: str, date: str):
                 num_to_use = min(8, max(1, len(available_diffs) // 2))
                 sorted_diffs = sorted(available_diffs)[:num_to_use]
                 avg_diff = sum(sorted_diffs) / len(sorted_diffs)
-                new_handicap = round(avg_diff * 0.96, 1)
+                new_handicap = round(avg_diff , 1)
             else:
                 avg_diff = sum(available_diffs) / len(available_diffs)
                 new_handicap = round(avg_diff, 1)
