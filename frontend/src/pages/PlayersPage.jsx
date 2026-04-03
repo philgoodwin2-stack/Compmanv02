@@ -192,6 +192,8 @@ export default function PlayersPage() {
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [historyData, setHistoryData] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletePlayerId, setDeletePlayerId] = useState(null);
   const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "" });
 
   useEffect(() => {
@@ -261,16 +263,23 @@ export default function PlayersPage() {
     }
   };
 
-  const handleDeletePlayer = async (playerId) => {
-    if (!window.confirm("Are you sure you want to delete this player?")) return;
+  const handleDeletePlayer = async () => {
+    if (!deletePlayerId) return;
 
     try {
-      await axios.delete(`${API}/players/${playerId}`);
+      await axios.delete(`${API}/players/${deletePlayerId}`);
       toast.success("Player deleted");
+      setShowDeleteDialog(false);
+      setDeletePlayerId(null);
       fetchPlayers();
     } catch (error) {
       toast.error("Failed to delete player");
     }
+  };
+
+  const openDeleteDialog = (playerId) => {
+    setDeletePlayerId(playerId);
+    setShowDeleteDialog(true);
   };
 
   const openEditDialog = (player) => {
@@ -504,7 +513,7 @@ export default function PlayersPage() {
                           data-testid={`delete-player-${player.id}`}
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeletePlayer(player.id)}
+                          onClick={() => openDeleteDialog(player.id)}
                           className="hover:bg-destructive/10 text-destructive"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -672,6 +681,44 @@ export default function PlayersPage() {
                 Differential = (Score - Course Rating) × (113 / Slope Rating)
               </p>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Player Confirmation Dialog */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold uppercase tracking-tight text-destructive flex items-center gap-2">
+                <Trash2 className="w-6 h-6" />
+                Delete Player
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-muted-foreground">
+                Are you sure you want to delete this player? This action cannot be undone.
+              </p>
+              <p className="mt-2 text-sm text-destructive/80">
+                All scores and handicap history for this player will be permanently removed.
+              </p>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteDialog(false)}
+                className="rounded-none"
+              >
+                Cancel
+              </Button>
+              <Button
+                data-testid="confirm-delete-player"
+                variant="destructive"
+                onClick={handleDeletePlayer}
+                className="rounded-none"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Player
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </main>
