@@ -417,30 +417,30 @@ export default function CompetitionPage() {
       {/* Main Content */}
       <main className="max-w-6xl mx-auto p-6">
         <Tabs defaultValue="leaderboard" className="space-y-6">
-          <TabsList className="bg-secondary rounded-none">
+          <TabsList className="bg-secondary rounded-none w-full justify-start overflow-x-auto">
             <TabsTrigger
               data-testid="tab-leaderboard"
               value="leaderboard"
-              className="rounded-none uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              className="rounded-none uppercase tracking-wider text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex-shrink-0"
             >
-              <Trophy className="w-4 h-4 mr-2" />
-              Leaderboard
+              <Trophy className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Leaderboard</span>
             </TabsTrigger>
             <TabsTrigger
               data-testid="tab-rounds"
               value="rounds"
-              className="rounded-none uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              className="rounded-none uppercase tracking-wider text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex-shrink-0"
             >
-              <Flag className="w-4 h-4 mr-2" />
-              Rounds
+              <Flag className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Rounds</span>
             </TabsTrigger>
             <TabsTrigger
               data-testid="tab-players"
               value="players"
-              className="rounded-none uppercase tracking-wider data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              className="rounded-none uppercase tracking-wider text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex-shrink-0"
             >
-              <Users className="w-4 h-4 mr-2" />
-              Players
+              <Users className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Players</span>
             </TabsTrigger>
           </TabsList>
 
