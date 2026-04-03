@@ -584,15 +584,16 @@ export default function PlayersPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card>
+          <Card className="overflow-hidden">
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="uppercase text-xs tracking-wider w-12">Team</TableHead>
                   <TableHead className="uppercase text-xs tracking-wider">Player</TableHead>
-                  <TableHead className="uppercase text-xs tracking-wider">Handicap</TableHead>
-                  <TableHead className="uppercase text-xs tracking-wider text-center">Status</TableHead>
-                  <TableHead className="uppercase text-xs tracking-wider text-center">Include</TableHead>
+                  <TableHead className="uppercase text-xs tracking-wider hidden sm:table-cell">Handicap</TableHead>
+                  <TableHead className="uppercase text-xs tracking-wider text-center hidden sm:table-cell">Status</TableHead>
+                  <TableHead className="uppercase text-xs tracking-wider text-center">Active</TableHead>
                   {isAdmin && <TableHead className="uppercase text-xs tracking-wider text-center">Admin</TableHead>}
                   <TableHead className="uppercase text-xs tracking-wider text-right">Actions</TableHead>
                 </TableRow>
@@ -600,25 +601,28 @@ export default function PlayersPage() {
               <TableBody>
                 {players.map((player) => (
                   <TableRow key={player.id} data-testid={`player-row-${player.id}`}>
-                    <TableCell>
+                    <TableCell className="p-2">
                       {player.team_logo ? (
                         <img src={player.team_logo} alt="Team" className="w-8 h-8 object-contain" />
                       ) : (
                         <div className="w-8 h-8 bg-muted rounded-full" />
                       )}
                     </TableCell>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {player.username}
-                        {player.is_admin && (
-                          <Shield className="w-4 h-4 text-[#D4AF37]" title="Admin" />
-                        )}
+                    <TableCell className="font-medium p-2">
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1">
+                          <span className="truncate max-w-[80px] sm:max-w-none">{player.username}</span>
+                          {player.is_admin && (
+                            <Shield className="w-3 h-3 sm:w-4 sm:h-4 text-[#D4AF37] flex-shrink-0" title="Admin" />
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground sm:hidden">HCP: {player.handicap.toFixed(1)}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <span className="font-mono text-lg">{player.handicap.toFixed(1)}</span>
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center hidden sm:table-cell">
                       <Badge
                         className={
                           player.is_active
@@ -629,7 +633,7 @@ export default function PlayersPage() {
                         {player.is_active ? "Active" : "Excluded"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center p-2">
                       <Switch
                         data-testid={`toggle-player-${player.id}`}
                         checked={player.is_active}
@@ -637,30 +641,30 @@ export default function PlayersPage() {
                       />
                     </TableCell>
                     {isAdmin && (
-                      <TableCell className="text-center">
+                      <TableCell className="text-center p-2">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleToggleAdmin(player)}
-                          className={player.is_admin ? "text-[#D4AF37] hover:bg-[#D4AF37]/10" : "text-muted-foreground hover:bg-muted"}
+                          className={`p-1 h-8 w-8 ${player.is_admin ? "text-[#D4AF37] hover:bg-[#D4AF37]/10" : "text-muted-foreground hover:bg-muted"}`}
                           title={player.is_admin ? "Revoke Admin" : "Grant Admin"}
                         >
                           {player.is_admin ? (
-                            <Shield className="w-5 h-5" />
+                            <Shield className="w-4 h-4" />
                           ) : (
-                            <ShieldOff className="w-5 h-5" />
+                            <ShieldOff className="w-4 h-4" />
                           )}
                         </Button>
                       </TableCell>
                     )}
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                    <TableCell className="text-right p-2">
+                      <div className="flex justify-end gap-1">
                         <Button
                           data-testid={`history-player-${player.id}`}
                           variant="ghost"
                           size="sm"
                           onClick={() => openHistoryDialog(player)}
-                          className="hover:bg-primary/10"
+                          className="hover:bg-primary/10 p-1 h-8 w-8"
                           title="Handicap History"
                         >
                           <History className="w-4 h-4" />
@@ -671,7 +675,7 @@ export default function PlayersPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => openImportDialog(player)}
-                            className="hover:bg-blue-500/10 text-blue-600"
+                            className="hover:bg-blue-500/10 text-blue-600 p-1 h-8 w-8 hidden sm:flex"
                             title="Import Differentials"
                           >
                             <Upload className="w-4 h-4" />
@@ -682,7 +686,7 @@ export default function PlayersPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => openEditDialog(player)}
-                          className="hover:bg-primary/10"
+                          className="hover:bg-primary/10 p-1 h-8 w-8"
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
@@ -691,7 +695,7 @@ export default function PlayersPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => openDeleteDialog(player.id)}
-                          className="hover:bg-destructive/10 text-destructive"
+                          className="hover:bg-destructive/10 text-destructive p-1 h-8 w-8 hidden sm:flex"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -701,6 +705,7 @@ export default function PlayersPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </Card>
         )}
 
