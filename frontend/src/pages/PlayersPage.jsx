@@ -773,6 +773,7 @@ export default function PlayersPage() {
                       <TableHead className="uppercase text-xs tracking-wider text-center">P.Hcp</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Gross</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Rating</TableHead>
+                      <TableHead className="uppercase text-xs tracking-wider text-center">Par</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Slope</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Diff</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-right">HCP</TableHead>
@@ -841,6 +842,9 @@ export default function PlayersPage() {
                             ) : (
                               record.course_rating?.toFixed(1) || "-"
                             )}
+                          </TableCell>
+                          <TableCell className="text-center font-mono text-sm text-muted-foreground">
+                            {record.par || "-"}
                           </TableCell>
                           <TableCell className="text-center font-mono text-sm text-muted-foreground">
                             {record.slope_rating}

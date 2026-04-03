@@ -1149,6 +1149,7 @@ async def update_score_points(score_id: str, points_data: ScorePointsUpdate):
         "score": points_data.total_stableford,
         "gross_score": gross_score,
         "playing_handicap": actual_playing_hcp,
+        "par": course_par,
         "course_rating": course_rating,
         "slope_rating": slope_rating,
         "score_differential": score_differential,
