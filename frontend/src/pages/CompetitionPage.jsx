@@ -88,6 +88,7 @@ export default function CompetitionPage() {
     course_id: "",
     tee: "White",
     slope_rating: 113,
+    course_rating: 72.0,
     course_par: 72 
   });
 
@@ -126,6 +127,7 @@ export default function CompetitionPage() {
         course_name: "",
         tee: "White",
         slope_rating: 113,
+        course_rating: 72.0,
         course_par: 72
       });
     } else {
@@ -137,6 +139,7 @@ export default function CompetitionPage() {
           course_name: course.name,
           tee: course.tee,
           slope_rating: course.slope_rating,
+          course_rating: course.course_rating || course.total_par,
           course_par: course.total_par
         });
       }
@@ -157,11 +160,12 @@ export default function CompetitionPage() {
         course_id: newRound.course_id || null,
         tee: newRound.tee,
         slope_rating: newRound.slope_rating,
+        course_rating: newRound.course_rating,
         course_par: newRound.course_par,
       });
       toast.success("Round added!");
       setShowAddRoundDialog(false);
-      setNewRound({ name: "", course_name: "", course_id: "", tee: "White", slope_rating: 113, course_par: 72 });
+      setNewRound({ name: "", course_name: "", course_id: "", tee: "White", slope_rating: 113, course_rating: 72.0, course_par: 72 });
       fetchData();
     } catch (error) {
       toast.error("Failed to add round");
@@ -824,6 +828,40 @@ export default function CompetitionPage() {
                         />
                       </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Course Rating {newRound.course_id && <span className="text-xs text-green-600">✓</span>}</Label>
+                        <Input
+                          data-testid="course-rating-input"
+                          type="number"
+                          step="0.1"
+                          min="60"
+                          max="80"
+                          value={newRound.course_rating}
+                          onChange={(e) => setNewRound({ ...newRound, course_rating: parseFloat(e.target.value) || 72.0 })}
+                          className={`border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary ${newRound.course_id ? 'text-primary font-medium' : ''}`}
+                          readOnly={!!newRound.course_id}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Course Par {newRound.course_id && <span className="text-xs text-green-600">✓</span>}</Label>
+                        <Select
+                          value={newRound.course_par.toString()}
+                          onValueChange={(val) => setNewRound({ ...newRound, course_par: parseInt(val) })}
+                          disabled={!!newRound.course_id}
+                        >
+                        <SelectTrigger data-testid="course-par-select" className={`rounded-none ${newRound.course_id ? 'bg-muted' : ''}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="70">70</SelectItem>
+                          <SelectItem value="71">71</SelectItem>
+                          <SelectItem value="72">72</SelectItem>
+                          <SelectItem value="73">73</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                     <div className="space-y-2">
                       <Label>Date</Label>
                       <Popover>
@@ -846,24 +884,6 @@ export default function CompetitionPage() {
                           />
                         </PopoverContent>
                       </Popover>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Course Par {newRound.course_id && <span className="text-xs text-green-600">✓</span>}</Label>
-                      <Select
-                        value={newRound.course_par.toString()}
-                        onValueChange={(val) => setNewRound({ ...newRound, course_par: parseInt(val) })}
-                        disabled={!!newRound.course_id}
-                      >
-                        <SelectTrigger data-testid="course-par-select" className={`rounded-none ${newRound.course_id ? 'bg-muted' : ''}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="70">70</SelectItem>
-                          <SelectItem value="71">71</SelectItem>
-                          <SelectItem value="72">72</SelectItem>
-                          <SelectItem value="73">73</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
                   </div>
                   <DialogFooter>

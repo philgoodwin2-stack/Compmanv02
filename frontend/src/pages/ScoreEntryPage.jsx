@@ -21,6 +21,7 @@ export default function ScoreEntryPage() {
   const [saving, setSaving] = useState(false);
 
   const [stablefordPoints, setStablefordPoints] = useState(0);
+  const [playingHandicap, setPlayingHandicap] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -77,7 +78,11 @@ export default function ScoreEntryPage() {
 
     setSaving(true);
     try {
-      await axios.put(`${API}/scores/${score.id}/points`, { total_stableford: stablefordPoints });
+      const payload = { 
+        total_stableford: stablefordPoints,
+        playing_handicap: playingHandicap || null
+      };
+      await axios.put(`${API}/scores/${score.id}/points`, payload);
       toast.success("Score saved!");
       navigate(-1);
     } catch (error) {
@@ -170,6 +175,26 @@ export default function ScoreEntryPage() {
                   pts
                 </span>
               </div>
+            </div>
+
+            {/* Playing Handicap (shots received) */}
+            <div className="text-center">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">
+                Playing Handicap (Shots Received)
+              </Label>
+              <Input
+                data-testid="playing-handicap-input"
+                type="number"
+                min="0"
+                max="54"
+                value={playingHandicap ?? ""}
+                onChange={(e) => setPlayingHandicap(e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="Auto-calculated if empty"
+                className="text-center text-2xl font-mono font-bold h-14 border-2 rounded-lg max-w-[200px] mx-auto"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Leave empty to use 95% of Course Handicap
+              </p>
             </div>
 
             {/* Quick Entry Buttons */}
