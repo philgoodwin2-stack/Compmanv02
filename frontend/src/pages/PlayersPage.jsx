@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag, History, TrendingDown, TrendingUp, Upload, Save, X } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag, History, TrendingDown, TrendingUp, Upload, Save, X, RefreshCw, Star } from "lucide-react";
 
 // Sports team logos - Football, Rugby, GAA and more
 const TEAM_LOGOS = [
@@ -376,6 +376,27 @@ export default function PlayersPage() {
     }
   };
 
+  const recalculateHandicap = async () => {
+    if (!historyData?.player_id) return;
+
+    try {
+      const response = await axios.post(`${API}/players/${historyData.player_id}/recalculate-handicap`);
+      toast.success(`Handicap recalculated: ${response.data.new_handicap}`);
+      
+      // Refresh history data
+      const historyResponse = await axios.get(`${API}/players/${historyData.player_id}/handicap-history`);
+      setHistoryData(historyResponse.data);
+      fetchPlayers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to recalculate handicap");
+    }
+  };
+
+  // Check if a date is used in handicap calculation
+  const isUsedInCalculation = (date) => {
+    return historyData?.used_dates?.includes(date);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -695,16 +716,36 @@ export default function PlayersPage() {
 
         {/* Handicap History Dialog */}
         <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
-          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogContent className="sm:max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold uppercase tracking-tight flex items-center gap-2">
-                <History className="w-6 h-6 text-primary" />
-                Handicap History
-              </DialogTitle>
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-2xl font-bold uppercase tracking-tight flex items-center gap-2">
+                  <History className="w-6 h-6 text-primary" />
+                  Handicap History
+                </DialogTitle>
+                <Button
+                  data-testid="refresh-handicap-btn"
+                  variant="outline"
+                  size="sm"
+                  onClick={recalculateHandicap}
+                  className="rounded-none"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
               {historyData && (
-                <p className="text-muted-foreground">
-                  {historyData.username} - Current Handicap: <span className="font-mono font-bold text-primary">{historyData.current_handicap?.toFixed(1)}</span>
-                </p>
+                <div className="flex flex-wrap items-center gap-4 text-sm">
+                  <p className="text-muted-foreground">
+                    {historyData.username} - Current Handicap: <span className="font-mono font-bold text-primary text-lg">{historyData.current_handicap?.toFixed(1)}</span>
+                  </p>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 rounded">
+                      <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                      {historyData.num_counting} of {Math.min(historyData.total_rounds, 20)} counting
+                    </span>
+                  </div>
+                </div>
               )}
             </DialogHeader>
             <div className="flex-1 overflow-y-auto py-4">
@@ -712,6 +753,7 @@ export default function PlayersPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="uppercase text-xs tracking-wider w-8"></TableHead>
                       <TableHead className="uppercase text-xs tracking-wider">Date</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider">Course</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Score</TableHead>
@@ -725,8 +767,14 @@ export default function PlayersPage() {
                     {historyData.history.slice().reverse().map((record, idx) => {
                       const handicapChange = record.handicap_after - record.handicap_before;
                       const isEditing = editingDiffDate === record.date;
+                      const isCounting = isUsedInCalculation(record.date);
                       return (
-                        <TableRow key={idx}>
+                        <TableRow key={idx} className={isCounting ? "bg-amber-50" : ""}>
+                          <TableCell className="text-center">
+                            {isCounting && (
+                              <Star className="w-4 h-4 fill-amber-400 text-amber-400" title="Used in handicap calculation" />
+                            )}
+                          </TableCell>
                           <TableCell className="font-mono text-sm">
                             {new Date(record.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                           </TableCell>

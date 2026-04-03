@@ -338,16 +338,128 @@ async def delete_player(player_id: str):
 
 @api_router.get("/players/{player_id}/handicap-history")
 async def get_player_handicap_history(player_id: str):
-    """Get the handicap history for a player"""
+    """Get the handicap history for a player with indication of which diffs are used"""
     player = await db.players.find_one({"id": player_id}, {"_id": 0})
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
+    
+    history = player.get("handicap_history", [])
+    
+    # Calculate which differentials are used in the handicap (best 8 of last 20)
+    if history:
+        # Get last 20 records sorted by date (most recent first)
+        sorted_history = sorted(history, key=lambda x: x.get("date", ""), reverse=True)[:20]
+        all_diffs = [(r.get("date"), r.get("score_differential", 0)) for r in sorted_history]
+        
+        # Sort by differential to find best ones
+        sorted_by_diff = sorted(all_diffs, key=lambda x: x[1])
+        
+        # Number to use based on WHS rules
+        num_rounds = len(all_diffs)
+        if num_rounds <= 3:
+            num_to_use = 1
+        elif num_rounds <= 5:
+            num_to_use = 1
+        elif num_rounds <= 6:
+            num_to_use = 2
+        elif num_rounds <= 8:
+            num_to_use = 2
+        elif num_rounds <= 11:
+            num_to_use = 3
+        elif num_rounds <= 14:
+            num_to_use = 4
+        elif num_rounds <= 16:
+            num_to_use = 5
+        elif num_rounds <= 18:
+            num_to_use = 6
+        elif num_rounds <= 19:
+            num_to_use = 7
+        else:
+            num_to_use = 8
+        
+        # Get dates of differentials used
+        used_dates = set(d[0] for d in sorted_by_diff[:num_to_use])
+    else:
+        used_dates = set()
+        num_to_use = 0
     
     return {
         "player_id": player_id,
         "username": player.get("username"),
         "current_handicap": player.get("handicap", 18.0),
-        "history": player.get("handicap_history", [])
+        "history": history,
+        "used_dates": list(used_dates),
+        "num_counting": num_to_use,
+        "total_rounds": len(history)
+    }
+
+@api_router.post("/players/{player_id}/recalculate-handicap")
+async def recalculate_handicap(player_id: str):
+    """Recalculate a player's handicap from their history"""
+    player = await db.players.find_one({"id": player_id}, {"_id": 0})
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    history = player.get("handicap_history", [])
+    
+    if not history:
+        return {"message": "No history to calculate from", "handicap": player.get("handicap", 18.0)}
+    
+    # Sort by date and recalculate
+    sorted_history = sorted(history, key=lambda x: x.get("date", ""))
+    
+    for i, record in enumerate(sorted_history):
+        available_diffs = [r["score_differential"] for r in sorted_history[:i+1]]
+        
+        num_rounds = len(available_diffs)
+        if num_rounds <= 3:
+            num_to_use = 1
+        elif num_rounds <= 5:
+            num_to_use = 1
+        elif num_rounds <= 6:
+            num_to_use = 2
+        elif num_rounds <= 8:
+            num_to_use = 2
+        elif num_rounds <= 11:
+            num_to_use = 3
+        elif num_rounds <= 14:
+            num_to_use = 4
+        elif num_rounds <= 16:
+            num_to_use = 5
+        elif num_rounds <= 18:
+            num_to_use = 6
+        elif num_rounds <= 19:
+            num_to_use = 7
+        else:
+            num_to_use = 8
+        
+        sorted_diffs = sorted(available_diffs)[:num_to_use]
+        avg_diff = sum(sorted_diffs) / len(sorted_diffs)
+        new_handicap = round(avg_diff * 0.96, 1)
+        
+        record["handicap_after"] = new_handicap
+        if i > 0:
+            record["handicap_before"] = sorted_history[i-1]["handicap_after"]
+        else:
+            record["handicap_before"] = new_handicap
+    
+    final_handicap = sorted_history[-1]["handicap_after"]
+    
+    # Update player
+    await db.players.update_one(
+        {"id": player_id},
+        {
+            "$set": {
+                "handicap": final_handicap,
+                "handicap_history": sorted_history
+            }
+        }
+    )
+    
+    return {
+        "message": "Handicap recalculated",
+        "new_handicap": final_handicap,
+        "rounds_used": len(sorted_history)
     }
 
 class ImportDifferentialsRequest(BaseModel):
