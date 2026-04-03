@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag, History, TrendingDown, TrendingUp, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag, History, TrendingDown, TrendingUp, Upload, Save, X } from "lucide-react";
 
 // Sports team logos - Football, Rugby, GAA and more
 const TEAM_LOGOS = [
@@ -198,6 +198,8 @@ export default function PlayersPage() {
   const [importPlayerId, setImportPlayerId] = useState(null);
   const [importPlayerName, setImportPlayerName] = useState("");
   const [importDifferentials, setImportDifferentials] = useState("");
+  const [editingDiffDate, setEditingDiffDate] = useState(null);
+  const [editingDiffValue, setEditingDiffValue] = useState("");
   const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "" });
 
   useEffect(() => {
@@ -324,6 +326,53 @@ export default function PlayersPage() {
       fetchPlayers();
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to import differentials");
+    }
+  };
+
+  const startEditDifferential = (date, currentValue) => {
+    setEditingDiffDate(date);
+    setEditingDiffValue(currentValue?.toFixed(1) || "0");
+  };
+
+  const cancelEditDifferential = () => {
+    setEditingDiffDate(null);
+    setEditingDiffValue("");
+  };
+
+  const saveEditDifferential = async () => {
+    if (!historyData?.player_id || !editingDiffDate) return;
+
+    try {
+      const response = await axios.put(`${API}/players/${historyData.player_id}/update-differential`, {
+        date: editingDiffDate,
+        new_differential: parseFloat(editingDiffValue)
+      });
+      toast.success(`Differential updated. New handicap: ${response.data.new_handicap}`);
+      
+      // Refresh history data
+      const historyResponse = await axios.get(`${API}/players/${historyData.player_id}/handicap-history`);
+      setHistoryData(historyResponse.data);
+      setEditingDiffDate(null);
+      setEditingDiffValue("");
+      fetchPlayers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to update differential");
+    }
+  };
+
+  const deleteDifferential = async (date) => {
+    if (!historyData?.player_id) return;
+
+    try {
+      await axios.delete(`${API}/players/${historyData.player_id}/delete-differential?date=${date}`);
+      toast.success("Differential deleted");
+      
+      // Refresh history data
+      const historyResponse = await axios.get(`${API}/players/${historyData.player_id}/handicap-history`);
+      setHistoryData(historyResponse.data);
+      fetchPlayers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to delete differential");
     }
   };
 
@@ -669,11 +718,13 @@ export default function PlayersPage() {
                       <TableHead className="uppercase text-xs tracking-wider text-center">Slope</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Diff</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-right">Handicap</TableHead>
+                      <TableHead className="uppercase text-xs tracking-wider text-center w-20">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {historyData.history.slice().reverse().map((record, idx) => {
                       const handicapChange = record.handicap_after - record.handicap_before;
+                      const isEditing = editingDiffDate === record.date;
                       return (
                         <TableRow key={idx}>
                           <TableCell className="font-mono text-sm">
@@ -683,13 +734,24 @@ export default function PlayersPage() {
                             {record.course_name || "Unknown"}
                           </TableCell>
                           <TableCell className="text-center font-mono font-bold">
-                            {record.score} pts
+                            {record.score || "-"} {record.score ? "pts" : ""}
                           </TableCell>
                           <TableCell className="text-center font-mono text-sm text-muted-foreground">
                             {record.slope_rating}
                           </TableCell>
-                          <TableCell className="text-center font-mono text-sm">
-                            {record.score_differential?.toFixed(1)}
+                          <TableCell className="text-center">
+                            {isEditing ? (
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={editingDiffValue}
+                                onChange={(e) => setEditingDiffValue(e.target.value)}
+                                className="w-16 h-7 text-center font-mono text-sm rounded-none"
+                                autoFocus
+                              />
+                            ) : (
+                              <span className="font-mono text-sm">{record.score_differential?.toFixed(1)}</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
@@ -701,6 +763,49 @@ export default function PlayersPage() {
                                 </span>
                               )}
                             </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {isEditing ? (
+                              <div className="flex items-center justify-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={saveEditDifferential}
+                                  className="h-7 w-7 p-0 text-green-600 hover:bg-green-100"
+                                >
+                                  <Save className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={cancelEditDifferential}
+                                  className="h-7 w-7 p-0 text-gray-500 hover:bg-gray-100"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => startEditDifferential(record.date, record.score_differential)}
+                                  className="h-7 w-7 p-0 text-blue-600 hover:bg-blue-100"
+                                  title="Edit differential"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteDifferential(record.date)}
+                                  className="h-7 w-7 p-0 text-red-600 hover:bg-red-100"
+                                  title="Delete record"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
                       );

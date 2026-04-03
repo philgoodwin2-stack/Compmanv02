@@ -443,6 +443,134 @@ async def import_score_differentials(player_id: str, request: ImportDifferential
         "records_imported": len(handicap_history)
     }
 
+class UpdateDifferentialRequest(BaseModel):
+    date: str
+    new_differential: float
+
+@api_router.put("/players/{player_id}/update-differential")
+async def update_score_differential(player_id: str, request: UpdateDifferentialRequest):
+    """Update a specific score differential and recalculate handicap"""
+    player = await db.players.find_one({"id": player_id}, {"_id": 0})
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    handicap_history = player.get("handicap_history", [])
+    
+    # Find the record by date
+    record_idx = None
+    for idx, record in enumerate(handicap_history):
+        if record.get("date") == request.date:
+            record_idx = idx
+            break
+    
+    if record_idx is None:
+        raise HTTPException(status_code=404, detail="Record not found for this date")
+    
+    # Update the differential
+    handicap_history[record_idx]["score_differential"] = request.new_differential
+    
+    # Recalculate all handicaps from this point forward
+    # Sort by date to process in order
+    sorted_history = sorted(handicap_history, key=lambda x: x.get("date", ""))
+    
+    for i, record in enumerate(sorted_history):
+        # Get all differentials up to and including this record
+        available_diffs = [r["score_differential"] for r in sorted_history[:i+1]]
+        
+        if len(available_diffs) >= 3:
+            # WHS: Best 8 of 20 (or proportional for fewer rounds)
+            num_to_use = min(8, max(1, len(available_diffs) // 2))
+            sorted_diffs = sorted(available_diffs)[:num_to_use]
+            avg_diff = sum(sorted_diffs) / len(sorted_diffs)
+            new_handicap = round(avg_diff * 0.96, 1)
+        else:
+            avg_diff = sum(available_diffs) / len(available_diffs)
+            new_handicap = round(avg_diff, 1)
+        
+        record["handicap_after"] = new_handicap
+        if i > 0:
+            record["handicap_before"] = sorted_history[i-1]["handicap_after"]
+    
+    # Final handicap is from the most recent record
+    final_handicap = sorted_history[-1]["handicap_after"] if sorted_history else player.get("handicap", 18.0)
+    
+    # Update player
+    await db.players.update_one(
+        {"id": player_id},
+        {
+            "$set": {
+                "handicap": final_handicap,
+                "handicap_history": sorted_history
+            }
+        }
+    )
+    
+    return {
+        "message": "Differential updated",
+        "new_handicap": final_handicap,
+        "updated_record": sorted_history[record_idx]
+    }
+
+class DeleteDifferentialRequest(BaseModel):
+    date: str
+
+@api_router.delete("/players/{player_id}/delete-differential")
+async def delete_score_differential(player_id: str, date: str):
+    """Delete a specific score differential and recalculate handicap"""
+    player = await db.players.find_one({"id": player_id}, {"_id": 0})
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    handicap_history = player.get("handicap_history", [])
+    
+    # Filter out the record with matching date
+    new_history = [r for r in handicap_history if r.get("date") != date]
+    
+    if len(new_history) == len(handicap_history):
+        raise HTTPException(status_code=404, detail="Record not found for this date")
+    
+    # Recalculate handicaps
+    if new_history:
+        sorted_history = sorted(new_history, key=lambda x: x.get("date", ""))
+        
+        for i, record in enumerate(sorted_history):
+            available_diffs = [r["score_differential"] for r in sorted_history[:i+1]]
+            
+            if len(available_diffs) >= 3:
+                num_to_use = min(8, max(1, len(available_diffs) // 2))
+                sorted_diffs = sorted(available_diffs)[:num_to_use]
+                avg_diff = sum(sorted_diffs) / len(sorted_diffs)
+                new_handicap = round(avg_diff * 0.96, 1)
+            else:
+                avg_diff = sum(available_diffs) / len(available_diffs)
+                new_handicap = round(avg_diff, 1)
+            
+            record["handicap_after"] = new_handicap
+            if i > 0:
+                record["handicap_before"] = sorted_history[i-1]["handicap_after"]
+        
+        final_handicap = sorted_history[-1]["handicap_after"]
+        new_history = sorted_history
+    else:
+        final_handicap = 18.0  # Default if no history
+    
+    # Update player
+    await db.players.update_one(
+        {"id": player_id},
+        {
+            "$set": {
+                "handicap": final_handicap,
+                "handicap_history": new_history
+            }
+        }
+    )
+    
+    return {
+        "message": "Differential deleted",
+        "new_handicap": final_handicap,
+        "remaining_records": len(new_history)
+    }
+
 # ============= COURSE ENDPOINTS =============
 
 @api_router.get("/courses", response_model=List[Course])
