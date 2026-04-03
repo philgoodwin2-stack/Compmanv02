@@ -1139,6 +1139,7 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
   const [scores, setScores] = useState([]);
   const [loadingScores, setLoadingScores] = useState(true);
   const [isIncluded, setIsIncluded] = useState(round.is_included !== false);
+  const [countsForHandicap, setCountsForHandicap] = useState(round.counts_for_handicap !== false);
 
   useEffect(() => {
     fetchScores();
@@ -1146,7 +1147,8 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
 
   useEffect(() => {
     setIsIncluded(round.is_included !== false);
-  }, [round.is_included]);
+    setCountsForHandicap(round.counts_for_handicap !== false);
+  }, [round.is_included, round.counts_for_handicap]);
 
   const fetchScores = async () => {
     try {
@@ -1167,6 +1169,17 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
       onRefresh();
     } catch (error) {
       toast.error("Failed to toggle round inclusion");
+    }
+  };
+
+  const handleToggleHandicap = async () => {
+    try {
+      const response = await axios.put(`${API}/rounds/${round.id}/toggle-handicap`);
+      setCountsForHandicap(response.data.counts_for_handicap);
+      toast.success(response.data.message);
+      onRefresh();
+    } catch (error) {
+      toast.error("Failed to toggle handicap setting");
     }
   };
 
@@ -1222,16 +1235,27 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
               {round.slope_rating && <span> • Slope {round.slope_rating}</span>}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Label htmlFor={`include-${round.id}`} className="text-xs text-muted-foreground">
-                {isIncluded ? 'Included' : 'Excluded'}
+                {isIncluded ? 'Comp' : 'Excl'}
               </Label>
               <Switch
                 id={`include-${round.id}`}
                 checked={isIncluded}
                 onCheckedChange={handleToggleInclusion}
                 data-testid={`toggle-round-${round.id}`}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor={`handicap-${round.id}`} className="text-xs text-muted-foreground">
+                {countsForHandicap ? 'HCP' : 'No HCP'}
+              </Label>
+              <Switch
+                id={`handicap-${round.id}`}
+                checked={countsForHandicap}
+                onCheckedChange={handleToggleHandicap}
+                data-testid={`toggle-handicap-${round.id}`}
               />
             </div>
             <Button

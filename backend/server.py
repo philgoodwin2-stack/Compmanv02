@@ -114,6 +114,7 @@ class RoundBase(BaseModel):
     course_rating: Optional[float] = 72.0  # Course Rating for differential calculation
     course_par: int = 72
     is_included: bool = True  # Whether this round counts towards competition
+    counts_for_handicap: bool = True  # Whether this round counts towards handicap calculation
 
 class RoundCreate(RoundBase):
     pass
@@ -982,6 +983,25 @@ async def toggle_round_inclusion(round_id: str):
     return {"message": f"Round {'included' if new_status else 'excluded'}", "is_included": new_status}
 
 
+@api_router.put("/rounds/{round_id}/toggle-handicap")
+async def toggle_round_handicap(round_id: str):
+    """Toggle whether a round counts towards handicap calculation"""
+    round_doc = await db.rounds.find_one({"id": round_id})
+    if not round_doc:
+        raise HTTPException(status_code=404, detail="Round not found")
+    
+    current_status = round_doc.get("counts_for_handicap", True)
+    new_status = not current_status
+    
+    await db.rounds.update_one(
+        {"id": round_id},
+        {"$set": {"counts_for_handicap": new_status}}
+    )
+    
+    return {"message": f"Round {'counts' if new_status else 'excluded'} for handicap", "counts_for_handicap": new_status}
+
+
+
 # ============= SCORE ENDPOINTS =============
 
 @api_router.get("/scores", response_model=List[Score])
@@ -1106,7 +1126,10 @@ async def update_score_points(score_id: str, points_data: ScorePointsUpdate):
         }}
     )
     
-    # Calculate score differential and update handicap (WHS)
+    # Check if this round counts for handicap calculation
+    counts_for_handicap = round_doc.get("counts_for_handicap", True)
+    
+    # Calculate score differential and update handicap (WHS) only if round counts
     course_rating = round_doc.get("course_rating", round_doc.get("course_par", 72))  # Use actual course rating
     slope_rating = round_doc.get("slope_rating", 113)
     course_par = round_doc.get("course_par", 72)
@@ -1138,18 +1161,23 @@ async def update_score_points(score_id: str, points_data: ScorePointsUpdate):
             existing_record_idx = idx
             break
     
-    # Get all differentials for calculation
-    all_differentials = [r.get("score_differential", 0) for r in handicap_history]
-    
-    if existing_record_idx is not None:
-        # Update existing differential
-        all_differentials[existing_record_idx] = score_differential
+    # Only update handicap if this round counts
+    if counts_for_handicap:
+        # Get all differentials for calculation
+        all_differentials = [r.get("score_differential", 0) for r in handicap_history]
+        
+        if existing_record_idx is not None:
+            # Update existing differential
+            all_differentials[existing_record_idx] = score_differential
+        else:
+            # Add new differential
+            all_differentials.append(score_differential)
+        
+        # Calculate new handicap
+        new_handicap = calculate_handicap_index(all_differentials)
     else:
-        # Add new differential
-        all_differentials.append(score_differential)
-    
-    # Calculate new handicap
-    new_handicap = calculate_handicap_index(all_differentials)
+        # Keep existing handicap
+        new_handicap = current_handicap
     
     # Calculate gross score for the record
     if playing_hcp is not None:
@@ -1161,37 +1189,51 @@ async def update_score_points(score_id: str, points_data: ScorePointsUpdate):
     points_diff = points_data.total_stableford - 36
     gross_score = course_par + actual_playing_hcp - points_diff
     
-    # Create handicap record
-    handicap_record = {
-        "date": round_date,
-        "round_id": score["round_id"],
-        "course_name": course_name,
-        "score": points_data.total_stableford,
-        "gross_score": gross_score,
-        "playing_handicap": actual_playing_hcp,
-        "par": course_par,
-        "course_rating": course_rating,
-        "slope_rating": slope_rating,
-        "score_differential": score_differential,
-        "handicap_before": current_handicap,
-        "handicap_after": new_handicap
-    }
-    
-    if existing_record_idx is not None:
-        # Update existing record
-        handicap_history[existing_record_idx] = handicap_record
-    else:
-        # Add new record
-        handicap_history.append(handicap_record)
-    
-    # Update player with new handicap and history
-    await db.players.update_one(
-        {"id": score["player_id"]},
-        {"$set": {
-            "handicap": new_handicap,
-            "handicap_history": handicap_history
-        }}
-    )
+    # Create handicap record (only if counts for handicap)
+    if counts_for_handicap:
+        handicap_record = {
+            "date": round_date,
+            "round_id": score["round_id"],
+            "course_name": course_name,
+            "score": points_data.total_stableford,
+            "gross_score": gross_score,
+            "playing_handicap": actual_playing_hcp,
+            "par": course_par,
+            "course_rating": course_rating,
+            "slope_rating": slope_rating,
+            "score_differential": score_differential,
+            "handicap_before": current_handicap,
+            "handicap_after": new_handicap
+        }
+        
+        if existing_record_idx is not None:
+            # Update existing record
+            handicap_history[existing_record_idx] = handicap_record
+        else:
+            # Add new record
+            handicap_history.append(handicap_record)
+        
+        # Update player with new handicap and history
+        await db.players.update_one(
+            {"id": score["player_id"]},
+            {"$set": {
+                "handicap": new_handicap,
+                "handicap_history": handicap_history
+            }}
+        )
+    elif existing_record_idx is not None:
+        # Round no longer counts - remove from handicap history
+        handicap_history.pop(existing_record_idx)
+        # Recalculate handicap without this round
+        all_differentials = [r.get("score_differential", 0) for r in handicap_history]
+        new_handicap = calculate_handicap_index(all_differentials) if all_differentials else current_handicap
+        await db.players.update_one(
+            {"id": score["player_id"]},
+            {"$set": {
+                "handicap": new_handicap,
+                "handicap_history": handicap_history
+            }}
+        )
     
     updated_score = await db.scores.find_one({"id": score_id}, {"_id": 0})
     return updated_score
