@@ -8,7 +8,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from enum import Enum
 
 ROOT_DIR = Path(__file__).parent
@@ -348,6 +348,99 @@ async def get_player_handicap_history(player_id: str):
         "username": player.get("username"),
         "current_handicap": player.get("handicap", 18.0),
         "history": player.get("handicap_history", [])
+    }
+
+class ImportDifferentialsRequest(BaseModel):
+    differentials: str  # Comma-delimited string like "8.7,4.5,11.5"
+
+@api_router.post("/players/{player_id}/import-differentials")
+async def import_score_differentials(player_id: str, request: ImportDifferentialsRequest):
+    """Import score differentials from comma-delimited string (latest to earliest)
+    
+    Dates are assigned as today-1, today-2, etc.
+    Max 20 differentials.
+    """
+    player = await db.players.find_one({"id": player_id}, {"_id": 0})
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    # Parse the comma-delimited string
+    try:
+        diff_strings = [s.strip() for s in request.differentials.split(",") if s.strip()]
+        differentials = [float(d) for d in diff_strings]
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid format. Use comma-separated numbers like: 8.7,4.5,11.5")
+    
+    if len(differentials) > 20:
+        raise HTTPException(status_code=400, detail="Maximum 20 differentials allowed")
+    
+    if len(differentials) == 0:
+        raise HTTPException(status_code=400, detail="No differentials provided")
+    
+    # Create handicap history records with dates going backwards from today
+    today = datetime.now(timezone.utc).date()
+    handicap_history = []
+    
+    for i, diff in enumerate(differentials):
+        record_date = today - timedelta(days=i + 1)
+        
+        # Calculate handicap_after for this record based on WHS rules
+        # For import, we'll store the differential and calculate running handicap
+        handicap_record = {
+            "date": record_date.isoformat(),
+            "round_id": f"imported-{i+1}",
+            "competition_name": "Imported History",
+            "course_name": "Historical Round",
+            "score": 0,  # Not available for imports
+            "slope_rating": 113,
+            "score_differential": diff,
+            "handicap_before": 0,  # Will be calculated
+            "handicap_after": 0,   # Will be calculated
+        }
+        handicap_history.append(handicap_record)
+    
+    # Calculate handicaps using WHS rules (best 8 of last 20)
+    all_differentials = [r["score_differential"] for r in handicap_history]
+    
+    for i, record in enumerate(handicap_history):
+        # Differentials available up to this point (from latest to this record)
+        available_diffs = all_differentials[:i+1]
+        
+        if len(available_diffs) >= 3:
+            # WHS: Best 8 of 20 (or proportional for fewer rounds)
+            num_to_use = min(8, max(1, len(available_diffs) // 2))
+            sorted_diffs = sorted(available_diffs)[:num_to_use]
+            avg_diff = sum(sorted_diffs) / len(sorted_diffs)
+            new_handicap = round(avg_diff * 0.96, 1)  # 96% of average
+        else:
+            # Not enough rounds, use simple average
+            avg_diff = sum(available_diffs) / len(available_diffs)
+            new_handicap = round(avg_diff, 1)
+        
+        record["handicap_after"] = new_handicap
+        if i > 0:
+            record["handicap_before"] = handicap_history[i-1]["handicap_after"]
+        else:
+            record["handicap_before"] = new_handicap
+    
+    # Final handicap is from the most recent (first) record
+    final_handicap = handicap_history[0]["handicap_after"] if handicap_history else player.get("handicap", 18.0)
+    
+    # Update player with imported history
+    await db.players.update_one(
+        {"id": player_id},
+        {
+            "$set": {
+                "handicap": final_handicap,
+                "handicap_history": handicap_history
+            }
+        }
+    )
+    
+    return {
+        "message": f"Imported {len(differentials)} differentials",
+        "new_handicap": final_handicap,
+        "records_imported": len(handicap_history)
     }
 
 # ============= COURSE ENDPOINTS =============

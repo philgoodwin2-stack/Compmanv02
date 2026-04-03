@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag, History, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag, History, TrendingDown, TrendingUp, Upload } from "lucide-react";
 
 // Sports team logos - Football, Rugby, GAA and more
 const TEAM_LOGOS = [
@@ -194,6 +194,10 @@ export default function PlayersPage() {
   const [historyData, setHistoryData] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletePlayerId, setDeletePlayerId] = useState(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importPlayerId, setImportPlayerId] = useState(null);
+  const [importPlayerName, setImportPlayerName] = useState("");
+  const [importDifferentials, setImportDifferentials] = useState("");
   const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "" });
 
   useEffect(() => {
@@ -294,6 +298,32 @@ export default function PlayersPage() {
       setShowHistoryDialog(true);
     } catch (error) {
       toast.error("Failed to load handicap history");
+    }
+  };
+
+  const openImportDialog = (player) => {
+    setImportPlayerId(player.id);
+    setImportPlayerName(player.username);
+    setImportDifferentials("");
+    setShowImportDialog(true);
+  };
+
+  const handleImportDifferentials = async () => {
+    if (!importPlayerId || !importDifferentials.trim()) {
+      toast.error("Please enter differentials");
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API}/players/${importPlayerId}/import-differentials`, {
+        differentials: importDifferentials
+      });
+      toast.success(`Imported ${response.data.records_imported} differentials. New handicap: ${response.data.new_handicap}`);
+      setShowImportDialog(false);
+      setImportDifferentials("");
+      fetchPlayers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to import differentials");
     }
   };
 
@@ -499,6 +529,16 @@ export default function PlayersPage() {
                           title="Handicap History"
                         >
                           <History className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          data-testid={`import-player-${player.id}`}
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openImportDialog(player)}
+                          className="hover:bg-blue-500/10 text-blue-600"
+                          title="Import Differentials"
+                        >
+                          <Upload className="w-4 h-4" />
                         </Button>
                         <Button
                           data-testid={`edit-player-${player.id}`}
@@ -717,6 +757,62 @@ export default function PlayersPage() {
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete Player
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Import Differentials Dialog */}
+        <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold uppercase tracking-tight flex items-center gap-2">
+                <Upload className="w-6 h-6 text-blue-600" />
+                Import Differentials
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <p className="text-sm text-muted-foreground">
+                Import up to 20 score differentials for <strong>{importPlayerName}</strong>.
+              </p>
+              
+              <div className="space-y-2">
+                <Label>Score Differentials (comma-separated)</Label>
+                <Input
+                  data-testid="import-differentials-input"
+                  value={importDifferentials}
+                  onChange={(e) => setImportDifferentials(e.target.value)}
+                  placeholder="8.7, 4.5, 11.5, 6.2, 9.8"
+                  className="rounded-none font-mono"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter from <strong>latest to earliest</strong>. Dates will be assigned as today-1, today-2, etc.
+                </p>
+              </div>
+
+              <div className="bg-secondary/50 p-3 rounded text-sm">
+                <p className="font-semibold mb-1">Example:</p>
+                <code className="text-xs bg-background px-2 py-1 rounded">8.7, 4.5, 11.5, 6.2, 9.8, 7.3, 10.1, 5.9</code>
+                <p className="text-xs text-muted-foreground mt-2">
+                  WHS handicap will be calculated using best 8 of up to 20 differentials.
+                </p>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowImportDialog(false)}
+                className="rounded-none"
+              >
+                Cancel
+              </Button>
+              <Button
+                data-testid="confirm-import-btn"
+                onClick={handleImportDifferentials}
+                className="rounded-none bg-blue-600 hover:bg-blue-700"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Import Differentials
               </Button>
             </DialogFooter>
           </DialogContent>
