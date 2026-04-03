@@ -35,7 +35,7 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - `/api/rounds` - Round management with course name, tee, slope rating
 - `/api/scores` - Simplified total Stableford points entry
 - `/api/leaderboard/{competition_id}` - Ranked leaderboard with round details
-- `/api/handicap-history` - WHS handicap tracking history
+- `/api/handicap-history` - WHS handicap tracking history with playing handicap
 
 ### Frontend Pages
 - **Login Page**: Username entry with auto player creation
@@ -59,6 +59,7 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - Round dates as columns with tee info
 - Custom delete dialogs (replaced browser popups)
 - WHS handicap tracking and history
+- **Playing Handicap column** in Handicap History table (April 2026)
 - 120+ sports team logos for players
 - Responsive design for mobile
 

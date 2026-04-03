@@ -55,6 +55,9 @@ class HandicapRecord(BaseModel):
     score: int  # Stableford points
     course_rating: float = 72.0
     slope_rating: int = 113
+    par: int = 72
+    playing_handicap: Optional[int] = None
+    gross_score: Optional[int] = None
     score_differential: float
     handicap_before: float
     handicap_after: float
@@ -242,6 +245,7 @@ def calculate_score_differential(stableford_points: int, course_rating: float, s
     points_diff = stableford_points - 36
     # Gross score = what the player actually shot
     approx_gross = par + playing_handicap - points_diff
+
     
     # Score Differential = (Adjusted Gross Score - Course Rating) × (113 / Slope Rating)
     differential = (approx_gross - course_rating) * (113 / slope_rating)

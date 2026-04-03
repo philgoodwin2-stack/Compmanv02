@@ -770,6 +770,7 @@ export default function PlayersPage() {
                       <TableHead className="uppercase text-xs tracking-wider">Date</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider">Course</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Pts</TableHead>
+                      <TableHead className="uppercase text-xs tracking-wider text-center">P.Hcp</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Gross</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Rating</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Slope</TableHead>
@@ -800,6 +801,19 @@ export default function PlayersPage() {
                           </TableCell>
                           <TableCell className="text-center font-mono font-bold">
                             {record.score || "-"}
+                          </TableCell>
+                          <TableCell className="text-center font-mono text-sm">
+                            {isEditing ? (
+                              <Input
+                                type="number"
+                                value={editingPlayingHcp}
+                                onChange={(e) => setEditingPlayingHcp(e.target.value)}
+                                className="w-14 h-7 text-center font-mono text-sm rounded-none"
+                                placeholder="-"
+                              />
+                            ) : (
+                              record.playing_handicap ?? "-"
+                            )}
                           </TableCell>
                           <TableCell className="text-center font-mono text-sm">
                             {isEditing ? (
