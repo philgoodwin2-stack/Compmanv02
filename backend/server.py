@@ -377,6 +377,30 @@ async def delete_player(player_id: str):
         raise HTTPException(status_code=404, detail="Player not found")
     return {"message": "Player deleted"}
 
+@api_router.put("/players/{player_id}/toggle-admin")
+async def toggle_admin_status(player_id: str, user_id: str = None):
+    """Toggle admin status for a player (Admin only)"""
+    if user_id:
+        await require_admin(user_id)
+    
+    player = await db.players.find_one({"id": player_id})
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    current_status = player.get("is_admin", False)
+    new_status = not current_status
+    
+    await db.players.update_one(
+        {"id": player_id},
+        {"$set": {"is_admin": new_status}}
+    )
+    
+    return {
+        "message": f"{'Granted' if new_status else 'Revoked'} admin access for {player['username']}",
+        "is_admin": new_status
+    }
+
+
 @api_router.get("/players/{player_id}/handicap-history")
 async def get_player_handicap_history(player_id: str):
     """Get the handicap history for a player with indication of which diffs are used"""

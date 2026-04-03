@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag, History, TrendingDown, TrendingUp, Upload, Save, X, RefreshCw, Star } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag, History, TrendingDown, TrendingUp, Upload, Save, X, RefreshCw, Star, Shield, ShieldOff } from "lucide-react";
 
 // Sports team logos - Football, Rugby, GAA and more
 const TEAM_LOGOS = [
@@ -270,6 +270,20 @@ export default function PlayersPage() {
       fetchPlayers();
     } catch (error) {
       toast.error("Failed to update player");
+    }
+  };
+
+  const handleToggleAdmin = async (player) => {
+    try {
+      const response = await axios.put(`${API}/players/${player.id}/toggle-admin?user_id=${user?.id}`);
+      toast.success(response.data.message);
+      fetchPlayers();
+    } catch (error) {
+      if (error.response?.status === 403) {
+        toast.error("Admin access required");
+      } else {
+        toast.error("Failed to update admin status");
+      }
     }
   };
 
@@ -579,6 +593,7 @@ export default function PlayersPage() {
                   <TableHead className="uppercase text-xs tracking-wider">Handicap</TableHead>
                   <TableHead className="uppercase text-xs tracking-wider text-center">Status</TableHead>
                   <TableHead className="uppercase text-xs tracking-wider text-center">Include</TableHead>
+                  {isAdmin && <TableHead className="uppercase text-xs tracking-wider text-center">Admin</TableHead>}
                   <TableHead className="uppercase text-xs tracking-wider text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -592,7 +607,14 @@ export default function PlayersPage() {
                         <div className="w-8 h-8 bg-muted rounded-full" />
                       )}
                     </TableCell>
-                    <TableCell className="font-medium">{player.username}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {player.username}
+                        {player.is_admin && (
+                          <Shield className="w-4 h-4 text-[#D4AF37]" title="Admin" />
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <span className="font-mono text-lg">{player.handicap.toFixed(1)}</span>
                     </TableCell>
@@ -614,6 +636,23 @@ export default function PlayersPage() {
                         onCheckedChange={() => handleToggleActive(player)}
                       />
                     </TableCell>
+                    {isAdmin && (
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleAdmin(player)}
+                          className={player.is_admin ? "text-[#D4AF37] hover:bg-[#D4AF37]/10" : "text-muted-foreground hover:bg-muted"}
+                          title={player.is_admin ? "Revoke Admin" : "Grant Admin"}
+                        >
+                          {player.is_admin ? (
+                            <Shield className="w-5 h-5" />
+                          ) : (
+                            <ShieldOff className="w-5 h-5" />
+                          )}
+                        </Button>
+                      </TableCell>
+                    )}
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
