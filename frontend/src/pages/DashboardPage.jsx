@@ -129,7 +129,7 @@ export default function DashboardPage() {
               <p className="text-white/70 text-sm">Welcome, {user?.username}</p>
             </div>
           </div>
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden xl:flex items-center gap-3">
             <Button
               data-testid="courses-nav-btn"
               variant="ghost"
@@ -167,7 +167,7 @@ export default function DashboardPage() {
             </Button>
           </div>
           {/* Mobile/Tablet logout only */}
-          <div className="lg:hidden">
+          <div className="xl:hidden">
             <Button
               data-testid="logout-btn-mobile"
               variant="ghost"
