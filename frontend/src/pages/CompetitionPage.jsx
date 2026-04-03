@@ -329,39 +329,36 @@ export default function CompetitionPage() {
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
       {/* Header */}
-      <header className="golf-header text-white py-6 px-4">
+      <header className="golf-header text-white py-4 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-3">
+          <div className="flex justify-between items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               <Button
                 data-testid="back-btn"
                 variant="ghost"
                 onClick={() => navigate("/dashboard")}
-                className="text-white hover:bg-white/10 p-2"
+                className="text-white hover:bg-white/10 p-2 flex-shrink-0"
               >
-                <ArrowLeft className="w-6 h-6" />
+                <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-3xl font-bold uppercase tracking-tight">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold uppercase tracking-tight truncate">
                     {competition.name}
                   </h1>
-                  <Badge className={`${getStatusColor(competition.status)} uppercase text-xs font-bold`}>
+                  <Badge className={`${getStatusColor(competition.status)} uppercase text-xs font-bold flex-shrink-0`}>
                     {competition.status}
                   </Badge>
                 </div>
-                {competition.description && (
-                  <p className="text-white/70">{competition.description}</p>
-                )}
-                {(competition.start_date || competition.end_date) && (
-                  <p className="text-white/60 text-sm mt-1 flex items-center gap-2">
-                    <CalendarIcon className="w-4 h-4" />
-                    {competition.start_date && new Date(competition.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                <p className="text-white/60 text-xs sm:text-sm mt-1 flex items-center gap-1 flex-wrap">
+                  <CalendarIcon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                  <span className="truncate">
+                    {competition.start_date && new Date(competition.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                     {competition.start_date && competition.end_date && " - "}
-                    {competition.end_date && new Date(competition.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    <span className="ml-2 px-2 py-0.5 bg-white/20 rounded text-xs">Min {competition.min_rounds || 13} rounds</span>
-                  </p>
-                )}
+                    {competition.end_date && new Date(competition.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                  </span>
+                  <span className="hidden sm:inline px-2 py-0.5 bg-white/20 rounded text-xs">Min {competition.min_rounds || 13} rounds</span>
+                </p>
               </div>
             </div>
             <DropdownMenu>
@@ -369,7 +366,7 @@ export default function CompetitionPage() {
                 <Button
                   data-testid="competition-menu-btn"
                   variant="ghost"
-                  className="text-white hover:bg-white/10"
+                  className="text-white hover:bg-white/10 p-2 flex-shrink-0"
                 >
                   <MoreVertical className="w-5 h-5" />
                 </Button>
