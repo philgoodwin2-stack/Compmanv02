@@ -212,18 +212,27 @@ def distribute_handicap_strokes(handicap: float, num_holes: int = 18) -> List[in
         strokes_per_hole[i] += 1
     return strokes_per_hole
 
-def calculate_score_differential(stableford_points: int, course_rating: float, slope_rating: int, par: int = 72) -> float:
+def calculate_score_differential(stableford_points: int, course_rating: float, slope_rating: int, par: int = 72, handicap_index: float = 18.0) -> float:
     """
     Calculate score differential based on World Handicap System.
     For Stableford: Convert points to approximate gross score, then calculate differential.
-    36 points = playing to handicap (par net)
-    Each point above/below 36 = 1 stroke better/worse than handicap
+    
+    WHS Formula:
+    1. Course Handicap = Handicap Index × (Slope Rating / 113)
+    2. Playing Handicap = Course Handicap × 0.95 (95% allowance for Stableford)
+    3. 36 points = playing to handicap (par net)
+    4. Gross Score = Par + Playing Handicap - (Stableford Points - 36)
+    5. Differential = (Gross Score - Course Rating) × (113 / Slope Rating)
     """
-    # Convert Stableford to approximate strokes relative to par
-    # 36 points = par (for a scratch golfer playing to their handicap)
+    # Calculate Course Handicap and Playing Handicap
+    course_handicap = handicap_index * (slope_rating / 113)
+    playing_handicap = round(course_handicap * 0.95)
+    
+    # Convert Stableford to approximate gross score
+    # 36 points = par net (playing to handicap)
     points_diff = stableford_points - 36
-    # Approximate gross score (lower is better, so subtract points diff)
-    approx_gross = par - points_diff
+    # Gross score = what the player actually shot
+    approx_gross = par + playing_handicap - points_diff
     
     # Score Differential = (Adjusted Gross Score - Course Rating) × (113 / Slope Rating)
     differential = (approx_gross - course_rating) * (113 / slope_rating)
@@ -992,16 +1001,19 @@ async def update_score_points(score_id: str, points_data: ScorePointsUpdate):
     course_name = round_doc.get("course_name", "Unknown Course")
     round_date = round_doc.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
     
+    # Get player's handicap before this round
+    current_handicap = player.get("handicap", 18.0)
+    
     score_differential = calculate_score_differential(
         points_data.total_stableford,
         course_rating,
         slope_rating,
-        round_doc.get("course_par", 72)
+        round_doc.get("course_par", 72),
+        current_handicap  # Pass handicap for 95% playing handicap calculation
     )
     
     # Get existing handicap history
     handicap_history = player.get("handicap_history", [])
-    current_handicap = player.get("handicap", 18.0)
     
     # Check if we already have a record for this round (update instead of add)
     existing_record_idx = None
