@@ -230,15 +230,15 @@ def calculate_score_differential(stableford_points: int, course_rating: float, s
     
     WHS Formula:
     1. Course Handicap = Handicap Index × (Slope Rating / 113)
-    2. Playing Handicap = Course Handicap × 0.95 (95% allowance for Stableford)
+    2. Playing Handicap = Course Handicap + (Course Rating - Par)
     3. 36 points = playing to handicap (par net)
     4. Gross Score = Par + Playing Handicap - (Stableford Points - 36)
     5. Differential = (Gross Score - Course Rating) × (113 / Slope Rating)
     """
     # Use provided playing_handicap or calculate it
     if playing_handicap is None:
-        course_handicap = handicap_index * (slope_rating / 113)
-        playing_handicap = round(course_handicap * 0.95)
+        course_handicap = round(handicap_index * (slope_rating / 113))
+        playing_handicap = round(course_handicap + (course_rating - par))
     
     # Convert Stableford to approximate gross score
     # 36 points = par net (playing to handicap)
@@ -454,8 +454,8 @@ async def recalculate_handicap(player_id: str):
                 playing_hcp = record.get("playing_handicap")
                 if playing_hcp is None:
                     hcp_before = record.get("handicap_before", 18.0)
-                    course_hcp = hcp_before * (slope_rating / 113)
-                    playing_hcp = round(course_hcp * 0.95)
+                    course_hcp = round(hcp_before * (slope_rating / 113))
+                    playing_hcp = round(course_hcp + (course_rating - course_par))
                 
                 # Recalculate differential with correct course rating
                 new_diff = calculate_score_differential(
@@ -1135,8 +1135,8 @@ async def update_score_points(score_id: str, points_data: ScorePointsUpdate):
     if playing_hcp is not None:
         actual_playing_hcp = playing_hcp
     else:
-        course_hcp = current_handicap * (slope_rating / 113)
-        actual_playing_hcp = round(course_hcp * 0.95)
+        course_hcp = round(current_handicap * (slope_rating / 113))
+        actual_playing_hcp = round(course_hcp + (course_rating - course_par))
     
     points_diff = points_data.total_stableford - 36
     gross_score = course_par + actual_playing_hcp - points_diff
