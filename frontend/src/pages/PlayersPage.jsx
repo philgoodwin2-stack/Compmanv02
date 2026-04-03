@@ -780,7 +780,7 @@ export default function PlayersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {historyData.history.slice().reverse().map((record, idx) => {
+                    {historyData.history.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).map((record, idx) => {
                       const handicapChange = record.handicap_after - record.handicap_before;
                       const isEditing = editingDiffDate === record.date;
                       const isCounting = isUsedInCalculation(record.date);
