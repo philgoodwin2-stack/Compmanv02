@@ -185,6 +185,7 @@ const TEAM_LOGOS = [
 export default function PlayersPage() {
   const navigate = useNavigate();
   const { user } = useUser();
+  const isAdmin = user?.is_admin === true;
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -320,7 +321,7 @@ export default function PlayersPage() {
     }
 
     try {
-      const response = await axios.post(`${API}/players/${importPlayerId}/import-differentials`, {
+      const response = await axios.post(`${API}/players/${importPlayerId}/import-differentials?user_id=${user?.id}`, {
         differentials: importDifferentials
       });
       toast.success(`Imported ${response.data.records_imported} differentials. New handicap: ${response.data.new_handicap}`);
@@ -328,7 +329,11 @@ export default function PlayersPage() {
       setImportDifferentials("");
       fetchPlayers();
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Failed to import differentials");
+      if (error.response?.status === 403) {
+        toast.error("Admin access required");
+      } else {
+        toast.error(error.response?.data?.detail || "Failed to import differentials");
+      }
     }
   };
 
@@ -360,7 +365,7 @@ export default function PlayersPage() {
         playing_handicap: editingPlayingHcp ? parseInt(editingPlayingHcp) : null,
       };
       
-      const response = await axios.put(`${API}/players/${historyData.player_id}/update-differential`, payload);
+      const response = await axios.put(`${API}/players/${historyData.player_id}/update-differential?user_id=${user?.id}`, payload);
       toast.success(`Updated. New handicap: ${response.data.new_handicap}`);
       
       // Refresh history data
@@ -369,7 +374,11 @@ export default function PlayersPage() {
       cancelEditDifferential();
       fetchPlayers();
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Failed to update");
+      if (error.response?.status === 403) {
+        toast.error("Admin access required");
+      } else {
+        toast.error(error.response?.data?.detail || "Failed to update");
+      }
     }
   };
 
@@ -377,7 +386,7 @@ export default function PlayersPage() {
     if (!historyData?.player_id) return;
 
     try {
-      await axios.delete(`${API}/players/${historyData.player_id}/delete-differential?date=${date}`);
+      await axios.delete(`${API}/players/${historyData.player_id}/delete-differential?date=${date}&user_id=${user?.id}`);
       toast.success("Differential deleted");
       
       // Refresh history data
@@ -385,7 +394,11 @@ export default function PlayersPage() {
       setHistoryData(historyResponse.data);
       fetchPlayers();
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Failed to delete differential");
+      if (error.response?.status === 403) {
+        toast.error("Admin access required");
+      } else {
+        toast.error(error.response?.data?.detail || "Failed to delete differential");
+      }
     }
   };
 
@@ -613,16 +626,18 @@ export default function PlayersPage() {
                         >
                           <History className="w-4 h-4" />
                         </Button>
-                        <Button
-                          data-testid={`import-player-${player.id}`}
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openImportDialog(player)}
-                          className="hover:bg-blue-500/10 text-blue-600"
-                          title="Import Differentials"
-                        >
-                          <Upload className="w-4 h-4" />
-                        </Button>
+                        {isAdmin && (
+                          <Button
+                            data-testid={`import-player-${player.id}`}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openImportDialog(player)}
+                            className="hover:bg-blue-500/10 text-blue-600"
+                            title="Import Differentials"
+                          >
+                            <Upload className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           data-testid={`edit-player-${player.id}`}
                           variant="ghost"
@@ -896,24 +911,28 @@ export default function PlayersPage() {
                               </div>
                             ) : (
                               <div className="flex items-center justify-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => startEditDifferential(record.date, record)}
-                                  className="h-7 w-7 p-0 text-blue-600 hover:bg-blue-100"
-                                  title="Edit record"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteDifferential(record.date)}
-                                  className="h-7 w-7 p-0 text-red-600 hover:bg-red-100"
-                                  title="Delete record"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </Button>
+                                {isAdmin && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => startEditDifferential(record.date, record)}
+                                      className="h-7 w-7 p-0 text-blue-600 hover:bg-blue-100"
+                                      title="Edit record"
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => deleteDifferential(record.date)}
+                                      className="h-7 w-7 p-0 text-red-600 hover:bg-red-100"
+                                      title="Delete record"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </>
+                                )}
                               </div>
                             )}
                           </TableCell>

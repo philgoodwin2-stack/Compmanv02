@@ -37,6 +37,7 @@ class PlayerBase(BaseModel):
     username: str
     handicap: float = 18.0
     is_active: bool = True
+    is_admin: bool = False
     team_logo: str = ""
 
 class PlayerCreate(PlayerBase):
@@ -46,6 +47,7 @@ class PlayerUpdate(BaseModel):
     username: Optional[str] = None
     handicap: Optional[float] = None
     is_active: Optional[bool] = None
+    is_admin: Optional[bool] = None
     team_logo: Optional[str] = None
 
 class HandicapRecord(BaseModel):
@@ -195,6 +197,21 @@ class Course(CourseBase):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+# ============= ADMIN CHECK HELPER =============
+
+async def check_admin(user_id: str) -> bool:
+    """Check if a user is an admin"""
+    player = await db.players.find_one({"id": user_id})
+    if not player:
+        return False
+    return player.get("is_admin", False)
+
+async def require_admin(user_id: str):
+    """Raise exception if user is not admin"""
+    if not await check_admin(user_id):
+        raise HTTPException(status_code=403, detail="Admin access required")
 
 # ============= HELPER FUNCTIONS =============
 
@@ -539,12 +556,15 @@ class ImportDifferentialsRequest(BaseModel):
     differentials: str  # Comma-delimited string like "8.7,4.5,11.5"
 
 @api_router.post("/players/{player_id}/import-differentials")
-async def import_score_differentials(player_id: str, request: ImportDifferentialsRequest):
-    """Import score differentials from comma-delimited string (latest to earliest)
+async def import_score_differentials(player_id: str, request: ImportDifferentialsRequest, user_id: str = None):
+    """Import score differentials from comma-delimited string (Admin only)
     
     Dates are assigned as today-1, today-2, etc.
     Max 20 differentials.
     """
+    if user_id:
+        await require_admin(user_id)
+    
     player = await db.players.find_one({"id": player_id}, {"_id": 0})
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -637,8 +657,11 @@ class UpdateDifferentialRequest(BaseModel):
     stableford_points: Optional[int] = None
 
 @api_router.put("/players/{player_id}/update-differential")
-async def update_score_differential(player_id: str, request: UpdateDifferentialRequest):
-    """Update a specific score differential and/or course details, then recalculate handicap"""
+async def update_score_differential(player_id: str, request: UpdateDifferentialRequest, user_id: str = None):
+    """Update a specific score differential and/or course details (Admin only)"""
+    if user_id:
+        await require_admin(user_id)
+    
     player = await db.players.find_one({"id": player_id}, {"_id": 0})
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -729,8 +752,11 @@ class DeleteDifferentialRequest(BaseModel):
     date: str
 
 @api_router.delete("/players/{player_id}/delete-differential")
-async def delete_score_differential(player_id: str, date: str):
-    """Delete a specific score differential and recalculate handicap"""
+async def delete_score_differential(player_id: str, date: str, user_id: str = None):
+    """Delete a specific score differential and recalculate handicap (Admin only)"""
+    if user_id:
+        await require_admin(user_id)
+    
     player = await db.players.find_one({"id": player_id}, {"_id": 0})
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -802,8 +828,11 @@ async def get_course(course_id: str):
     return course
 
 @api_router.post("/courses", response_model=Course)
-async def create_course(course_data: CourseCreate):
-    """Create a new course with stroke indices"""
+async def create_course(course_data: CourseCreate, user_id: str = None):
+    """Create a new course with stroke indices (Admin only)"""
+    if user_id:
+        await require_admin(user_id)
+    
     # Validate holes if provided
     if course_data.holes:
         # Check all 18 holes are present with unique stroke indices
@@ -822,8 +851,11 @@ async def create_course(course_data: CourseCreate):
     return course
 
 @api_router.put("/courses/{course_id}", response_model=Course)
-async def update_course(course_id: str, course_data: CourseUpdate):
-    """Update an existing course"""
+async def update_course(course_id: str, course_data: CourseUpdate, user_id: str = None):
+    """Update an existing course (Admin only)"""
+    if user_id:
+        await require_admin(user_id)
+    
     update_dict = {k: v for k, v in course_data.model_dump().items() if v is not None}
     
     # Convert holes to dict if present
@@ -841,8 +873,11 @@ async def update_course(course_id: str, course_data: CourseUpdate):
     return course
 
 @api_router.delete("/courses/{course_id}")
-async def delete_course(course_id: str):
-    """Delete a course"""
+async def delete_course(course_id: str, user_id: str = None):
+    """Delete a course (Admin only)"""
+    if user_id:
+        await require_admin(user_id)
+    
     result = await db.courses.delete_one({"id": course_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Course not found")

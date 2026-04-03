@@ -47,6 +47,7 @@ const DEFAULT_PARS = [4, 4, 4, 3, 5, 4, 4, 3, 4, 4, 4, 4, 3, 5, 4, 4, 3, 5];
 export default function CoursesPage() {
   const navigate = useNavigate();
   const { user } = useUser();
+  const isAdmin = user?.is_admin === true;
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -97,7 +98,7 @@ export default function CoursesPage() {
     }
 
     try {
-      await axios.post(`${API}/courses`, newCourse);
+      await axios.post(`${API}/courses?user_id=${user?.id}`, newCourse);
       toast.success("Course created!");
       setShowAddDialog(false);
       setNewCourse({
@@ -123,23 +124,31 @@ export default function CoursesPage() {
     if (!editingCourse) return;
 
     try {
-      await axios.put(`${API}/courses/${editingCourse.id}`, editingCourse);
+      await axios.put(`${API}/courses/${editingCourse.id}?user_id=${user?.id}`, editingCourse);
       toast.success("Course updated!");
       setShowEditDialog(false);
       setEditingCourse(null);
       fetchCourses();
     } catch (error) {
-      toast.error("Failed to update course");
+      if (error.response?.status === 403) {
+        toast.error("Admin access required");
+      } else {
+        toast.error("Failed to update course");
+      }
     }
   };
 
   const handleDeleteCourse = async (courseId) => {
     try {
-      await axios.delete(`${API}/courses/${courseId}`);
+      await axios.delete(`${API}/courses/${courseId}?user_id=${user?.id}`);
       toast.success("Course deleted");
       fetchCourses();
     } catch (error) {
-      toast.error("Failed to delete course");
+      if (error.response?.status === 403) {
+        toast.error("Admin access required");
+      } else {
+        toast.error("Failed to delete course");
+      }
     }
   };
 
@@ -189,16 +198,17 @@ export default function CoursesPage() {
               </div>
             </div>
           </div>
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-            <DialogTrigger asChild>
-              <Button
-                data-testid="add-course-btn"
-                className="bg-[#D4AF37] text-black hover:bg-[#c4a030] rounded-none uppercase font-bold tracking-widest"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Add Course
-              </Button>
-            </DialogTrigger>
+          {isAdmin ? (
+            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+              <DialogTrigger asChild>
+                <Button
+                  data-testid="add-course-btn"
+                  className="bg-[#D4AF37] text-black hover:bg-[#c4a030] rounded-none uppercase font-bold tracking-widest"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Add Course
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold uppercase tracking-tight flex items-center gap-2">
@@ -422,6 +432,9 @@ export default function CoursesPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          ) : (
+            <span className="text-white/70 text-sm">(Admin only)</span>
+          )}
         </div>
       </header>
 
@@ -432,14 +445,18 @@ export default function CoursesPage() {
           <Card className="text-center py-12">
             <CardContent>
               <MapPin className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
-              <p className="text-muted-foreground mb-4">No courses yet. Add your first course with stroke indices!</p>
-              <Button
-                onClick={() => setShowAddDialog(true)}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Course
-              </Button>
+              <p className="text-muted-foreground mb-4">
+                {isAdmin ? "No courses yet. Add your first course with stroke indices!" : "No courses available."}
+              </p>
+              {isAdmin && (
+                <Button
+                  onClick={() => setShowAddDialog(true)}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Course
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -456,27 +473,29 @@ export default function CoursesPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingCourse(course);
-                        setShowEditDialog(true);
-                      }}
-                      className="text-white hover:bg-white/10"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteCourse(course.id)}
-                      className="text-red-400 hover:bg-red-500/10"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingCourse(course);
+                          setShowEditDialog(true);
+                        }}
+                        className="text-white hover:bg-white/10"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteCourse(course.id)}
+                        className="text-red-400 hover:bg-red-500/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <CardContent className="p-4">
                   {/* Stroke Index Display */}
