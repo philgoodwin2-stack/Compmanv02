@@ -193,3 +193,22 @@ html {
         scrollbar-width: none;
     }
 }
+
+
+/* Safari iOS fixed bottom nav fix */
+@supports (-webkit-touch-callout: none) {
+    .fixed.bottom-0 {
+        position: fixed !important;
+        bottom: 0 !important;
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+    }
+}
+
+/* Ensure body doesn't clip fixed elements */
+html, body {
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
