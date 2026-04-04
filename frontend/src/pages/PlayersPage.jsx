@@ -206,8 +206,8 @@ export default function PlayersPage() {
   const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "" });
   const [systemHasAdmins, setSystemHasAdmins] = useState(true); // Default to true to hide controls until checked
 
-  // Check if user is admin OR if no admins exist yet (first-time setup)
-  const isAdmin = user?.is_admin === true || !systemHasAdmins;
+  // Show admin controls for everyone (simple app without strict access control)
+  const isAdmin = true;
 
   useEffect(() => {
     fetchPlayers();
