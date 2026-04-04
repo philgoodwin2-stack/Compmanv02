@@ -636,43 +636,59 @@ export default function PlayersPage() {
                           data-testid={`admin-toggle-${player.id}`}
                           variant="outline"
                           size="sm"
-                          onClick={() => handleToggleAdmin(player)}
-                          className={`h-9 px-3 ${player.is_admin ? "border-[#D4AF37] text-[#D4AF37]" : ""}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleToggleAdmin(player);
+                          }}
+                          className={`h-10 px-4 min-w-[80px] active:scale-95 ${player.is_admin ? "border-[#D4AF37] text-[#D4AF37] bg-[#D4AF37]/10" : "border-gray-300"}`}
                         >
                           {player.is_admin ? <Shield className="w-4 h-4 mr-1" /> : <ShieldOff className="w-4 h-4 mr-1" />}
                           {player.is_admin ? "Admin" : "User"}
                         </Button>
                       )}
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-2">
                       {isAdmin && (
                         <Button
                           data-testid={`import-player-${player.id}`}
                           variant="ghost"
                           size="sm"
-                          onClick={() => openImportDialog(player)}
-                          className="h-9 w-9 p-0 text-blue-600"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openImportDialog(player);
+                          }}
+                          className="h-10 w-10 p-0 text-blue-600 active:scale-95"
                         >
-                          <Upload className="w-4 h-4" />
+                          <Upload className="w-5 h-5" />
                         </Button>
                       )}
                       <Button
                         data-testid={`edit-player-${player.id}`}
                         variant="ghost"
                         size="sm"
-                        onClick={() => openEditDialog(player)}
-                        className="h-9 w-9 p-0"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openEditDialog(player);
+                        }}
+                        className="h-10 w-10 p-0 active:scale-95"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Pencil className="w-5 h-5" />
                       </Button>
                       <Button
                         data-testid={`delete-player-${player.id}`}
                         variant="ghost"
                         size="sm"
-                        onClick={() => openDeleteDialog(player.id)}
-                        className="h-9 w-9 p-0 text-destructive hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openDeleteDialog(player.id);
+                        }}
+                        className="h-10 w-10 p-0 text-destructive hover:bg-destructive/10 active:scale-95 active:bg-destructive/20"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-5 h-5" />
                       </Button>
                     </div>
                   </div>

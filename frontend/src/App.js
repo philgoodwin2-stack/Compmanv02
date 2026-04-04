@@ -41,10 +41,8 @@ function App() {
         try {
           const response = await axios.post(`${API}/login`, { username: user.username });
           const freshUser = response.data.player;
-          // Update if admin status changed
-          if (freshUser.is_admin !== user.is_admin) {
-            setUser(freshUser);
-          }
+          // Always update user with fresh data from server
+          setUser(freshUser);
         } catch (error) {
           console.error("Failed to refresh user:", error);
         }
