@@ -338,6 +338,12 @@ async def get_players(active_only: bool = False):
     players = await db.players.find(query, {"_id": 0}).to_list(1000)
     return players
 
+@api_router.get("/admin-status")
+async def get_admin_status():
+    """Check if any admins exist in the system"""
+    admin_count = await db.players.count_documents({"is_admin": True})
+    return {"has_admins": admin_count > 0, "admin_count": admin_count}
+
 @api_router.get("/players/{player_id}", response_model=Player)
 async def get_player(player_id: str):
     player = await db.players.find_one({"id": player_id}, {"_id": 0})

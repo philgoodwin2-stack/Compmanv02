@@ -204,14 +204,24 @@ export default function PlayersPage() {
   const [editingGross, setEditingGross] = useState("");
   const [editingPlayingHcp, setEditingPlayingHcp] = useState("");
   const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "" });
+  const [systemHasAdmins, setSystemHasAdmins] = useState(true); // Default to true to hide controls until checked
 
   // Check if user is admin OR if no admins exist yet (first-time setup)
-  const hasAdmins = players.some(p => p.is_admin === true);
-  const isAdmin = user?.is_admin === true || !hasAdmins;
+  const isAdmin = user?.is_admin === true || !systemHasAdmins;
 
   useEffect(() => {
     fetchPlayers();
+    checkAdminStatus();
   }, []);
+
+  const checkAdminStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/admin-status`);
+      setSystemHasAdmins(response.data.has_admins);
+    } catch (error) {
+      console.error("Failed to check admin status");
+    }
+  };
 
   const fetchPlayers = async () => {
     try {
