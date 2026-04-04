@@ -632,64 +632,44 @@ export default function PlayersPage() {
                         History
                       </Button>
                       {isAdmin && (
-                        <Button
+                        <button
+                          type="button"
                           data-testid={`admin-toggle-${player.id}`}
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleToggleAdmin(player);
-                          }}
-                          className={`h-10 px-4 min-w-[80px] active:scale-95 ${player.is_admin ? "border-[#D4AF37] text-[#D4AF37] bg-[#D4AF37]/10" : "border-gray-300"}`}
+                          onClick={() => handleToggleAdmin(player)}
+                          className={`inline-flex items-center justify-center h-10 px-4 min-w-[80px] text-sm font-medium rounded-md border transition-colors active:scale-95 ${player.is_admin ? "border-[#D4AF37] text-[#D4AF37] bg-[#D4AF37]/10" : "border-gray-300 bg-white"}`}
                         >
                           {player.is_admin ? <Shield className="w-4 h-4 mr-1" /> : <ShieldOff className="w-4 h-4 mr-1" />}
                           {player.is_admin ? "Admin" : "User"}
-                        </Button>
+                        </button>
                       )}
                     </div>
                     <div className="flex gap-2">
                       {isAdmin && (
-                        <Button
+                        <button
+                          type="button"
                           data-testid={`import-player-${player.id}`}
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            openImportDialog(player);
-                          }}
-                          className="h-10 w-10 p-0 text-blue-600 active:scale-95"
+                          onClick={() => openImportDialog(player)}
+                          className="inline-flex items-center justify-center h-10 w-10 p-0 text-blue-600 rounded-md hover:bg-blue-50 active:scale-95 active:bg-blue-100"
                         >
                           <Upload className="w-5 h-5" />
-                        </Button>
+                        </button>
                       )}
-                      <Button
+                      <button
+                        type="button"
                         data-testid={`edit-player-${player.id}`}
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          openEditDialog(player);
-                        }}
-                        className="h-10 w-10 p-0 active:scale-95"
+                        onClick={() => openEditDialog(player)}
+                        className="inline-flex items-center justify-center h-10 w-10 p-0 rounded-md hover:bg-gray-100 active:scale-95"
                       >
                         <Pencil className="w-5 h-5" />
-                      </Button>
-                      <Button
+                      </button>
+                      <button
+                        type="button"
                         data-testid={`delete-player-${player.id}`}
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          openDeleteDialog(player.id);
-                        }}
-                        className="h-10 w-10 p-0 text-destructive hover:bg-destructive/10 active:scale-95 active:bg-destructive/20"
+                        onClick={() => openDeleteDialog(player.id)}
+                        className="inline-flex items-center justify-center h-10 w-10 p-0 text-destructive rounded-md hover:bg-destructive/10 active:scale-95 active:bg-destructive/20"
                       >
                         <Trash2 className="w-5 h-5" />
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 </CardContent>
@@ -1077,18 +1057,15 @@ export default function PlayersPage() {
               >
                 Cancel
               </Button>
-              <Button
+              <button
+                type="button"
                 data-testid="confirm-import-btn"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleImportDifferentials();
-                }}
-                className="rounded-none bg-blue-600 hover:bg-blue-700 active:bg-blue-800 min-h-[44px]"
+                onClick={handleImportDifferentials}
+                className="inline-flex items-center justify-center rounded-none bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium px-4 min-h-[44px]"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 Import Differentials
-              </Button>
+              </button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

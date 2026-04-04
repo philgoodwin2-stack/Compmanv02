@@ -233,3 +233,26 @@ html, body {
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
 }
+
+
+/* Safari iOS button touch fixes */
+button, [role="button"], a {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    touch-action: manipulation;
+    cursor: pointer;
+}
+
+/* Ensure dialogs work on Safari */
+[data-radix-dialog-overlay] {
+    -webkit-tap-highlight-color: transparent;
+}
+
+[data-radix-dialog-content] {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+}
+
+/* Force buttons to be clickable */
+button:not(:disabled) {
+    pointer-events: auto !important;
+}
