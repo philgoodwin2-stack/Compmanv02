@@ -254,13 +254,12 @@ def calculate_score_differential(stableford_points: int, course_rating: float, s
     4. Gross Score = Par + Playing Handicap - (Stableford Points - 36)
     5. Differential = (Gross Score - Course Rating) × (113 / Slope Rating)
     """
-    # Use provided playing_handicap or calculate it
+    # Use provided playing_handicap or calculate it using WHS formula
     if playing_handicap is None:
-        # WHS: Course Handicap = Handicap Index × (Slope Rating / 113), rounded to nearest integer
-        # Standard rounding: 0.5 rounds up
-        course_handicap = int(handicap_index * (slope_rating / 113) + 0.5)
-        # Playing Handicap adjustment for course rating vs par
-        playing_handicap = course_handicap + int(course_rating - par + 0.5)
+        # WHS Formula: Course Handicap = Handicap Index × (Slope Rating ÷ 113) + (Course Rating – Par)
+        # Calculate in one step, then round to avoid double-rounding errors
+        raw_handicap = handicap_index * (slope_rating / 113) + (course_rating - par)
+        playing_handicap = int(raw_handicap + 0.5) if raw_handicap >= 0 else int(raw_handicap - 0.5)
     
     # Convert Stableford to approximate gross score
     # 36 points = par net (playing to handicap)
@@ -506,12 +505,13 @@ async def recalculate_handicap(player_id: str):
             if score_doc:
                 stableford_pts = score_doc.get("total_stableford", record.get("score", 0))
                 
-                # Use stored playing_handicap or calculate
+                # Use stored playing_handicap or calculate using WHS formula
                 playing_hcp = record.get("playing_handicap")
                 if playing_hcp is None:
                     hcp_before = record.get("handicap_before", 18.0)
-                    course_hcp = round(hcp_before * (slope_rating / 113))
-                    playing_hcp = round(course_hcp + (course_rating - course_par))
+                    # WHS: Single-step calculation then round
+                    raw_hcp = hcp_before * (slope_rating / 113) + (course_rating - course_par)
+                    playing_hcp = int(raw_hcp + 0.5) if raw_hcp >= 0 else int(raw_hcp - 0.5)
                 
                 # Recalculate differential with correct course rating
                 new_diff = calculate_score_differential(
@@ -1101,9 +1101,9 @@ async def toggle_round_handicap(round_id: str):
                 stableford = score.get("total_stableford", 0)
                 hcp_before = player.get("handicap", 18.0)
                 
-                # Calculate playing handicap
-                course_hcp = round(hcp_before * (slope_rating / 113))
-                playing_hcp = round(course_hcp + (course_rating - course_par))
+                # Calculate playing handicap using WHS formula (single step)
+                raw_hcp = hcp_before * (slope_rating / 113) + (course_rating - course_par)
+                playing_hcp = int(raw_hcp + 0.5) if raw_hcp >= 0 else int(raw_hcp - 0.5)
                 
                 # Calculate differential
                 points_diff = stableford - 36
@@ -1331,12 +1331,12 @@ async def update_score_points(score_id: str, points_data: ScorePointsUpdate):
         # Keep existing handicap
         new_handicap = current_handicap
     
-    # Calculate gross score for the record
+    # Calculate playing handicap using WHS formula (single step)
     if playing_hcp is not None:
         actual_playing_hcp = playing_hcp
     else:
-        course_hcp = round(current_handicap * (slope_rating / 113))
-        actual_playing_hcp = round(course_hcp + (course_rating - course_par))
+        raw_hcp = current_handicap * (slope_rating / 113) + (course_rating - course_par)
+        actual_playing_hcp = int(raw_hcp + 0.5) if raw_hcp >= 0 else int(raw_hcp - 0.5)
     
     points_diff = points_data.total_stableford - 36
     gross_score = course_par + actual_playing_hcp - points_diff
