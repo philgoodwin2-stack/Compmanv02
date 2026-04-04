@@ -1050,7 +1050,11 @@ export default function PlayersPage() {
                   value={importDifferentials}
                   onChange={(e) => setImportDifferentials(e.target.value)}
                   placeholder="8.7, 4.5, 11.5, 6.2, 9.8"
-                  className="rounded-none font-mono"
+                  className="rounded-none font-mono min-h-[44px] text-base"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
                 />
                 <p className="text-xs text-muted-foreground">
                   Enter from <strong>latest to earliest</strong>. Dates will be assigned as today-1, today-2, etc.
@@ -1075,8 +1079,12 @@ export default function PlayersPage() {
               </Button>
               <Button
                 data-testid="confirm-import-btn"
-                onClick={handleImportDifferentials}
-                className="rounded-none bg-blue-600 hover:bg-blue-700"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleImportDifferentials();
+                }}
+                className="rounded-none bg-blue-600 hover:bg-blue-700 active:bg-blue-800 min-h-[44px]"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 Import Differentials
