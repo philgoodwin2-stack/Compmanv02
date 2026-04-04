@@ -256,8 +256,11 @@ def calculate_score_differential(stableford_points: int, course_rating: float, s
     """
     # Use provided playing_handicap or calculate it
     if playing_handicap is None:
-        course_handicap = round(handicap_index * (slope_rating / 113))
-        playing_handicap = round(course_handicap + (course_rating - par))
+        # WHS: Course Handicap = Handicap Index × (Slope Rating / 113), rounded to nearest integer
+        # Standard rounding: 0.5 rounds up
+        course_handicap = int(handicap_index * (slope_rating / 113) + 0.5)
+        # Playing Handicap adjustment for course rating vs par
+        playing_handicap = course_handicap + int(course_rating - par + 0.5)
     
     # Convert Stableford to approximate gross score
     # 36 points = par net (playing to handicap)
