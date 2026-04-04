@@ -438,7 +438,7 @@ export default function PlayersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 lg:pb-0">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="golf-header text-white py-6 px-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">

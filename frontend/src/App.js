@@ -77,42 +77,44 @@ function App() {
 
   return (
     <UserContext.Provider value={{ user, login, logout }}>
-      <div className="min-h-screen bg-background">
+      <div className="app-container">
         <BrowserRouter>
-          <Routes>
-            <Route
-              path="/"
-              element={user ? <Navigate to="/dashboard" /> : <LoginPage />}
-            />
-            <Route
-              path="/dashboard"
-              element={user ? <DashboardPage /> : <Navigate to="/" />}
-            />
-            <Route
-              path="/players"
-              element={user ? <PlayersPage /> : <Navigate to="/" />}
-            />
-            <Route
-              path="/competition/:id"
-              element={user ? <CompetitionPage /> : <Navigate to="/" />}
-            />
-            <Route
-              path="/score/:roundId/:playerId"
-              element={user ? <ScoreEntryPage /> : <Navigate to="/" />}
-            />
-            <Route
-              path="/handicap-tracking"
-              element={user ? <HandicapTrackingPage /> : <Navigate to="/" />}
-            />
-            <Route
-              path="/handicaps"
-              element={user ? <HandicapTrackingPage /> : <Navigate to="/" />}
-            />
-            <Route
-              path="/courses"
-              element={user ? <CoursesPage /> : <Navigate to="/" />}
-            />
-          </Routes>
+          <main className="app-content">
+            <Routes>
+              <Route
+                path="/"
+                element={user ? <Navigate to="/dashboard" /> : <LoginPage />}
+              />
+              <Route
+                path="/dashboard"
+                element={user ? <DashboardPage /> : <Navigate to="/" />}
+              />
+              <Route
+                path="/players"
+                element={user ? <PlayersPage /> : <Navigate to="/" />}
+              />
+              <Route
+                path="/competition/:id"
+                element={user ? <CompetitionPage /> : <Navigate to="/" />}
+              />
+              <Route
+                path="/score/:roundId/:playerId"
+                element={user ? <ScoreEntryPage /> : <Navigate to="/" />}
+              />
+              <Route
+                path="/handicap-tracking"
+                element={user ? <HandicapTrackingPage /> : <Navigate to="/" />}
+              />
+              <Route
+                path="/handicaps"
+                element={user ? <HandicapTrackingPage /> : <Navigate to="/" />}
+              />
+              <Route
+                path="/courses"
+                element={user ? <CoursesPage /> : <Navigate to="/" />}
+              />
+            </Routes>
+          </main>
           <MobileNav />
         </BrowserRouter>
         <Toaster position="top-center" richColors />

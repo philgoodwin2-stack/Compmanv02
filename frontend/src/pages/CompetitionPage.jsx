@@ -327,7 +327,7 @@ export default function CompetitionPage() {
   if (!competition) return null;
 
   return (
-    <div className="min-h-screen bg-background pb-20 lg:pb-0">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="golf-header text-white py-4 px-4">
         <div className="max-w-6xl mx-auto">
