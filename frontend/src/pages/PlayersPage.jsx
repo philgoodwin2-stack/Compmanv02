@@ -16,14 +16,6 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag, History, TrendingDown, TrendingUp, Upload, Save, X, RefreshCw, Star, Shield, ShieldOff } from "lucide-react";
 
@@ -573,7 +565,7 @@ export default function PlayersPage() {
           </Dialog>
         </div>
 
-        {/* Players Table */}
+        {/* Players List */}
         {loading ? (
           <div className="text-center py-12 text-muted-foreground">Loading...</div>
         ) : players.length === 0 ? (
@@ -584,129 +576,110 @@ export default function PlayersPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="overflow-hidden">
-            <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="uppercase text-xs tracking-wider w-12">Team</TableHead>
-                  <TableHead className="uppercase text-xs tracking-wider">Player</TableHead>
-                  <TableHead className="uppercase text-xs tracking-wider hidden sm:table-cell">Handicap</TableHead>
-                  <TableHead className="uppercase text-xs tracking-wider text-center hidden sm:table-cell">Status</TableHead>
-                  <TableHead className="uppercase text-xs tracking-wider text-center">Active</TableHead>
-                  {isAdmin && <TableHead className="uppercase text-xs tracking-wider text-center">Admin</TableHead>}
-                  <TableHead className="uppercase text-xs tracking-wider text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {players.map((player) => (
-                  <TableRow key={player.id} data-testid={`player-row-${player.id}`}>
-                    <TableCell className="p-2">
+          <div className="space-y-3">
+            {players.map((player) => (
+              <Card key={player.id} data-testid={`player-card-${player.id}`} className="overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    {/* Team Logo */}
+                    <div className="flex-shrink-0">
                       {player.team_logo ? (
-                        <img src={player.team_logo} alt="Team" className="w-8 h-8 object-contain" />
+                        <img src={player.team_logo} alt="Team" className="w-12 h-12 object-contain" />
                       ) : (
-                        <div className="w-8 h-8 bg-muted rounded-full" />
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium p-2">
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-1">
-                          <span className="truncate max-w-[80px] sm:max-w-none">{player.username}</span>
-                          {player.is_admin && (
-                            <Shield className="w-3 h-3 sm:w-4 sm:h-4 text-[#D4AF37] flex-shrink-0" title="Admin" />
-                          )}
+                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                          <Users className="w-6 h-6 text-muted-foreground" />
                         </div>
-                        <span className="text-xs text-muted-foreground sm:hidden">HCP: {player.handicap.toFixed(1)}</span>
+                      )}
+                    </div>
+                    
+                    {/* Player Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-lg truncate">{player.username}</span>
+                        {player.is_admin && (
+                          <Shield className="w-4 h-4 text-[#D4AF37] flex-shrink-0" title="Admin" />
+                        )}
                       </div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <span className="font-mono text-lg">{player.handicap.toFixed(1)}</span>
-                    </TableCell>
-                    <TableCell className="text-center hidden sm:table-cell">
-                      <Badge
-                        className={
-                          player.is_active
-                            ? "bg-green-500 text-white"
-                            : "bg-gray-400 text-white"
-                        }
-                      >
-                        {player.is_active ? "Active" : "Excluded"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center p-2">
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <span>HCP: <strong className="text-foreground">{player.handicap.toFixed(1)}</strong></span>
+                        <Badge className={player.is_active ? "bg-green-500/20 text-green-700 text-xs" : "bg-gray-400/20 text-gray-600 text-xs"}>
+                          {player.is_active ? "Active" : "Excluded"}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Active Toggle */}
+                    <div className="flex-shrink-0">
                       <Switch
                         data-testid={`toggle-player-${player.id}`}
                         checked={player.is_active}
                         onCheckedChange={() => handleToggleActive(player)}
                       />
-                    </TableCell>
-                    {isAdmin && (
-                      <TableCell className="text-center p-2">
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                    <div className="flex gap-2">
+                      <Button
+                        data-testid={`history-player-${player.id}`}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openHistoryDialog(player)}
+                        className="h-9 px-3"
+                      >
+                        <History className="w-4 h-4 mr-1" />
+                        History
+                      </Button>
+                      {isAdmin && (
                         <Button
-                          variant="ghost"
+                          data-testid={`admin-toggle-${player.id}`}
+                          variant="outline"
                           size="sm"
                           onClick={() => handleToggleAdmin(player)}
-                          className={`p-1 h-8 w-8 ${player.is_admin ? "text-[#D4AF37] hover:bg-[#D4AF37]/10" : "text-muted-foreground hover:bg-muted"}`}
-                          title={player.is_admin ? "Revoke Admin" : "Grant Admin"}
+                          className={`h-9 px-3 ${player.is_admin ? "border-[#D4AF37] text-[#D4AF37]" : ""}`}
                         >
-                          {player.is_admin ? (
-                            <Shield className="w-4 h-4" />
-                          ) : (
-                            <ShieldOff className="w-4 h-4" />
-                          )}
+                          {player.is_admin ? <Shield className="w-4 h-4 mr-1" /> : <ShieldOff className="w-4 h-4 mr-1" />}
+                          {player.is_admin ? "Admin" : "User"}
                         </Button>
-                      </TableCell>
-                    )}
-                    <TableCell className="text-right p-2">
-                      <div className="flex justify-end gap-1">
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      {isAdmin && (
                         <Button
-                          data-testid={`history-player-${player.id}`}
+                          data-testid={`import-player-${player.id}`}
                           variant="ghost"
                           size="sm"
-                          onClick={() => openHistoryDialog(player)}
-                          className="hover:bg-primary/10 p-1 h-8 w-8"
-                          title="Handicap History"
+                          onClick={() => openImportDialog(player)}
+                          className="h-9 w-9 p-0 text-blue-600"
                         >
-                          <History className="w-4 h-4" />
+                          <Upload className="w-4 h-4" />
                         </Button>
-                        {isAdmin && (
-                          <Button
-                            data-testid={`import-player-${player.id}`}
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openImportDialog(player)}
-                            className="hover:bg-blue-500/10 text-blue-600 p-1 h-8 w-8 hidden sm:flex"
-                            title="Import Differentials"
-                          >
-                            <Upload className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Button
-                          data-testid={`edit-player-${player.id}`}
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(player)}
-                          className="hover:bg-primary/10 p-1 h-8 w-8"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          data-testid={`delete-player-${player.id}`}
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openDeleteDialog(player.id)}
-                          className="hover:bg-destructive/10 text-destructive p-1 h-8 w-8 hidden sm:flex"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            </div>
-          </Card>
+                      )}
+                      <Button
+                        data-testid={`edit-player-${player.id}`}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditDialog(player)}
+                        className="h-9 w-9 p-0"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        data-testid={`delete-player-${player.id}`}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openDeleteDialog(player.id)}
+                        className="h-9 w-9 p-0 text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
 
         {/* Edit Dialog */}
