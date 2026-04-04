@@ -379,8 +379,12 @@ async def delete_player(player_id: str):
 
 @api_router.put("/players/{player_id}/toggle-admin")
 async def toggle_admin_status(player_id: str, user_id: str = None):
-    """Toggle admin status for a player (Admin only)"""
-    if user_id:
+    """Toggle admin status for a player (Admin only, or first admin setup)"""
+    # Check if any admins exist
+    admin_count = await db.players.count_documents({"is_admin": True})
+    
+    # If no admins exist, allow anyone to become the first admin
+    if admin_count > 0 and user_id:
         await require_admin(user_id)
     
     player = await db.players.find_one({"id": player_id})

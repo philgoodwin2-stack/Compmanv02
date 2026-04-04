@@ -185,7 +185,6 @@ const TEAM_LOGOS = [
 export default function PlayersPage() {
   const navigate = useNavigate();
   const { user } = useUser();
-  const isAdmin = user?.is_admin === true;
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -205,6 +204,10 @@ export default function PlayersPage() {
   const [editingGross, setEditingGross] = useState("");
   const [editingPlayingHcp, setEditingPlayingHcp] = useState("");
   const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "" });
+
+  // Check if user is admin OR if no admins exist yet (first-time setup)
+  const hasAdmins = players.some(p => p.is_admin === true);
+  const isAdmin = user?.is_admin === true || !hasAdmins;
 
   useEffect(() => {
     fetchPlayers();
