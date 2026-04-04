@@ -220,6 +220,8 @@ export default function PlayersPage() {
       setSystemHasAdmins(response.data.has_admins);
     } catch (error) {
       console.error("Failed to check admin status");
+      // On error, assume no admins exist to allow first-time setup
+      setSystemHasAdmins(false);
     }
   };
 
