@@ -846,7 +846,7 @@ export default function PlayersPage() {
                             )}
                           </TableCell>
                           <TableCell className="font-mono text-sm">
-                            {new Date(record.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                            {new Date(record.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '/')}
                           </TableCell>
                           <TableCell className="text-sm max-w-[100px] truncate" title={record.course_name}>
                             {record.course_name || "Unknown"}

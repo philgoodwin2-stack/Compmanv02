@@ -380,7 +380,7 @@ export default function HandicapTrackingPage() {
                           className="px-1 py-2 text-center font-normal text-xs text-gray-600 min-w-[55px]"
                           style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', height: '70px' }}
                         >
-                          {new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          {new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '/')}
                         </th>
                       ))}
                     </tr>
@@ -480,10 +480,10 @@ export default function HandicapTrackingPage() {
                           <TableRow key={idx}>
                             <TableCell className="font-mono">
                               {new Date(record.date).toLocaleDateString('en-GB', { 
-                                day: 'numeric', 
+                                day: '2-digit', 
                                 month: 'short',
                                 year: 'numeric'
-                              })}
+                              }).replace(/ /g, '/')}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
