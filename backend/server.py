@@ -599,7 +599,7 @@ class ImportDifferentialsRequest(BaseModel):
 async def import_score_differentials(player_id: str, request: ImportDifferentialsRequest, user_id: str = None):
     """Import score differentials from comma-delimited string (Admin only)
     
-    Dates are assigned as today-1, today-2, etc.
+    Dates are assigned as today-900, today-901, etc. to keep them as historical imports.
     Max 20 differentials.
     """
     if user_id:
@@ -622,12 +622,13 @@ async def import_score_differentials(player_id: str, request: ImportDifferential
     if len(differentials) == 0:
         raise HTTPException(status_code=400, detail="No differentials provided")
     
-    # Create handicap history records with dates going backwards from today
+    # Create handicap history records with dates starting from today-900
     today = datetime.now(timezone.utc).date()
     handicap_history = []
     
     for i, diff in enumerate(differentials):
-        record_date = today - timedelta(days=i + 1)
+        # Start from today-900, then today-901, today-902, etc.
+        record_date = today - timedelta(days=900 + i)
         
         # Calculate handicap_after for this record based on WHS rules
         # For import, we'll store the differential and calculate running handicap
