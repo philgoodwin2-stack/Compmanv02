@@ -353,9 +353,9 @@ export default function CompetitionPage() {
                 <p className="text-white/60 text-xs sm:text-sm mt-1 flex items-center gap-1 flex-wrap">
                   <CalendarIcon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                   <span className="truncate">
-                    {competition.start_date && new Date(competition.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                    {competition.start_date && new Date(competition.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                     {competition.start_date && competition.end_date && " - "}
-                    {competition.end_date && new Date(competition.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                    {competition.end_date && new Date(competition.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                   </span>
                   <span className="hidden sm:inline px-2 py-0.5 bg-white/20 rounded text-xs">Min {competition.min_rounds || 13} rounds</span>
                 </p>
@@ -661,7 +661,7 @@ export default function CompetitionPage() {
                         <th className="px-2 py-1"></th>
                         {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round) => (
                           <th key={round.id} className="px-1 py-1 text-center text-xs font-normal text-gray-600" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', height: '50px' }}>
-                            {new Date(round.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })}
+                            {new Date(round.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                           </th>
                         ))}
                       </tr>
@@ -1276,7 +1276,7 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
             </div>
             <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
               <CalendarIcon className="w-4 h-4" />
-              {round.date}
+              {new Date(round.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
             </p>
             {round.course_name && (
               <p className="text-sm font-medium mt-1">
