@@ -670,10 +670,8 @@ export default function CompetitionPage() {
                       {leaderboard.map((entry, index) => {
                         const minRounds = competition.min_rounds || 13;
                         const isQualified = entry.rounds_played >= minRounds;
-                        // Calculate which scores count (best 8 of last 20 for WHS-style)
-                        const validScores = entry.round_scores.filter(s => s >= 0);
-                        const sortedScores = [...validScores].sort((a, b) => b - a);
-                        const countingScores = sortedScores.slice(0, 8);
+                        // Use dropped_rounds from API if available, otherwise calculate
+                        const droppedIndices = entry.dropped_rounds || [];
                         
                         return (
                           <tr 
@@ -711,8 +709,7 @@ export default function CompetitionPage() {
                             {rounds.sort((a, b) => new Date(a.date) - new Date(b.date)).map((round, idx) => {
                               const score = entry.round_scores[idx];
                               const hasScore = score !== undefined && score >= 0;
-                              const isCounting = hasScore && countingScores.includes(score);
-                              const isDropped = hasScore && !isCounting && validScores.length > 8;
+                              const isDropped = droppedIndices.includes(idx);
                               
                               // Color coding based on score
                               let bgColor = '';

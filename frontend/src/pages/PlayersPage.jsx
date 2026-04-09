@@ -821,7 +821,7 @@ export default function PlayersPage() {
                       <TableHead className="uppercase text-xs tracking-wider">Date</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider">Course</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Pts</TableHead>
-                      <TableHead className="uppercase text-xs tracking-wider text-center">P.Hcp</TableHead>
+                      <TableHead className="uppercase text-xs tracking-wider text-center">P.Hp</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Gross</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Rating</TableHead>
                       <TableHead className="uppercase text-xs tracking-wider text-center">Par</TableHead>
@@ -842,7 +842,7 @@ export default function PlayersPage() {
                         <TableRow key={idx} className={isCounting ? "bg-amber-50" : ""}>
                           <TableCell className="text-center">
                             {isCounting && (
-                              <Star className="w-4 h-4 fill-amber-400 text-amber-400" title="Used in handicap calculation" />
+                              <Star className="w-4 h-4 fill-amber-400 text-amber-p=400" title="Used in handicap calculation" />
                             )}
                           </TableCell>
                           <TableCell className="font-mono text-sm">

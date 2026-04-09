@@ -163,8 +163,10 @@ class LeaderboardEntry(BaseModel):
     player_team_logo: str = ""
     rounds_played: int
     total_stableford: int
+    counting_total: int = 0  # Total of only counting rounds
     average_stableford: float = 0.0
     round_scores: List[int] = []
+    dropped_rounds: List[int] = []  # Indices of dropped rounds (0-based)
     qualified: bool = False
 
 # Course Models
@@ -244,14 +246,15 @@ def distribute_handicap_strokes(handicap: float, num_holes: int = 18) -> List[in
 
 def calculate_score_differential(stableford_points: int, course_rating: float, slope_rating: int, par: int = 72, handicap_index: float = 18.0, playing_handicap: int = None) -> float:
     """
+
     Calculate score differential based on World Handicap System.
     For Stableford: Convert points to approximate gross score, then calculate differential.
     
     WHS Formula:
-    1. Course Handicap = Handicap Index × (Slope Rating / 113)
-    2. Playing Handicap = Course Handicap + (Course Rating - Par)
+    1. Course Handicap = Handicap Index × (Slope Rating / 113)+72
+    2. Playing Handicap = Course Handicap + (Course Rating - Par-45)
     3. 36 points = playing to handicap (par net)
-    4. Gross Score = Par + Playing Handicap - (Stableford Points - 36)
+    4. Gross Score = Par + Playing Handicap - (Stableford Points -36)
     5. Differential = (Gross Score - Course Rating) × (113 / Slope Rating)
     """
     # Use provided playing_handicap or calculate it using WHS formula
@@ -1435,19 +1438,49 @@ async def get_leaderboard(competition_id: str):
     for pid, data in player_scores.items():
         player = await db.players.find_one({"id": pid}, {"_id": 0})
         if player:
-            avg_stableford = data["total_stableford"] / data["rounds_played"] if data["rounds_played"] > 0 else 0.0
-            # Convert None to -1 or keep as list with actual values
-            round_scores = [s if s is not None else -1 for s in data["round_scores"]]
-            qualified = data["rounds_played"] >= min_rounds
+            round_scores = data["round_scores"]
+            rounds_played = data["rounds_played"]
+            
+            # Get valid scores (non-None) with their indices
+            valid_scores_with_idx = [(idx, score) for idx, score in enumerate(round_scores) if score is not None]
+            
+            # Sort by score descending to find best rounds
+            sorted_scores = sorted(valid_scores_with_idx, key=lambda x: x[1], reverse=True)
+            
+            # Determine counting and dropped rounds
+            dropped_indices = []
+            counting_scores = []
+            
+            if rounds_played > min_rounds:
+                # Only count the best min_rounds scores
+                counting_rounds = sorted_scores[:min_rounds]
+                dropped_rounds_list = sorted_scores[min_rounds:]
+                
+                counting_scores = [s[1] for s in counting_rounds]
+                dropped_indices = [s[0] for s in dropped_rounds_list]
+            else:
+                # All rounds count
+                counting_scores = [s[1] for s in sorted_scores]
+            
+            counting_total = sum(counting_scores)
+            counting_count = len(counting_scores)
+            avg_stableford = counting_total / counting_count if counting_count > 0 else 0.0
+            
+            # Convert None to -1 for display
+            display_scores = [s if s is not None else -1 for s in round_scores]
+            qualified = rounds_played >= min_rounds
+            
             leaderboard.append(LeaderboardEntry(
                 player_id=pid,
                 player_username=player["username"],
                 player_handicap=player["handicap"],
                 player_team_logo=player.get("team_logo", ""),
-                rounds_played=data["rounds_played"],
+                rounds_played=rounds_played,
                 total_stableford=data["total_stableford"],
+                counting_total=counting_total,
                 average_stableford=round(avg_stableford, 1),
-                round_scores=round_scores,
+                round_scores=display_scores,
+                dropped_rounds=dropped_indices,
                 qualified=qualified
             ))
     
