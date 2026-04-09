@@ -904,26 +904,41 @@ export default function CompetitionPage() {
                   </div>
                     <div className="space-y-2">
                       <Label>Date</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            data-testid="round-date-btn"
-                            variant="outline"
-                            className="w-full justify-start text-left font-normal rounded-none"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {format(selectedDate, "PPP")}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={selectedDate}
-                            onSelect={(date) => date && setSelectedDate(date)}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <div className="flex gap-2">
+                        <Input
+                          data-testid="round-date-input"
+                          type="date"
+                          value={format(selectedDate, "yyyy-MM-dd")}
+                          onChange={(e) => {
+                            const date = new Date(e.target.value);
+                            if (!isNaN(date.getTime())) {
+                              setSelectedDate(date);
+                            }
+                          }}
+                          className="flex-1 rounded-none"
+                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              data-testid="round-date-calendar-btn"
+                              variant="outline"
+                              size="icon"
+                              className="rounded-none"
+                              title="Pick from calendar"
+                            >
+                              <CalendarIcon className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={selectedDate}
+                              onSelect={(date) => date && setSelectedDate(date)}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </div>
                   </div>
                   <DialogFooter>
