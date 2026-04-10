@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -74,10 +75,23 @@ export default function SocietyPage() {
     }
   };
 
-  const copyJoinCode = () => {
+  const copyJoinCode = async () => {
     if (society?.join_code) {
-      navigator.clipboard.writeText(society.join_code);
-      toast.success("Join code copied to clipboard!");
+      try {
+        await navigator.clipboard.writeText(society.join_code);
+        toast.success("Join code copied to clipboard!");
+      } catch (err) {
+        // Fallback for browsers without clipboard API
+        const textArea = document.createElement('textarea');
+        textArea.value = society.join_code;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        toast.success("Join code copied to clipboard!");
+      }
     }
   };
 
@@ -398,6 +412,7 @@ export default function SocietyPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Society</DialogTitle>
+            <DialogDescription>Update your society's name and settings.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -426,6 +441,9 @@ export default function SocietyPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Transfer Admin</DialogTitle>
+            <DialogDescription>
+              Transfer admin privileges to another member.
+            </DialogDescription>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Are you sure you want to make <strong>{selectedMember?.username}</strong> the admin of this society? 
@@ -448,6 +466,9 @@ export default function SocietyPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Remove Member</DialogTitle>
+            <DialogDescription>
+              Remove a member from your society.
+            </DialogDescription>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Are you sure you want to remove <strong>{selectedMember?.username}</strong> from the society? 
