@@ -13,8 +13,35 @@ export default function LoginPage() {
   const [joinCode, setJoinCode] = useState("");
   const [societyName, setSocietyName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState("join"); // "join" or "create"
+  const [mode, setMode] = useState("login"); // "login", "join", or "create"
+  const [needsCode, setNeedsCode] = useState(false);
   const { login } = useUser();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!username.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Try to login with just username first
+      const result = await login(username.trim(), null, null);
+      
+      // Check if user needs to join a society
+      if (result.needs_society) {
+        setNeedsCode(true);
+        toast.info("Please join or create a society to continue");
+      } else {
+        toast.success(result.message);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleJoinSociety = async (e) => {
     e.preventDefault();
@@ -73,6 +100,132 @@ export default function LoginPage() {
     }
   };
 
+  // If user needs to join/create a society after initial login attempt
+  if (needsCode) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        {/* Hero Section */}
+        <div className="golf-header text-white py-12 px-4 flex-shrink-0">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="flex justify-center mb-4">
+              <div className="bg-white/10 p-3 rounded-full">
+                <Flag className="w-10 h-10 text-[#D4AF37]" />
+              </div>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight uppercase mb-2">
+              Stableford Golf
+            </h1>
+            <p className="text-lg md:text-xl text-white/80 font-light">
+              Welcome, {username}!
+            </p>
+          </div>
+        </div>
+
+        {/* Society Selection */}
+        <div className="flex-1 flex items-center justify-center p-4 bg-secondary/30">
+          <Card className="w-full max-w-md shadow-lg">
+            <CardHeader className="text-center pb-2">
+              <CardTitle className="text-2xl font-bold uppercase tracking-tight">
+                {mode === "join" ? "Join a Society" : "Create a Society"}
+              </CardTitle>
+              <CardDescription className="text-sm mt-1">
+                {mode === "join" 
+                  ? "Enter the code from your society admin" 
+                  : "Start a new golf society and invite members"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {/* Mode Toggle */}
+              <div className="flex gap-2 mb-6">
+                <Button
+                  type="button"
+                  variant={mode === "join" ? "default" : "outline"}
+                  className="flex-1 rounded-none"
+                  onClick={() => setMode("join")}
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Join
+                </Button>
+                <Button
+                  type="button"
+                  variant={mode === "create" ? "default" : "outline"}
+                  className="flex-1 rounded-none"
+                  onClick={() => setMode("create")}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create
+                </Button>
+              </div>
+
+              {mode === "join" ? (
+                <form onSubmit={handleJoinSociety} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Society Code</Label>
+                    <Input
+                      data-testid="join-code-input"
+                      type="text"
+                      placeholder="e.g., ABC123"
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                      className="rounded-none font-mono text-lg tracking-widest text-center uppercase"
+                      maxLength={6}
+                      autoFocus
+                    />
+                  </div>
+                  <Button
+                    data-testid="join-button"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full rounded-none uppercase font-bold tracking-widest py-5"
+                  >
+                    {loading ? "Joining..." : "Join Society"}
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={handleCreateSociety} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Society Name</Label>
+                    <Input
+                      data-testid="society-name-input"
+                      type="text"
+                      placeholder="e.g., Newport Golf Society"
+                      value={societyName}
+                      onChange={(e) => setSocietyName(e.target.value)}
+                      className="rounded-none"
+                      autoFocus
+                    />
+                  </div>
+                  <Button
+                    data-testid="create-button"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full rounded-none uppercase font-bold tracking-widest py-5"
+                  >
+                    {loading ? "Creating..." : "Create Society"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    You'll receive a code to share with members
+                  </p>
+                </form>
+              )}
+
+              <Button
+                variant="ghost"
+                className="w-full mt-4 text-muted-foreground"
+                onClick={() => {
+                  setNeedsCode(false);
+                  setUsername("");
+                }}
+              >
+                ← Back to login
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
@@ -97,108 +250,62 @@ export default function LoginPage() {
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl font-bold uppercase tracking-tight">
-              {mode === "join" ? "Join a Society" : "Create a Society"}
+              Welcome Back
             </CardTitle>
             <CardDescription className="text-sm mt-1">
-              {mode === "join" 
-                ? "Enter the code from your society admin" 
-                : "Start a new golf society and invite members"}
+              Enter your name to continue
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
-            {/* Mode Toggle */}
-            <div className="flex gap-2 mb-6">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Your Name</Label>
+                <Input
+                  data-testid="username-input"
+                  type="text"
+                  placeholder="e.g., Phil G"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="rounded-none"
+                  autoFocus
+                />
+              </div>
               <Button
-                type="button"
-                variant={mode === "join" ? "default" : "outline"}
-                className="flex-1 rounded-none"
-                onClick={() => setMode("join")}
+                data-testid="login-button"
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-none uppercase font-bold tracking-widest py-5"
               >
-                <LogIn className="w-4 h-4 mr-2" />
-                Join
+                {loading ? "Loading..." : "Enter"}
               </Button>
-              <Button
-                type="button"
-                variant={mode === "create" ? "default" : "outline"}
-                className="flex-1 rounded-none"
-                onClick={() => setMode("create")}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create
-              </Button>
-            </div>
+            </form>
 
-            {mode === "join" ? (
-              <form onSubmit={handleJoinSociety} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Your Name</Label>
-                  <Input
-                    data-testid="username-input"
-                    type="text"
-                    placeholder="e.g., Phil G"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="rounded-none"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Society Code</Label>
-                  <Input
-                    data-testid="join-code-input"
-                    type="text"
-                    placeholder="e.g., ABC123"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                    className="rounded-none font-mono text-lg tracking-widest text-center uppercase"
-                    maxLength={6}
-                  />
-                </div>
+            <div className="mt-6 pt-6 border-t">
+              <p className="text-sm text-muted-foreground text-center mb-3">
+                New to Stableford Golf?
+              </p>
+              <div className="flex gap-2">
                 <Button
-                  data-testid="join-button"
-                  type="submit"
-                  disabled={loading}
-                  className="w-full rounded-none uppercase font-bold tracking-widest py-5"
+                  variant="outline"
+                  className="flex-1 rounded-none"
+                  onClick={() => setNeedsCode(true)}
                 >
-                  {loading ? "Joining..." : "Join Society"}
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Join Society
                 </Button>
-              </form>
-            ) : (
-              <form onSubmit={handleCreateSociety} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Your Name</Label>
-                  <Input
-                    data-testid="username-input"
-                    type="text"
-                    placeholder="e.g., Phil G"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="rounded-none"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Society Name</Label>
-                  <Input
-                    data-testid="society-name-input"
-                    type="text"
-                    placeholder="e.g., Newport Golf Society"
-                    value={societyName}
-                    onChange={(e) => setSocietyName(e.target.value)}
-                    className="rounded-none"
-                  />
-                </div>
                 <Button
-                  data-testid="create-button"
-                  type="submit"
-                  disabled={loading}
-                  className="w-full rounded-none uppercase font-bold tracking-widest py-5"
+                  variant="outline"
+                  className="flex-1 rounded-none"
+                  onClick={() => {
+                    setNeedsCode(true);
+                    setMode("create");
+                  }}
                 >
-                  {loading ? "Creating..." : "Create Society"}
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Society
                 </Button>
-                <p className="text-xs text-muted-foreground text-center">
-                  You'll receive a code to share with members
-                </p>
-              </form>
-            )}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
