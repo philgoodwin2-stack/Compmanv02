@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Users, Flag, TrendingUp, LogOut } from "lucide-react";
+import { Home, Users, Flag, TrendingUp, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/App";
 
@@ -8,6 +8,7 @@ const navItems = [
   { path: "/players", icon: Users, label: "Players" },
   { path: "/courses", icon: Flag, label: "Courses" },
   { path: "/handicap-tracking", icon: TrendingUp, label: "HCP" },
+  { path: "/society", icon: Building2, label: "Society" },
 ];
 
 export default function MobileNav() {
@@ -44,15 +45,6 @@ export default function MobileNav() {
             </button>
           );
         })}
-        {/* Logout button */}
-        <button
-          data-testid="mobile-nav-logout"
-          onClick={logout}
-          className="flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-95 text-white/60 active:text-red-400"
-        >
-          <LogOut className="w-5 h-5" />
-          <span className="text-[9px] mt-1 font-semibold tracking-wide">Logout</span>
-        </button>
       </div>
     </nav>
   );
