@@ -34,6 +34,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { user, logout } = useUser();
   const [competitions, setCompetitions] = useState([]);
+  const [societies, setSocieties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -49,6 +50,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchCompetitions();
+    fetchSocieties();
   }, [user]);
 
   const fetchCompetitions = async () => {
@@ -63,6 +65,15 @@ export default function DashboardPage() {
       toast.error("Failed to load competitions");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSocieties = async () => {
+    try {
+      const response = await axios.get(`${API}/societies`);
+      setSocieties(response.data);
+    } catch (error) {
+      console.error("Failed to load societies");
     }
   };
 
@@ -150,6 +161,7 @@ export default function DashboardPage() {
         start_date: editCompetition.start_date ? format(editCompetition.start_date, "yyyy-MM-dd") : null,
         end_date: editCompetition.end_date ? format(editCompetition.end_date, "yyyy-MM-dd") : null,
         min_rounds: editCompetition.min_rounds || 13,
+        society_id: editCompetition.society_id || null,
       };
       await axios.put(`${API}/competitions/${editCompetition.id}`, payload);
       toast.success("Competition updated!");
@@ -717,6 +729,33 @@ export default function DashboardPage() {
                   className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
                 />
                 <p className="text-xs text-muted-foreground">Players must complete at least this many rounds to qualify</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Society</Label>
+                <Select
+                  value={editCompetition.society_id || "none"}
+                  onValueChange={(value) => setEditCompetition({ 
+                    ...editCompetition, 
+                    society_id: value === "none" ? null : value 
+                  })}
+                >
+                  <SelectTrigger data-testid="edit-society-select" className="rounded-none">
+                    <SelectValue placeholder="Select a society" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Society (Unassigned)</SelectItem>
+                    {societies.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {editCompetition.society_id 
+                    ? "Competition is linked to this society" 
+                    : "⚠️ This competition is not linked to any society"}
+                </p>
               </div>
             </div>
           )}

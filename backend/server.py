@@ -126,6 +126,7 @@ class CompetitionUpdate(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     min_rounds: Optional[int] = None
+    society_id: Optional[str] = None
 
 class Competition(CompetitionBase):
     model_config = ConfigDict(extra="ignore")

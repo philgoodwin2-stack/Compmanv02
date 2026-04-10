@@ -32,8 +32,8 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - `PUT /api/societies/{society_id}` - Update society name, regenerate join code (Admin only)
 - `PUT /api/societies/{society_id}/admin/{player_id}` - Transfer admin rights (Admin only)
 - `DELETE /api/societies/{society_id}/members/{player_id}` - Remove member (Admin only)
-- `GET /api/user-societies/{username}` - **Get all societies a user belongs to**
-- `POST /api/switch-society` - **Switch to a different society**
+- `GET /api/user-societies/{username}` - Get all societies a user belongs to
+- `POST /api/switch-society` - Switch to a different society
 
 #### Invite Link Endpoints
 - `POST /api/societies/{society_id}/invites` - Create shareable invite link (Admin only)
@@ -50,8 +50,8 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 
 #### Competition & Scoring Endpoints
 - `GET /api/competitions` - List competitions (filtered by society_id)
-- `POST /api/competitions` - Create competition
-- `PUT /api/competitions/{id}` - Edit competition (name, description, dates, min_rounds)
+- `POST /api/competitions` - Create competition (auto-links to current society)
+- `PUT /api/competitions/{id}` - Edit competition (name, description, dates, min_rounds, **society_id**)
 - `DELETE /api/competitions/{id}` - Delete competition
 - `/api/competitions/{comp_id}/toggle-round` - Toggle round inclusion in leaderboard
 - `/api/rounds` - Round management with course name, tee, slope rating
@@ -65,13 +65,13 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 
 ### Frontend Pages
 - **Login Page**: Streamlined login - returning users go straight to dashboard
-- **Dashboard**: Competition overview with stats, Edit Competition dialog, responsive header
+- **Dashboard**: Competition overview with stats, Edit Competition dialog (with society selector), responsive header
 - **Players Page**: Card-based layout with admin controls, handicap history
 - **Competition Page**: Tabs for leaderboard, rounds, players
 - **Score Entry Page**: Total Stableford points (simplified)
 - **Handicap Tracking Page**: Handicap changes history by date
 - **Courses Page**: Course management with tees and stroke indices
-- **Society Page**: Society management for admins + **Society Switcher** for multi-society users
+- **Society Page**: Society management for admins + Society Switcher for multi-society users
 - **Join Invite Page**: `/join/:code` - Public page for joining via invite link
 
 ### Features Completed (April 2026)
@@ -87,7 +87,14 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - ✅ Shareable Invite Links (customizable expiration 1-30 days)
 - ✅ Edit Competition (name, description, dates, min_rounds)
 - ✅ Streamlined Login - Returning users with society go directly to dashboard
-- ✅ **Society Switcher** - Users in multiple societies can switch between them (April 10, 2026)
+- ✅ Society Switcher - Users in multiple societies can switch between them
+- ✅ **Competition-Society Linking** - Edit dialog has society dropdown to assign/reassign competitions (April 10, 2026)
+
+## Competition-Society Linking
+- New competitions are automatically linked to the user's current society
+- Legacy competitions without a society can be assigned via the Edit dialog
+- Society dropdown in Edit Competition shows all available societies
+- "No Society (Unassigned)" option available for unlinked competitions
 
 ## Login Flow
 1. **Returning user with society**: Enter name → Goes directly to dashboard (prioritizes users with societies)
@@ -101,13 +108,6 @@ Users who belong to multiple societies can:
 3. Tap any society to switch to it
 4. Current society is highlighted with checkmark
 5. After switching, redirected to dashboard with new society context
-
-## First-Time Setup (Production)
-When deploying to production with an empty database:
-1. Log in with any username (creates new player)
-2. Create a new society (you become admin automatically)
-3. Share join code or create invite links for other players
-4. Admin can manage society settings, members, and data
 
 ## Test Users (Preview Environment)
 - `TestAdmin` - Society: "Test Golf Society", Code: NPFUJH (is_admin: true)
