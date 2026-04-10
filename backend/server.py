@@ -1868,12 +1868,21 @@ async def login(login_data: LoginRequest):
             {"_id": 0}
         )
     else:
-        # Try to find any player with this username
-        player = await db.players.find_one({"username": login_data.username}, {"_id": 0})
-        if player and player.get("society_id"):
+        # Try to find a player with this username who has a society (prioritize this)
+        player = await db.players.find_one(
+            {"username": login_data.username, "society_id": {"$ne": None}}, 
+            {"_id": 0}
+        )
+        if player:
             # Player exists in a society, return it
             return LoginResponse(player=Player(**player), message="Welcome back")
-        elif player and not player.get("society_id"):
+        
+        # Check if player exists without a society
+        player = await db.players.find_one(
+            {"username": login_data.username, "society_id": None}, 
+            {"_id": 0}
+        )
+        if player:
             # Legacy player without society - needs to join one
             return LoginResponse(player=Player(**player), message="Please join or create a society", needs_society=True)
     
@@ -1907,6 +1916,55 @@ async def login(login_data: LoginRequest):
             return LoginResponse(player=new_player, message="Please join or create a society", needs_society=True)
     
     return LoginResponse(player=Player(**player), message="Welcome back")
+
+class UserSociety(BaseModel):
+    society_id: str
+    society_name: str
+    player_id: str
+    is_admin: bool
+
+@api_router.get("/user-societies/{username}")
+async def get_user_societies(username: str):
+    """Get all societies a user belongs to"""
+    # Find all players with this username that have a society
+    players = await db.players.find(
+        {"username": username, "society_id": {"$ne": None}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    if not players:
+        return []
+    
+    # Get society details for each player
+    societies = []
+    for player in players:
+        society = await db.societies.find_one(
+            {"id": player["society_id"]},
+            {"_id": 0}
+        )
+        if society:
+            societies.append(UserSociety(
+                society_id=society["id"],
+                society_name=society["name"],
+                player_id=player["id"],
+                is_admin=player.get("is_admin", False)
+            ))
+    
+    return societies
+
+@api_router.post("/switch-society")
+async def switch_society(username: str, society_id: str):
+    """Switch to a different society for the user"""
+    # Find the player in the target society
+    player = await db.players.find_one(
+        {"username": username, "society_id": society_id},
+        {"_id": 0}
+    )
+    
+    if not player:
+        raise HTTPException(status_code=404, detail="You are not a member of this society")
+    
+    return {"player": Player(**player), "message": "Switched society"}
 
 # ============= ROOT ENDPOINT =============
 

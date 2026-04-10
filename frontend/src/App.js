@@ -85,8 +85,18 @@ function App() {
     setUser(null);
   };
 
+  const switchSociety = async (societyId) => {
+    try {
+      const response = await axios.post(`${API}/switch-society?username=${encodeURIComponent(user.username)}&society_id=${societyId}`);
+      setUser(response.data.player);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   return (
-    <UserContext.Provider value={{ user, login, logout }}>
+    <UserContext.Provider value={{ user, login, logout, switchSociety }}>
       <div className="app-container">
         <BrowserRouter>
           <main className="app-content">

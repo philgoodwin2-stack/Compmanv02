@@ -32,7 +32,9 @@ import {
   Plus,
   Share2,
   Clock,
-  ExternalLink
+  ExternalLink,
+  ArrowLeftRight,
+  Check
 } from "lucide-react";
 import {
   Select,
@@ -44,7 +46,7 @@ import {
 
 export default function SocietyPage() {
   const navigate = useNavigate();
-  const { user, logout } = useUser();
+  const { user, logout, switchSociety } = useUser();
   const [society, setSociety] = useState(null);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +60,8 @@ export default function SocietyPage() {
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteExpiry, setInviteExpiry] = useState("7");
   const [creatingInvite, setCreatingInvite] = useState(false);
+  const [userSocieties, setUserSocieties] = useState([]);
+  const [switchingTo, setSwitchingTo] = useState(null);
 
   const isAdmin = user?.is_admin === true;
 
@@ -65,6 +69,7 @@ export default function SocietyPage() {
     if (user?.society_id) {
       fetchSociety();
       fetchMembers();
+      fetchUserSocieties();
       if (user?.is_admin) {
         fetchInvites();
       }
@@ -91,6 +96,30 @@ export default function SocietyPage() {
       console.error("Failed to load members");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserSocieties = async () => {
+    try {
+      const response = await axios.get(`${API}/user-societies/${encodeURIComponent(user.username)}`);
+      setUserSocieties(response.data);
+    } catch (error) {
+      console.error("Failed to load user societies");
+    }
+  };
+
+  const handleSwitchSociety = async (societyId) => {
+    if (societyId === user?.society_id) return;
+    
+    setSwitchingTo(societyId);
+    try {
+      await switchSociety(societyId);
+      toast.success("Switched society!");
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to switch society");
+    } finally {
+      setSwitchingTo(null);
     }
   };
 
@@ -359,6 +388,59 @@ export default function SocietyPage() {
       </header>
 
       <main className="p-4 space-y-4">
+        {/* Society Switcher (only if user belongs to multiple societies) */}
+        {userSocieties.length > 1 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ArrowLeftRight className="w-5 h-5" />
+                Your Societies
+              </CardTitle>
+              <CardDescription>
+                You belong to {userSocieties.length} societies. Tap to switch.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {userSocieties.map((s) => (
+                  <button
+                    key={s.society_id}
+                    type="button"
+                    onClick={() => handleSwitchSociety(s.society_id)}
+                    disabled={switchingTo === s.society_id}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
+                      s.society_id === user?.society_id
+                        ? 'bg-primary/10 border-2 border-primary'
+                        : 'bg-secondary/30 hover:bg-secondary/50 border-2 border-transparent'
+                    }`}
+                    data-testid={`switch-society-${s.society_id}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Building2 className={`w-5 h-5 ${s.society_id === user?.society_id ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <div className="text-left">
+                        <p className={`font-medium ${s.society_id === user?.society_id ? 'text-primary' : ''}`}>
+                          {s.society_name}
+                        </p>
+                        {s.is_admin && (
+                          <Badge variant="outline" className="text-xs mt-0.5">
+                            <Crown className="w-3 h-3 mr-1" />
+                            Admin
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    {s.society_id === user?.society_id ? (
+                      <Check className="w-5 h-5 text-primary" />
+                    ) : switchingTo === s.society_id ? (
+                      <RefreshCw className="w-5 h-5 animate-spin text-muted-foreground" />
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Society Info Card */}
         <Card>
           <CardHeader className="pb-2">

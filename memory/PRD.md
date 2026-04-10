@@ -32,6 +32,8 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - `PUT /api/societies/{society_id}` - Update society name, regenerate join code (Admin only)
 - `PUT /api/societies/{society_id}/admin/{player_id}` - Transfer admin rights (Admin only)
 - `DELETE /api/societies/{society_id}/members/{player_id}` - Remove member (Admin only)
+- `GET /api/user-societies/{username}` - **Get all societies a user belongs to**
+- `POST /api/switch-society` - **Switch to a different society**
 
 #### Invite Link Endpoints
 - `POST /api/societies/{society_id}/invites` - Create shareable invite link (Admin only)
@@ -69,7 +71,7 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - **Score Entry Page**: Total Stableford points (simplified)
 - **Handicap Tracking Page**: Handicap changes history by date
 - **Courses Page**: Course management with tees and stroke indices
-- **Society Page**: Society management for admins (edit name, regenerate code, transfer admin, remove members, manage invite links)
+- **Society Page**: Society management for admins + **Society Switcher** for multi-society users
 - **Join Invite Page**: `/join/:code` - Public page for joining via invite link
 
 ### Features Completed (April 2026)
@@ -84,12 +86,21 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - ✅ Society Management UI for admins
 - ✅ Shareable Invite Links (customizable expiration 1-30 days)
 - ✅ Edit Competition (name, description, dates, min_rounds)
-- ✅ **Streamlined Login** - Returning users with society go directly to dashboard (April 10, 2026)
+- ✅ Streamlined Login - Returning users with society go directly to dashboard
+- ✅ **Society Switcher** - Users in multiple societies can switch between them (April 10, 2026)
 
 ## Login Flow
-1. **Returning user with society**: Enter name → Goes directly to dashboard
+1. **Returning user with society**: Enter name → Goes directly to dashboard (prioritizes users with societies)
 2. **New user / user without society**: Enter name → Shows Join/Create Society options
 3. Users can join via invite link at `/join/:code`
+
+## Society Switching
+Users who belong to multiple societies can:
+1. Navigate to Society page
+2. See "Your Societies" card showing all their societies
+3. Tap any society to switch to it
+4. Current society is highlighted with checkmark
+5. After switching, redirected to dashboard with new society context
 
 ## First-Time Setup (Production)
 When deploying to production with an empty database:
@@ -100,7 +111,7 @@ When deploying to production with an empty database:
 
 ## Test Users (Preview Environment)
 - `TestAdmin` - Society: "Test Golf Society", Code: NPFUJH (is_admin: true)
-- `phil g` - Multiple instances with different societies
+- `phil g` - Belongs to 7 societies (can test society switching)
 - See `/app/memory/test_credentials.md` for full list
 
 ## Next Tasks (Prioritized)
