@@ -99,12 +99,16 @@ export default function CompetitionPage() {
 
   const fetchData = async () => {
     try {
+      const societyId = user?.society_id;
+      const playersUrl = societyId ? `${API}/players?society_id=${societyId}` : `${API}/players`;
+      const coursesUrl = societyId ? `${API}/courses?society_id=${societyId}` : `${API}/courses`;
+      
       const [compRes, roundsRes, leaderboardRes, playersRes, coursesRes] = await Promise.all([
         axios.get(`${API}/competitions/${id}`),
         axios.get(`${API}/rounds?competition_id=${id}`),
         axios.get(`${API}/leaderboard/${id}`),
-        axios.get(`${API}/players`),
-        axios.get(`${API}/courses`),
+        axios.get(playersUrl),
+        axios.get(coursesUrl),
       ]);
       setCompetition(compRes.data);
       setRounds(roundsRes.data);
