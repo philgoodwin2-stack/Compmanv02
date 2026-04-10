@@ -5,6 +5,7 @@ import { API, useUser } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -19,12 +20,13 @@ import {
   Users, 
   Copy, 
   Shield, 
-  ShieldOff, 
   Crown,
   RefreshCw,
   Building2,
-  UserPlus,
-  LogOut
+  LogOut,
+  Pencil,
+  Trash2,
+  Settings
 } from "lucide-react";
 
 export default function SocietyPage() {
@@ -34,7 +36,11 @@ export default function SocietyPage() {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [regeneratingCode, setRegeneratingCode] = useState(false);
 
   const isAdmin = user?.is_admin === true;
 
@@ -51,6 +57,7 @@ export default function SocietyPage() {
     try {
       const response = await axios.get(`${API}/societies/${user.society_id}`);
       setSociety(response.data);
+      setEditName(response.data.name);
     } catch (error) {
       console.error("Failed to load society");
     }
@@ -74,6 +81,45 @@ export default function SocietyPage() {
     }
   };
 
+  const handleUpdateSociety = async () => {
+    if (!editName.trim()) {
+      toast.error("Society name is required");
+      return;
+    }
+    
+    try {
+      const response = await axios.put(
+        `${API}/societies/${user.society_id}?admin_id=${user.id}`,
+        { name: editName.trim() }
+      );
+      setSociety(response.data);
+      setShowEditDialog(false);
+      toast.success("Society updated!");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to update society");
+    }
+  };
+
+  const handleRegenerateCode = async () => {
+    if (!confirm("Are you sure? All existing join links will stop working.")) {
+      return;
+    }
+    
+    setRegeneratingCode(true);
+    try {
+      const response = await axios.put(
+        `${API}/societies/${user.society_id}?admin_id=${user.id}`,
+        { regenerate_code: true }
+      );
+      setSociety(response.data);
+      toast.success(`New join code: ${response.data.join_code}`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to regenerate code");
+    } finally {
+      setRegeneratingCode(false);
+    }
+  };
+
   const handleTransferAdmin = async () => {
     if (!selectedMember) return;
     
@@ -89,6 +135,22 @@ export default function SocietyPage() {
       window.location.reload();
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to transfer admin");
+    }
+  };
+
+  const handleRemoveMember = async () => {
+    if (!selectedMember) return;
+    
+    try {
+      await axios.delete(
+        `${API}/societies/${user.society_id}/members/${selectedMember.id}?admin_id=${user.id}`
+      );
+      toast.success(`${selectedMember.username} removed from society`);
+      setShowRemoveDialog(false);
+      setSelectedMember(null);
+      fetchMembers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to remove member");
     }
   };
 
@@ -155,7 +217,18 @@ export default function SocietyPage() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-xl font-bold uppercase tracking-wider">Society</h1>
-          <div className="w-10" />
+          {isAdmin ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowEditDialog(true)}
+              className="text-white hover:bg-white/10"
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
+          ) : (
+            <div className="w-10" />
+          )}
         </div>
       </header>
 
@@ -167,7 +240,7 @@ export default function SocietyPage() {
               <div className="bg-primary/10 p-3 rounded-full">
                 <Building2 className="w-6 h-6 text-primary" />
               </div>
-              <div>
+              <div className="flex-1">
                 <CardTitle className="text-xl">{society?.name || "Loading..."}</CardTitle>
                 <CardDescription>{members.length} member{members.length !== 1 ? 's' : ''}</CardDescription>
               </div>
@@ -178,7 +251,7 @@ export default function SocietyPage() {
             <div className="bg-secondary/50 p-4 rounded-lg">
               <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">Join Code</p>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-mono font-bold tracking-widest">
+                <span className="text-2xl font-mono font-bold tracking-widest flex-1">
                   {society?.join_code || "------"}
                 </span>
                 <Button
@@ -186,9 +259,22 @@ export default function SocietyPage() {
                   size="icon"
                   onClick={copyJoinCode}
                   className="h-8 w-8"
+                  title="Copy code"
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
+                {isAdmin && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleRegenerateCode}
+                    disabled={regeneratingCode}
+                    className="h-8 w-8"
+                    title="Generate new code"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${regeneratingCode ? 'animate-spin' : ''}`} />
+                  </Button>
+                )}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 Share this code with others to let them join your society
@@ -256,20 +342,34 @@ export default function SocietyPage() {
                         </div>
                       </div>
                       
-                      {/* Transfer Admin Button (only for admin, not self) */}
+                      {/* Admin Actions */}
                       {isAdmin && !member.is_admin && member.id !== user.id && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedMember(member);
-                            setShowTransferDialog(true);
-                          }}
-                          className="text-xs"
-                        >
-                          <Shield className="w-4 h-4 mr-1" />
-                          Make Admin
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedMember(member);
+                              setShowTransferDialog(true);
+                            }}
+                            className="h-8 w-8 p-0"
+                            title="Make Admin"
+                          >
+                            <Shield className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedMember(member);
+                              setShowRemoveDialog(true);
+                            }}
+                            className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                            title="Remove Member"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -293,6 +393,34 @@ export default function SocietyPage() {
         </Card>
       </main>
 
+      {/* Edit Society Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Society</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Society Name</Label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Society name"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateSociety}>
+              <Pencil className="w-4 h-4 mr-2" />
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Transfer Admin Dialog */}
       <Dialog open={showTransferDialog} onOpenChange={setShowTransferDialog}>
         <DialogContent>
@@ -310,6 +438,28 @@ export default function SocietyPage() {
             <Button onClick={handleTransferAdmin}>
               <Shield className="w-4 h-4 mr-2" />
               Transfer Admin
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Member Dialog */}
+      <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Member</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to remove <strong>{selectedMember?.username}</strong> from the society? 
+            They will need to rejoin with the code to access the society again.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRemoveDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleRemoveMember}>
+              <Trash2 className="w-4 h-4 mr-2" />
+              Remove Member
             </Button>
           </DialogFooter>
         </DialogContent>

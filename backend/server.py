@@ -331,6 +331,64 @@ async def set_society_admin(society_id: str, player_id: str, current_admin_id: s
     
     return {"message": "Admin changed successfully"}
 
+class SocietyUpdate(BaseModel):
+    name: Optional[str] = None
+    regenerate_code: Optional[bool] = False
+
+@api_router.put("/societies/{society_id}")
+async def update_society(society_id: str, update_data: SocietyUpdate, admin_id: str = None):
+    """Update society details (Admin only)"""
+    society = await db.societies.find_one({"id": society_id}, {"_id": 0})
+    if not society:
+        raise HTTPException(status_code=404, detail="Society not found")
+    
+    # Verify admin
+    if admin_id and society.get("admin_id") != admin_id:
+        raise HTTPException(status_code=403, detail="Only admin can update society details")
+    
+    update_fields = {}
+    
+    if update_data.name:
+        update_fields["name"] = update_data.name
+    
+    if update_data.regenerate_code:
+        # Generate new join code
+        new_code = ''.join(random.choices('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', k=6))
+        update_fields["join_code"] = new_code
+    
+    if update_fields:
+        await db.societies.update_one(
+            {"id": society_id},
+            {"$set": update_fields}
+        )
+    
+    # Return updated society
+    updated = await db.societies.find_one({"id": society_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/societies/{society_id}/members/{player_id}")
+async def remove_member(society_id: str, player_id: str, admin_id: str = None):
+    """Remove a member from the society (Admin only)"""
+    society = await db.societies.find_one({"id": society_id}, {"_id": 0})
+    if not society:
+        raise HTTPException(status_code=404, detail="Society not found")
+    
+    # Verify admin
+    if admin_id and society.get("admin_id") != admin_id:
+        raise HTTPException(status_code=403, detail="Only admin can remove members")
+    
+    # Can't remove admin
+    if player_id == society.get("admin_id"):
+        raise HTTPException(status_code=400, detail="Cannot remove admin. Transfer admin first.")
+    
+    # Remove player from society
+    await db.players.update_one(
+        {"id": player_id},
+        {"$set": {"society_id": None}}
+    )
+    
+    return {"message": "Member removed successfully"}
+
 # ============= HELPER FUNCTIONS =============
 
 def calculate_stableford(strokes: int, par: int, handicap_strokes: int) -> int:
