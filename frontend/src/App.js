@@ -59,9 +59,13 @@ function App() {
     }
   }, [user]);
 
-  const login = async (username) => {
+  const login = async (username, societyId = null, joinCode = null) => {
     try {
-      const response = await axios.post(`${API}/login`, { username });
+      const payload = { username };
+      if (societyId) payload.society_id = societyId;
+      if (joinCode) payload.join_code = joinCode;
+      
+      const response = await axios.post(`${API}/login`, payload);
       setUser(response.data.player);
       return response.data;
     } catch (error) {

@@ -1,29 +1,73 @@
 import { useState } from "react";
-import { useUser } from "@/App";
+import { useUser, API } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Flag, Trophy, Users } from "lucide-react";
+import { Flag, Trophy, Users, Plus, LogIn } from "lucide-react";
+import axios from "axios";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
+  const [joinCode, setJoinCode] = useState("");
+  const [societyName, setSocietyName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState("join"); // "join" or "create"
   const { login } = useUser();
 
-  const handleSubmit = async (e) => {
+  const handleJoinSociety = async (e) => {
     e.preventDefault();
     if (!username.trim()) {
-      toast.error("Please enter a username");
+      toast.error("Please enter your name");
+      return;
+    }
+    if (!joinCode.trim()) {
+      toast.error("Please enter a society code");
       return;
     }
 
     setLoading(true);
     try {
-      const result = await login(username.trim());
+      const result = await login(username.trim(), null, joinCode.trim().toUpperCase());
       toast.success(result.message);
     } catch (error) {
-      toast.error("Login failed. Please try again.");
+      toast.error(error.response?.data?.detail || "Invalid society code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateSociety = async (e) => {
+    e.preventDefault();
+    if (!username.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+    if (!societyName.trim()) {
+      toast.error("Please enter a society name");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // First create the society
+      const societyResponse = await axios.post(`${API}/societies`, {
+        name: societyName.trim()
+      });
+      const society = societyResponse.data;
+      
+      // Then login with the new society
+      const result = await login(username.trim(), society.id, null);
+      
+      toast.success(`Society created! Your join code is: ${society.join_code}`);
+      
+      // Show the join code in an alert for copying
+      setTimeout(() => {
+        alert(`Share this code with your society members:\n\n${society.join_code}\n\nYou are now the admin of ${society.name}`);
+      }, 500);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to create society");
     } finally {
       setLoading(false);
     }
@@ -32,88 +76,154 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
-      <div className="golf-header text-white py-16 px-4 flex-shrink-0">
+      <div className="golf-header text-white py-12 px-4 flex-shrink-0">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="flex justify-center mb-6">
-            <div className="bg-white/10 p-4 rounded-full">
-              <Flag className="w-12 h-12 text-[#D4AF37]" />
+          <div className="flex justify-center mb-4">
+            <div className="bg-white/10 p-3 rounded-full">
+              <Flag className="w-10 h-10 text-[#D4AF37]" />
             </div>
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight uppercase mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight uppercase mb-2">
             Stableford Golf
           </h1>
-          <p className="text-xl md:text-2xl text-white/80 font-light">
+          <p className="text-lg md:text-xl text-white/80 font-light">
             Track scores. Compete. Win.
           </p>
         </div>
       </div>
 
       {/* Login Section */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-secondary/30">
-        <Card className="w-full max-w-md shadow-lg border-l-4 border-l-primary">
+      <div className="flex-1 flex items-center justify-center p-4 bg-secondary/30">
+        <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-3xl font-bold uppercase tracking-tight">
-              Enter the Clubhouse
+            <CardTitle className="text-2xl font-bold uppercase tracking-tight">
+              {mode === "join" ? "Join a Society" : "Create a Society"}
             </CardTitle>
-            <CardDescription className="text-base mt-2">
-              Enter your name to join or create your profile
+            <CardDescription className="text-sm mt-1">
+              {mode === "join" 
+                ? "Enter the code from your society admin" 
+                : "Start a new golf society and invite members"}
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Input
-                  data-testid="username-input"
-                  type="text"
-                  placeholder="Your name"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="text-lg py-6 border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary placeholder:text-muted-foreground/50"
-                />
-              </div>
+          <CardContent className="pt-4">
+            {/* Mode Toggle */}
+            <div className="flex gap-2 mb-6">
               <Button
-                data-testid="login-button"
-                type="submit"
-                disabled={loading}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest py-6 text-lg"
+                type="button"
+                variant={mode === "join" ? "default" : "outline"}
+                className="flex-1 rounded-none"
+                onClick={() => setMode("join")}
               >
-                {loading ? "Entering..." : "Enter"}
+                <LogIn className="w-4 h-4 mr-2" />
+                Join
               </Button>
-            </form>
+              <Button
+                type="button"
+                variant={mode === "create" ? "default" : "outline"}
+                className="flex-1 rounded-none"
+                onClick={() => setMode("create")}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create
+              </Button>
+            </div>
+
+            {mode === "join" ? (
+              <form onSubmit={handleJoinSociety} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Your Name</Label>
+                  <Input
+                    data-testid="username-input"
+                    type="text"
+                    placeholder="e.g., Phil G"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="rounded-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Society Code</Label>
+                  <Input
+                    data-testid="join-code-input"
+                    type="text"
+                    placeholder="e.g., ABC123"
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    className="rounded-none font-mono text-lg tracking-widest text-center uppercase"
+                    maxLength={6}
+                  />
+                </div>
+                <Button
+                  data-testid="join-button"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-none uppercase font-bold tracking-widest py-5"
+                >
+                  {loading ? "Joining..." : "Join Society"}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleCreateSociety} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Your Name</Label>
+                  <Input
+                    data-testid="username-input"
+                    type="text"
+                    placeholder="e.g., Phil G"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="rounded-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Society Name</Label>
+                  <Input
+                    data-testid="society-name-input"
+                    type="text"
+                    placeholder="e.g., Newport Golf Society"
+                    value={societyName}
+                    onChange={(e) => setSocietyName(e.target.value)}
+                    className="rounded-none"
+                  />
+                </div>
+                <Button
+                  data-testid="create-button"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-none uppercase font-bold tracking-widest py-5"
+                >
+                  {loading ? "Creating..." : "Create Society"}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  You'll receive a code to share with members
+                </p>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Features Section */}
-      <div className="bg-background py-12 px-4">
+      <div className="bg-background py-8 px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
-              <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trophy className="w-8 h-8 text-primary" />
+              <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Trophy className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-bold uppercase tracking-wide mb-2">Stableford Scoring</h3>
-              <p className="text-muted-foreground text-sm">
-                Automatic point calculation based on your handicap
-              </p>
+              <h3 className="font-bold text-xs uppercase tracking-wide">Scoring</h3>
             </div>
             <div className="text-center">
-              <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-primary" />
+              <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Users className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-bold uppercase tracking-wide mb-2">Competitions</h3>
-              <p className="text-muted-foreground text-sm">
-                Create and manage multi-round tournaments
-              </p>
+              <h3 className="font-bold text-xs uppercase tracking-wide">Compete</h3>
             </div>
             <div className="text-center">
-              <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Flag className="w-8 h-8 text-primary" />
+              <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Flag className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-bold uppercase tracking-wide mb-2">Handicap Tracking</h3>
-              <p className="text-muted-foreground text-sm">
-                Track and update player handicaps easily
-              </p>
+              <h3 className="font-bold text-xs uppercase tracking-wide">Handicaps</h3>
             </div>
           </div>
         </div>

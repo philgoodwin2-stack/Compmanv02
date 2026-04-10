@@ -46,11 +46,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchCompetitions();
-  }, []);
+  }, [user]);
 
   const fetchCompetitions = async () => {
     try {
-      const response = await axios.get(`${API}/competitions`);
+      const societyId = user?.society_id;
+      const url = societyId 
+        ? `${API}/competitions?society_id=${societyId}`
+        : `${API}/competitions`;
+      const response = await axios.get(url);
       setCompetitions(response.data);
     } catch (error) {
       toast.error("Failed to load competitions");
@@ -70,6 +74,7 @@ export default function DashboardPage() {
         ...newCompetition,
         start_date: newCompetition.start_date ? format(newCompetition.start_date, "yyyy-MM-dd") : null,
         end_date: newCompetition.end_date ? format(newCompetition.end_date, "yyyy-MM-dd") : null,
+        society_id: user?.society_id || null,
       };
       await axios.post(`${API}/competitions`, payload);
       toast.success("Competition created!");

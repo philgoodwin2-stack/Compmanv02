@@ -70,11 +70,15 @@ export default function CoursesPage() {
 
   useEffect(() => {
     fetchCourses();
-  }, []);
+  }, [user]);
 
   const fetchCourses = async () => {
     try {
-      const response = await axios.get(`${API}/courses`);
+      const societyId = user?.society_id;
+      const url = societyId 
+        ? `${API}/courses?society_id=${societyId}`
+        : `${API}/courses`;
+      const response = await axios.get(url);
       setCourses(response.data);
     } catch (error) {
       toast.error("Failed to load courses");
@@ -98,7 +102,11 @@ export default function CoursesPage() {
     }
 
     try {
-      await axios.post(`${API}/courses?user_id=${user?.id}`, newCourse);
+      const payload = {
+        ...newCourse,
+        society_id: user?.society_id || null,
+      };
+      await axios.post(`${API}/courses?user_id=${user?.id}`, payload);
       toast.success("Course created!");
       setShowAddDialog(false);
       setNewCourse({

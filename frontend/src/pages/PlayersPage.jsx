@@ -227,7 +227,11 @@ export default function PlayersPage() {
 
   const fetchPlayers = async () => {
     try {
-      const response = await axios.get(`${API}/players`);
+      const societyId = user?.society_id;
+      const url = societyId 
+        ? `${API}/players?society_id=${societyId}`
+        : `${API}/players`;
+      const response = await axios.get(url);
       setPlayers(response.data);
     } catch (error) {
       toast.error("Failed to load players");
@@ -243,7 +247,11 @@ export default function PlayersPage() {
     }
 
     try {
-      await axios.post(`${API}/players`, newPlayer);
+      const payload = {
+        ...newPlayer,
+        society_id: user?.society_id || null,
+      };
+      await axios.post(`${API}/players`, payload);
       toast.success("Player added!");
       setShowAddDialog(false);
       setNewPlayer({ username: "", handicap: 18, team_logo: "" });

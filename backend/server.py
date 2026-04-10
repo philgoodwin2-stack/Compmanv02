@@ -4,6 +4,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import random
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
@@ -33,12 +34,27 @@ api_router = APIRouter(prefix="/api")
 
 # ============= MODELS =============
 
+# Society Models
+class SocietyBase(BaseModel):
+    name: str
+
+class SocietyCreate(SocietyBase):
+    pass
+
+class Society(SocietyBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    join_code: str = Field(default_factory=lambda: ''.join(random.choices('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', k=6)))
+    admin_id: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 class PlayerBase(BaseModel):
     username: str
     handicap: float = 18.0
     is_active: bool = True
     is_admin: bool = False
     team_logo: str = ""
+    society_id: Optional[str] = None
 
 class PlayerCreate(PlayerBase):
     pass
@@ -49,6 +65,7 @@ class PlayerUpdate(BaseModel):
     is_active: Optional[bool] = None
     is_admin: Optional[bool] = None
     team_logo: Optional[str] = None
+    society_id: Optional[str] = None
 
 class HandicapRecord(BaseModel):
     date: str
@@ -83,6 +100,7 @@ class CompetitionBase(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     min_rounds: int = 13
+    society_id: Optional[str] = None
 
 class CompetitionCreate(CompetitionBase):
     pass
@@ -103,6 +121,7 @@ class Competition(CompetitionBase):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     min_rounds: int = 13
+    society_id: Optional[str] = None
 
 class RoundBase(BaseModel):
     competition_id: str
@@ -183,6 +202,7 @@ class CourseBase(BaseModel):
     course_rating: float = 72.0
     total_par: int = 72
     holes: List[HoleInfo] = []
+    society_id: Optional[str] = None
 
 class CourseCreate(CourseBase):
     pass
@@ -199,6 +219,7 @@ class Course(CourseBase):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    society_id: Optional[str] = None
 
 
 # ============= ADMIN CHECK HELPER =============
@@ -214,6 +235,101 @@ async def require_admin(user_id: str):
     """Raise exception if user is not admin"""
     if not await check_admin(user_id):
         raise HTTPException(status_code=403, detail="Admin access required")
+
+# ============= SOCIETY ENDPOINTS =============
+
+@api_router.post("/societies", response_model=Society)
+async def create_society(society_data: SocietyCreate, creator_username: str = None):
+    """Create a new society. The creator becomes the admin."""
+    society = Society(**society_data.model_dump())
+    
+    await db.societies.insert_one(society.model_dump())
+    
+    return society
+
+@api_router.get("/societies", response_model=List[Society])
+async def get_societies():
+    """Get all societies (for admin purposes)"""
+    societies = await db.societies.find({}, {"_id": 0}).to_list(1000)
+    return societies
+
+@api_router.get("/societies/{society_id}", response_model=Society)
+async def get_society(society_id: str):
+    """Get a specific society by ID"""
+    society = await db.societies.find_one({"id": society_id}, {"_id": 0})
+    if not society:
+        raise HTTPException(status_code=404, detail="Society not found")
+    return society
+
+@api_router.get("/societies/code/{join_code}")
+async def get_society_by_code(join_code: str):
+    """Get a society by its join code"""
+    society = await db.societies.find_one({"join_code": join_code.upper()}, {"_id": 0})
+    if not society:
+        raise HTTPException(status_code=404, detail="Society not found with that code")
+    return society
+
+@api_router.post("/societies/{society_id}/join")
+async def join_society(society_id: str, player_id: str):
+    """Join a society as a player"""
+    society = await db.societies.find_one({"id": society_id}, {"_id": 0})
+    if not society:
+        raise HTTPException(status_code=404, detail="Society not found")
+    
+    # Update player's society_id
+    result = await db.players.update_one(
+        {"id": player_id},
+        {"$set": {"society_id": society_id}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    # Check if this is the first player in the society - make them admin
+    player_count = await db.players.count_documents({"society_id": society_id})
+    if player_count == 1:
+        # First player becomes society admin
+        await db.players.update_one(
+            {"id": player_id},
+            {"$set": {"is_admin": True}}
+        )
+        await db.societies.update_one(
+            {"id": society_id},
+            {"$set": {"admin_id": player_id}}
+        )
+        return {"message": "Joined society and became admin (first member)", "is_admin": True}
+    
+    return {"message": "Joined society successfully", "is_admin": False}
+
+@api_router.put("/societies/{society_id}/admin/{player_id}")
+async def set_society_admin(society_id: str, player_id: str, current_admin_id: str = None):
+    """Set a new admin for the society (current admin only)"""
+    society = await db.societies.find_one({"id": society_id}, {"_id": 0})
+    if not society:
+        raise HTTPException(status_code=404, detail="Society not found")
+    
+    # Verify current user is admin (if provided)
+    if current_admin_id and society.get("admin_id") != current_admin_id:
+        raise HTTPException(status_code=403, detail="Only current admin can change admin")
+    
+    # Remove admin from old admin
+    if society.get("admin_id"):
+        await db.players.update_one(
+            {"id": society["admin_id"]},
+            {"$set": {"is_admin": False}}
+        )
+    
+    # Set new admin
+    await db.players.update_one(
+        {"id": player_id},
+        {"$set": {"is_admin": True}}
+    )
+    await db.societies.update_one(
+        {"id": society_id},
+        {"$set": {"admin_id": player_id}}
+    )
+    
+    return {"message": "Admin changed successfully"}
 
 # ============= HELPER FUNCTIONS =============
 
@@ -338,15 +454,22 @@ def calculate_handicap_index(differentials: List[float]) -> float:
 # ============= PLAYER ENDPOINTS =============
 
 @api_router.get("/players", response_model=List[Player])
-async def get_players(active_only: bool = False):
-    query = {"is_active": True} if active_only else {}
+async def get_players(active_only: bool = False, society_id: Optional[str] = None):
+    query = {}
+    if active_only:
+        query["is_active"] = True
+    if society_id:
+        query["society_id"] = society_id
     players = await db.players.find(query, {"_id": 0}).to_list(1000)
     return players
 
 @api_router.get("/admin-status")
-async def get_admin_status():
-    """Check if any admins exist in the system"""
-    admin_count = await db.players.count_documents({"is_admin": True})
+async def get_admin_status(society_id: Optional[str] = None):
+    """Check if any admins exist in the system or society"""
+    query = {"is_admin": True}
+    if society_id:
+        query["society_id"] = society_id
+    admin_count = await db.players.count_documents(query)
     return {"has_admins": admin_count > 0, "admin_count": admin_count}
 
 @api_router.get("/players/{player_id}", response_model=Player)
@@ -855,9 +978,12 @@ async def delete_score_differential(player_id: str, date: str, user_id: str = No
 # ============= COURSE ENDPOINTS =============
 
 @api_router.get("/courses", response_model=List[Course])
-async def get_courses():
-    """Get all courses"""
-    courses = await db.courses.find({}, {"_id": 0}).to_list(1000)
+async def get_courses(society_id: Optional[str] = None):
+    """Get all courses, optionally filtered by society"""
+    query = {}
+    if society_id:
+        query["society_id"] = society_id
+    courses = await db.courses.find(query, {"_id": 0}).to_list(1000)
     return courses
 
 @api_router.get("/courses/{course_id}", response_model=Course)
@@ -927,8 +1053,11 @@ async def delete_course(course_id: str, user_id: str = None):
 # ============= COMPETITION ENDPOINTS =============
 
 @api_router.get("/competitions", response_model=List[Competition])
-async def get_competitions():
-    competitions = await db.competitions.find({}, {"_id": 0}).to_list(1000)
+async def get_competitions(society_id: Optional[str] = None):
+    query = {}
+    if society_id:
+        query["society_id"] = society_id
+    competitions = await db.competitions.find(query, {"_id": 0}).to_list(1000)
     return competitions
 
 @api_router.get("/competitions/{competition_id}", response_model=Competition)
@@ -1493,20 +1622,70 @@ async def get_leaderboard(competition_id: str):
 
 class LoginRequest(BaseModel):
     username: str
+    society_id: Optional[str] = None
+    join_code: Optional[str] = None
 
 class LoginResponse(BaseModel):
     player: Player
     message: str
+    needs_society: bool = False
 
 @api_router.post("/login", response_model=LoginResponse)
 async def login(login_data: LoginRequest):
-    player = await db.players.find_one({"username": login_data.username}, {"_id": 0})
+    # If join_code provided, find society
+    society_id = login_data.society_id
+    if login_data.join_code:
+        society = await db.societies.find_one({"join_code": login_data.join_code.upper()}, {"_id": 0})
+        if society:
+            society_id = society["id"]
+        else:
+            raise HTTPException(status_code=404, detail="Invalid society code")
+    
+    # Find player by username AND society
+    if society_id:
+        player = await db.players.find_one(
+            {"username": login_data.username, "society_id": society_id}, 
+            {"_id": 0}
+        )
+    else:
+        # Try to find any player with this username
+        player = await db.players.find_one({"username": login_data.username}, {"_id": 0})
+        if player and player.get("society_id"):
+            # Player exists in a society, return it
+            return LoginResponse(player=Player(**player), message="Welcome back")
+        elif player and not player.get("society_id"):
+            # Legacy player without society - needs to join one
+            return LoginResponse(player=Player(**player), message="Please join or create a society", needs_society=True)
+    
     if not player:
-        # Create new player
-        new_player = Player(username=login_data.username)
-        doc = new_player.model_dump()
-        await db.players.insert_one(doc)
-        return LoginResponse(player=new_player, message="New player created")
+        if society_id:
+            # Create new player in this society
+            new_player = Player(username=login_data.username, society_id=society_id)
+            doc = new_player.model_dump()
+            await db.players.insert_one(doc)
+            
+            # Check if first player in society - make them admin
+            player_count = await db.players.count_documents({"society_id": society_id})
+            if player_count == 1:
+                await db.players.update_one(
+                    {"id": new_player.id},
+                    {"$set": {"is_admin": True}}
+                )
+                await db.societies.update_one(
+                    {"id": society_id},
+                    {"$set": {"admin_id": new_player.id}}
+                )
+                new_player.is_admin = True
+                return LoginResponse(player=new_player, message="New player created - you are the society admin!")
+            
+            return LoginResponse(player=new_player, message="New player created")
+        else:
+            # No society - prompt user to join or create one
+            new_player = Player(username=login_data.username)
+            doc = new_player.model_dump()
+            await db.players.insert_one(doc)
+            return LoginResponse(player=new_player, message="Please join or create a society", needs_society=True)
+    
     return LoginResponse(player=Player(**player), message="Welcome back")
 
 # ============= ROOT ENDPOINT =============
