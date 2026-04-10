@@ -33,6 +33,13 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - `PUT /api/societies/{society_id}/admin/{player_id}` - Transfer admin rights (Admin only)
 - `DELETE /api/societies/{society_id}/members/{player_id}` - Remove member (Admin only)
 
+#### Invite Link Endpoints (NEW - April 10, 2026)
+- `POST /api/societies/{society_id}/invites` - Create shareable invite link (Admin only)
+- `GET /api/societies/{society_id}/invites` - List active invite links (Admin only)
+- `GET /api/invites/{code}` - Get invite details (Public)
+- `POST /api/invites/{code}/join` - Join society via invite link (Public)
+- `DELETE /api/societies/{society_id}/invites/{invite_id}` - Revoke invite link (Admin only)
+
 #### Player & Auth Endpoints
 - `/api/login` - Simple username login (creates player if not exists)
 - `/api/players` - CRUD for player management with handicap
@@ -59,7 +66,8 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - **Score Entry Page**: Total Stableford points (simplified)
 - **Handicap Tracking Page**: Handicap changes history by date
 - **Courses Page**: Course management with tees and stroke indices
-- **Society Page**: Society management for admins (edit name, regenerate code, transfer admin, remove members)
+- **Society Page**: Society management for admins (edit name, regenerate code, transfer admin, remove members, manage invite links)
+- **Join Invite Page** (NEW): `/join/:code` - Public page for joining via invite link
 
 ### Features Completed (April 2026)
 - ✅ PWA with mobile bottom navigation (Safari-compatible flex layout)
@@ -71,12 +79,17 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - ✅ "The Open Championship" style leaderboard with dropped rounds
 - ✅ Multi-tenant Society Architecture (data isolated by society_id)
 - ✅ Society Management UI for admins (TESTED - April 10, 2026)
+- ✅ **Shareable Invite Links** (TESTED - April 10, 2026)
+  - Create invite links with customizable expiration (1-30 days, default 7)
+  - Unlimited uses per link
+  - Share via WhatsApp/text/email or copy to clipboard
+  - Public `/join/:code` page for easy onboarding
 
 ## First-Time Setup (Production)
 When deploying to production with an empty database:
 1. Log in with any username (creates new player)
-2. Create a new society or join existing one with code
-3. First member of a society becomes admin automatically
+2. Create a new society (you become admin automatically)
+3. Share join code or create invite links for other players
 4. Admin can manage society settings, members, and data
 
 ## Test Users (Preview Environment)
