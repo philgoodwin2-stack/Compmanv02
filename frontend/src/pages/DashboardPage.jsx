@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
   DialogFooter,
   DialogClose,
@@ -580,6 +581,9 @@ export default function DashboardPage() {
             <DialogTitle className="text-2xl font-bold uppercase tracking-tight">
               Edit Competition
             </DialogTitle>
+            <DialogDescription>
+              Update competition details including name, dates, and settings.
+            </DialogDescription>
           </DialogHeader>
           {editCompetition && (
             <div className="space-y-4 py-2">

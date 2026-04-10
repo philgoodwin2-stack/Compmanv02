@@ -33,7 +33,7 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - `PUT /api/societies/{society_id}/admin/{player_id}` - Transfer admin rights (Admin only)
 - `DELETE /api/societies/{society_id}/members/{player_id}` - Remove member (Admin only)
 
-#### Invite Link Endpoints (NEW - April 10, 2026)
+#### Invite Link Endpoints
 - `POST /api/societies/{society_id}/invites` - Create shareable invite link (Admin only)
 - `GET /api/societies/{society_id}/invites` - List active invite links (Admin only)
 - `GET /api/invites/{code}` - Get invite details (Public)
@@ -47,7 +47,10 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - `/api/admin-status` - Check if any admins exist in system
 
 #### Competition & Scoring Endpoints
-- `/api/competitions` - CRUD for competitions with start/end dates, min_rounds
+- `GET /api/competitions` - List competitions (filtered by society_id)
+- `POST /api/competitions` - Create competition
+- `PUT /api/competitions/{id}` - **Edit competition** (name, description, dates, min_rounds)
+- `DELETE /api/competitions/{id}` - Delete competition
 - `/api/competitions/{comp_id}/toggle-round` - Toggle round inclusion in leaderboard
 - `/api/rounds` - Round management with course name, tee, slope rating
 - `/api/scores` - Simplified total Stableford points entry
@@ -60,14 +63,14 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 
 ### Frontend Pages
 - **Login Page**: Username entry with society join/create flow
-- **Dashboard**: Competition overview with stats, responsive header
+- **Dashboard**: Competition overview with stats, **Edit Competition** dialog, responsive header
 - **Players Page**: Card-based layout with admin controls, handicap history
 - **Competition Page**: Tabs for leaderboard, rounds, players
 - **Score Entry Page**: Total Stableford points (simplified)
 - **Handicap Tracking Page**: Handicap changes history by date
 - **Courses Page**: Course management with tees and stroke indices
 - **Society Page**: Society management for admins (edit name, regenerate code, transfer admin, remove members, manage invite links)
-- **Join Invite Page** (NEW): `/join/:code` - Public page for joining via invite link
+- **Join Invite Page**: `/join/:code` - Public page for joining via invite link
 
 ### Features Completed (April 2026)
 - ✅ PWA with mobile bottom navigation (Safari-compatible flex layout)
@@ -78,12 +81,9 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - ✅ Handicap history with WHS calculations
 - ✅ "The Open Championship" style leaderboard with dropped rounds
 - ✅ Multi-tenant Society Architecture (data isolated by society_id)
-- ✅ Society Management UI for admins (TESTED - April 10, 2026)
-- ✅ **Shareable Invite Links** (TESTED - April 10, 2026)
-  - Create invite links with customizable expiration (1-30 days, default 7)
-  - Unlimited uses per link
-  - Share via WhatsApp/text/email or copy to clipboard
-  - Public `/join/:code` page for easy onboarding
+- ✅ Society Management UI for admins
+- ✅ Shareable Invite Links (customizable expiration 1-30 days)
+- ✅ **Edit Competition** - Edit name, description, dates, min_rounds (TESTED - April 10, 2026)
 
 ## First-Time Setup (Production)
 When deploying to production with an empty database:
