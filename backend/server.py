@@ -48,6 +48,20 @@ class Society(SocietyBase):
     admin_id: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+# Invite Link Models
+class InviteCreate(BaseModel):
+    expires_in_days: int = 7  # Default 7 days
+
+class InviteLink(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    society_id: str
+    code: str = Field(default_factory=lambda: ''.join(random.choices('abcdefghjkmnpqrstuvwxyz23456789', k=8)))
+    created_by: str  # Admin player_id
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    expires_at: str  # ISO datetime string
+    is_active: bool = True
+
 class PlayerBase(BaseModel):
     username: str
     handicap: float = 18.0
@@ -388,6 +402,154 @@ async def remove_member(society_id: str, player_id: str, admin_id: str = None):
     )
     
     return {"message": "Member removed successfully"}
+
+# ============= INVITE LINK ENDPOINTS =============
+
+@api_router.post("/societies/{society_id}/invites")
+async def create_invite_link(society_id: str, invite_data: InviteCreate, admin_id: str = None):
+    """Create a shareable invite link for a society (Admin only)"""
+    society = await db.societies.find_one({"id": society_id}, {"_id": 0})
+    if not society:
+        raise HTTPException(status_code=404, detail="Society not found")
+    
+    # Verify admin
+    if admin_id and society.get("admin_id") != admin_id:
+        raise HTTPException(status_code=403, detail="Only admin can create invite links")
+    
+    # Calculate expiration
+    expires_at = datetime.now(timezone.utc) + timedelta(days=invite_data.expires_in_days)
+    
+    invite = InviteLink(
+        society_id=society_id,
+        created_by=admin_id or society.get("admin_id"),
+        expires_at=expires_at.isoformat()
+    )
+    
+    await db.invite_links.insert_one(invite.model_dump())
+    
+    return {
+        "id": invite.id,
+        "code": invite.code,
+        "society_id": invite.society_id,
+        "society_name": society["name"],
+        "expires_at": invite.expires_at,
+        "created_at": invite.created_at
+    }
+
+@api_router.get("/societies/{society_id}/invites")
+async def get_society_invites(society_id: str, admin_id: str = None):
+    """Get all active invite links for a society (Admin only)"""
+    society = await db.societies.find_one({"id": society_id}, {"_id": 0})
+    if not society:
+        raise HTTPException(status_code=404, detail="Society not found")
+    
+    # Verify admin
+    if admin_id and society.get("admin_id") != admin_id:
+        raise HTTPException(status_code=403, detail="Only admin can view invite links")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    invites = await db.invite_links.find({
+        "society_id": society_id,
+        "is_active": True,
+        "expires_at": {"$gt": now}
+    }, {"_id": 0}).to_list(100)
+    
+    return invites
+
+@api_router.get("/invites/{code}")
+async def get_invite_by_code(code: str):
+    """Get invite link details by code (Public - for join page)"""
+    invite = await db.invite_links.find_one({"code": code, "is_active": True}, {"_id": 0})
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invite link not found or expired")
+    
+    # Check expiration
+    now = datetime.now(timezone.utc)
+    expires_at = datetime.fromisoformat(invite["expires_at"].replace('Z', '+00:00'))
+    if now > expires_at:
+        raise HTTPException(status_code=410, detail="Invite link has expired")
+    
+    # Get society details
+    society = await db.societies.find_one({"id": invite["society_id"]}, {"_id": 0})
+    if not society:
+        raise HTTPException(status_code=404, detail="Society not found")
+    
+    # Count members
+    member_count = await db.players.count_documents({"society_id": invite["society_id"]})
+    
+    return {
+        "code": invite["code"],
+        "society_id": invite["society_id"],
+        "society_name": society["name"],
+        "member_count": member_count,
+        "expires_at": invite["expires_at"]
+    }
+
+@api_router.post("/invites/{code}/join")
+async def join_via_invite(code: str, username: str):
+    """Join a society using an invite link"""
+    invite = await db.invite_links.find_one({"code": code, "is_active": True}, {"_id": 0})
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invite link not found or expired")
+    
+    # Check expiration
+    now = datetime.now(timezone.utc)
+    expires_at = datetime.fromisoformat(invite["expires_at"].replace('Z', '+00:00'))
+    if now > expires_at:
+        raise HTTPException(status_code=410, detail="Invite link has expired")
+    
+    society_id = invite["society_id"]
+    
+    # Check if player exists in this society
+    existing = await db.players.find_one({
+        "username": username,
+        "society_id": society_id
+    }, {"_id": 0})
+    
+    if existing:
+        return existing
+    
+    # Check if player exists without society
+    player_without_society = await db.players.find_one({
+        "username": username,
+        "society_id": None
+    }, {"_id": 0})
+    
+    if player_without_society:
+        # Update player to join this society
+        await db.players.update_one(
+            {"id": player_without_society["id"]},
+            {"$set": {"society_id": society_id}}
+        )
+        player_without_society["society_id"] = society_id
+        return player_without_society
+    
+    # Create new player in this society
+    new_player = Player(username=username, society_id=society_id)
+    await db.players.insert_one(new_player.model_dump())
+    
+    return new_player.model_dump()
+
+@api_router.delete("/societies/{society_id}/invites/{invite_id}")
+async def revoke_invite(society_id: str, invite_id: str, admin_id: str = None):
+    """Revoke an invite link (Admin only)"""
+    society = await db.societies.find_one({"id": society_id}, {"_id": 0})
+    if not society:
+        raise HTTPException(status_code=404, detail="Society not found")
+    
+    # Verify admin
+    if admin_id and society.get("admin_id") != admin_id:
+        raise HTTPException(status_code=403, detail="Only admin can revoke invite links")
+    
+    result = await db.invite_links.update_one(
+        {"id": invite_id, "society_id": society_id},
+        {"$set": {"is_active": False}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Invite not found")
+    
+    return {"message": "Invite revoked successfully"}
 
 # ============= HELPER FUNCTIONS =============
 

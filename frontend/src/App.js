@@ -14,6 +14,7 @@ import ScoreEntryPage from "@/pages/ScoreEntryPage";
 import HandicapTrackingPage from "@/pages/HandicapTrackingPage";
 import CoursesPage from "@/pages/CoursesPage";
 import SocietyPage from "@/pages/SocietyPage";
+import JoinInvitePage from "@/pages/JoinInvitePage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
@@ -119,6 +120,10 @@ function App() {
               <Route
                 path="/society"
                 element={user ? <SocietyPage /> : <Navigate to="/" />}
+              />
+              <Route
+                path="/join/:code"
+                element={<JoinInvitePage />}
               />
             </Routes>
           </main>

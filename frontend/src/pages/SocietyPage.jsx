@@ -27,8 +27,20 @@ import {
   LogOut,
   Pencil,
   Trash2,
-  Settings
+  Settings,
+  Link2,
+  Plus,
+  Share2,
+  Clock,
+  ExternalLink
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function SocietyPage() {
   const navigate = useNavigate();
@@ -42,6 +54,10 @@ export default function SocietyPage() {
   const [selectedMember, setSelectedMember] = useState(null);
   const [editName, setEditName] = useState("");
   const [regeneratingCode, setRegeneratingCode] = useState(false);
+  const [invites, setInvites] = useState([]);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteExpiry, setInviteExpiry] = useState("7");
+  const [creatingInvite, setCreatingInvite] = useState(false);
 
   const isAdmin = user?.is_admin === true;
 
@@ -49,6 +65,9 @@ export default function SocietyPage() {
     if (user?.society_id) {
       fetchSociety();
       fetchMembers();
+      if (user?.is_admin) {
+        fetchInvites();
+      }
     } else {
       setLoading(false);
     }
@@ -72,6 +91,15 @@ export default function SocietyPage() {
       console.error("Failed to load members");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchInvites = async () => {
+    try {
+      const response = await axios.get(`${API}/societies/${user.society_id}/invites?admin_id=${user.id}`);
+      setInvites(response.data);
+    } catch (error) {
+      console.error("Failed to load invites");
     }
   };
 
@@ -183,6 +211,90 @@ export default function SocietyPage() {
         toast.error("Failed to leave society");
       }
     }
+  };
+
+  const handleCreateInvite = async () => {
+    setCreatingInvite(true);
+    try {
+      const response = await axios.post(
+        `${API}/societies/${user.society_id}/invites?admin_id=${user.id}`,
+        { expires_in_days: parseInt(inviteExpiry) }
+      );
+      setInvites([response.data, ...invites]);
+      setShowInviteDialog(false);
+      
+      // Copy link to clipboard
+      const inviteUrl = `${window.location.origin}/join/${response.data.code}`;
+      await copyToClipboard(inviteUrl);
+      toast.success("Invite link created and copied to clipboard!");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to create invite");
+    } finally {
+      setCreatingInvite(false);
+    }
+  };
+
+  const handleRevokeInvite = async (inviteId) => {
+    if (!confirm("Are you sure you want to revoke this invite link?")) return;
+    
+    try {
+      await axios.delete(`${API}/societies/${user.society_id}/invites/${inviteId}?admin_id=${user.id}`);
+      setInvites(invites.filter(i => i.id !== inviteId));
+      toast.success("Invite revoked");
+    } catch (error) {
+      toast.error("Failed to revoke invite");
+    }
+  };
+
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    }
+  };
+
+  const copyInviteLink = async (code) => {
+    const inviteUrl = `${window.location.origin}/join/${code}`;
+    await copyToClipboard(inviteUrl);
+    toast.success("Invite link copied!");
+  };
+
+  const shareInvite = async (code) => {
+    const inviteUrl = `${window.location.origin}/join/${code}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Join ${society?.name}`,
+          text: `You've been invited to join ${society?.name} golf society!`,
+          url: inviteUrl,
+        });
+      } catch (err) {
+        // User cancelled or share failed - copy to clipboard instead
+        await copyInviteLink(code);
+      }
+    } else {
+      await copyInviteLink(code);
+    }
+  };
+
+  const formatExpiry = (isoDate) => {
+    const date = new Date(isoDate);
+    const now = new Date();
+    const diff = date - now;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    
+    if (days > 0) return `${days}d`;
+    if (hours > 0) return `${hours}h`;
+    return "Soon";
   };
 
   if (!user?.society_id) {
@@ -309,6 +421,90 @@ export default function SocietyPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Invite Links Card (Admin only) */}
+        {isAdmin && (
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Link2 className="w-5 h-5" />
+                  Invite Links
+                </CardTitle>
+                <Button
+                  size="sm"
+                  onClick={() => setShowInviteDialog(true)}
+                  data-testid="create-invite-btn"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Create Link
+                </Button>
+              </div>
+              <CardDescription>
+                Create shareable links for easy onboarding
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {invites.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Link2 className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No active invite links</p>
+                  <p className="text-xs">Create one to easily invite new members</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {invites.map((invite) => (
+                    <div
+                      key={invite.id}
+                      className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <code className="text-sm font-mono bg-background px-2 py-0.5 rounded truncate">
+                            /join/{invite.code}
+                          </code>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                          <Clock className="w-3 h-3" />
+                          <span>Expires in {formatExpiry(invite.expires_at)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => shareInvite(invite.code)}
+                          title="Share"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => copyInviteLink(invite.code)}
+                          title="Copy link"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                          onClick={() => handleRevokeInvite(invite.id)}
+                          title="Revoke"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Members List */}
         <Card>
@@ -481,6 +677,55 @@ export default function SocietyPage() {
             <Button variant="destructive" onClick={handleRemoveMember}>
               <Trash2 className="w-4 h-4 mr-2" />
               Remove Member
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Invite Dialog */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Invite Link</DialogTitle>
+            <DialogDescription>
+              Create a shareable link to invite new members to your society.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Link Expiration</Label>
+              <Select value={inviteExpiry} onValueChange={setInviteExpiry}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select expiration" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 day</SelectItem>
+                  <SelectItem value="3">3 days</SelectItem>
+                  <SelectItem value="7">7 days (default)</SelectItem>
+                  <SelectItem value="14">14 days</SelectItem>
+                  <SelectItem value="30">30 days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="bg-secondary/50 p-3 rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                The link will be copied to your clipboard automatically. You can share it via WhatsApp, text, email, or any messaging app.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInviteDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateInvite} disabled={creatingInvite}>
+              {creatingInvite ? (
+                <>Creating...</>
+              ) : (
+                <>
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Create & Copy Link
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
