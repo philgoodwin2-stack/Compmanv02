@@ -32,6 +32,7 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - `PUT /api/societies/{society_id}` - Update society name, regenerate join code (Admin only)
 - `PUT /api/societies/{society_id}/admin/{player_id}` - Transfer admin rights (Admin only)
 - `DELETE /api/societies/{society_id}/members/{player_id}` - Remove member (Admin only)
+- `DELETE /api/societies/{society_id}` - **Delete society and all data** (Admin only)
 - `GET /api/user-societies/{username}` - Get all societies a user belongs to
 - `POST /api/switch-society` - Switch to a different society
 
@@ -51,7 +52,7 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 #### Competition & Scoring Endpoints
 - `GET /api/competitions` - List competitions (filtered by society_id)
 - `POST /api/competitions` - Create competition (auto-links to current society)
-- `PUT /api/competitions/{id}` - Edit competition (name, description, dates, min_rounds, **society_id**)
+- `PUT /api/competitions/{id}` - Edit competition (name, description, dates, min_rounds, society_id)
 - `DELETE /api/competitions/{id}` - Delete competition
 - `/api/competitions/{comp_id}/toggle-round` - Toggle round inclusion in leaderboard
 - `/api/rounds` - Round management with course name, tee, slope rating
@@ -65,13 +66,13 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 
 ### Frontend Pages
 - **Login Page**: Streamlined login - returning users go straight to dashboard
-- **Dashboard**: Competition overview with stats, Edit Competition dialog (with society selector), responsive header
+- **Dashboard**: Competition overview with stats, Edit Competition dialog (with society selector)
 - **Players Page**: Card-based layout with admin controls, handicap history
 - **Competition Page**: Tabs for leaderboard, rounds, players
 - **Score Entry Page**: Total Stableford points (simplified)
 - **Handicap Tracking Page**: Handicap changes history by date
 - **Courses Page**: Course management with tees and stroke indices
-- **Society Page**: Society management for admins + Society Switcher for multi-society users
+- **Society Page**: Society management + Society Switcher + **Delete Society** (admin only)
 - **Join Invite Page**: `/join/:code` - Public page for joining via invite link
 
 ### Features Completed (April 2026)
@@ -88,26 +89,16 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - ✅ Edit Competition (name, description, dates, min_rounds)
 - ✅ Streamlined Login - Returning users with society go directly to dashboard
 - ✅ Society Switcher - Users in multiple societies can switch between them
-- ✅ **Competition-Society Linking** - Edit dialog has society dropdown to assign/reassign competitions (April 10, 2026)
+- ✅ Competition-Society Linking - Edit dialog has society dropdown
+- ✅ **Delete Society** - Admin can permanently delete society and all data (April 10, 2026)
 
-## Competition-Society Linking
-- New competitions are automatically linked to the user's current society
-- Legacy competitions without a society can be assigned via the Edit dialog
-- Society dropdown in Edit Competition shows all available societies
-- "No Society (Unassigned)" option available for unlinked competitions
-
-## Login Flow
-1. **Returning user with society**: Enter name → Goes directly to dashboard (prioritizes users with societies)
-2. **New user / user without society**: Enter name → Shows Join/Create Society options
-3. Users can join via invite link at `/join/:code`
-
-## Society Switching
-Users who belong to multiple societies can:
-1. Navigate to Society page
-2. See "Your Societies" card showing all their societies
-3. Tap any society to switch to it
-4. Current society is highlighted with checkmark
-5. After switching, redirected to dashboard with new society context
+## Delete Society Feature
+When an admin deletes a society:
+- All competitions (including scores and rounds) are deleted
+- All courses are deleted
+- All invite links are deleted
+- All members are unlinked (accounts remain, society_id set to null)
+- The society itself is deleted
 
 ## Test Users (Preview Environment)
 - `TestAdmin` - Society: "Test Golf Society", Code: NPFUJH (is_admin: true)

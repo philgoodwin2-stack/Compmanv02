@@ -62,6 +62,8 @@ export default function SocietyPage() {
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [userSocieties, setUserSocieties] = useState([]);
   const [switchingTo, setSwitchingTo] = useState(null);
+  const [showDeleteSocietyDialog, setShowDeleteSocietyDialog] = useState(false);
+  const [deletingSociety, setDeletingSociety] = useState(false);
 
   const isAdmin = user?.is_admin === true;
 
@@ -239,6 +241,20 @@ export default function SocietyPage() {
       } catch (error) {
         toast.error("Failed to leave society");
       }
+    }
+  };
+
+  const handleDeleteSociety = async () => {
+    setDeletingSociety(true);
+    try {
+      await axios.delete(`${API}/societies/${user.society_id}?admin_id=${user.id}`);
+      toast.success("Society deleted successfully");
+      setShowDeleteSocietyDialog(false);
+      logout();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to delete society");
+    } finally {
+      setDeletingSociety(false);
     }
   };
 
@@ -672,7 +688,7 @@ export default function SocietyPage() {
 
         {/* Actions */}
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-4 space-y-3">
             <Button
               variant="outline"
               className="w-full text-destructive hover:bg-destructive/10"
@@ -681,6 +697,17 @@ export default function SocietyPage() {
               <LogOut className="w-4 h-4 mr-2" />
               Leave Society
             </Button>
+            {isAdmin && (
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={() => setShowDeleteSocietyDialog(true)}
+                data-testid="delete-society-btn"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Society
+              </Button>
+            )}
           </CardContent>
         </Card>
       </main>
@@ -806,6 +833,52 @@ export default function SocietyPage() {
                 <>
                   <Link2 className="w-4 h-4 mr-2" />
                   Create & Copy Link
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Society Dialog */}
+      <Dialog open={showDeleteSocietyDialog} onOpenChange={setShowDeleteSocietyDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Delete Society</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+              <p className="text-sm font-medium text-destructive mb-2">Warning: This will permanently delete:</p>
+              <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                <li>The society "{society?.name}"</li>
+                <li>All competitions ({members.length > 0 ? 'including scores and rounds' : ''})</li>
+                <li>All courses</li>
+                <li>All invite links</li>
+              </ul>
+              <p className="text-sm text-muted-foreground mt-2">
+                Members will be unlinked but their accounts will remain.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteSocietyDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteSociety}
+              disabled={deletingSociety}
+              data-testid="confirm-delete-society-btn"
+            >
+              {deletingSociety ? (
+                <>Deleting...</>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Society
                 </>
               )}
             </Button>

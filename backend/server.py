@@ -404,6 +404,51 @@ async def remove_member(society_id: str, player_id: str, admin_id: str = None):
     
     return {"message": "Member removed successfully"}
 
+@api_router.delete("/societies/{society_id}")
+async def delete_society(society_id: str, admin_id: str = None):
+    """Delete a society and all associated data (Admin only)"""
+    society = await db.societies.find_one({"id": society_id}, {"_id": 0})
+    if not society:
+        raise HTTPException(status_code=404, detail="Society not found")
+    
+    # Verify admin
+    if admin_id and society.get("admin_id") != admin_id:
+        raise HTTPException(status_code=403, detail="Only admin can delete the society")
+    
+    # Delete all invite links for this society
+    await db.invite_links.delete_many({"society_id": society_id})
+    
+    # Delete all scores for rounds in competitions of this society
+    competitions = await db.competitions.find({"society_id": society_id}, {"_id": 0}).to_list(1000)
+    comp_ids = [c["id"] for c in competitions]
+    
+    if comp_ids:
+        rounds = await db.rounds.find({"competition_id": {"$in": comp_ids}}, {"_id": 0}).to_list(10000)
+        round_ids = [r["id"] for r in rounds]
+        
+        if round_ids:
+            await db.scores.delete_many({"round_id": {"$in": round_ids}})
+        
+        # Delete all rounds for competitions in this society
+        await db.rounds.delete_many({"competition_id": {"$in": comp_ids}})
+    
+    # Delete all competitions for this society
+    await db.competitions.delete_many({"society_id": society_id})
+    
+    # Delete all courses for this society
+    await db.courses.delete_many({"society_id": society_id})
+    
+    # Remove society_id from all players (don't delete players, just unlink them)
+    await db.players.update_many(
+        {"society_id": society_id},
+        {"$set": {"society_id": None, "is_admin": False}}
+    )
+    
+    # Delete the society itself
+    await db.societies.delete_one({"id": society_id})
+    
+    return {"message": "Society and all associated data deleted successfully"}
+
 # ============= INVITE LINK ENDPOINTS =============
 
 @api_router.post("/societies/{society_id}/invites")
