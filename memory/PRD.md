@@ -49,7 +49,7 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 #### Competition & Scoring Endpoints
 - `GET /api/competitions` - List competitions (filtered by society_id)
 - `POST /api/competitions` - Create competition
-- `PUT /api/competitions/{id}` - **Edit competition** (name, description, dates, min_rounds)
+- `PUT /api/competitions/{id}` - Edit competition (name, description, dates, min_rounds)
 - `DELETE /api/competitions/{id}` - Delete competition
 - `/api/competitions/{comp_id}/toggle-round` - Toggle round inclusion in leaderboard
 - `/api/rounds` - Round management with course name, tee, slope rating
@@ -62,8 +62,8 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - `/api/players/{player_id}/import-differentials` - Import comma-separated differentials
 
 ### Frontend Pages
-- **Login Page**: Username entry with society join/create flow
-- **Dashboard**: Competition overview with stats, **Edit Competition** dialog, responsive header
+- **Login Page**: Streamlined login - returning users go straight to dashboard
+- **Dashboard**: Competition overview with stats, Edit Competition dialog, responsive header
 - **Players Page**: Card-based layout with admin controls, handicap history
 - **Competition Page**: Tabs for leaderboard, rounds, players
 - **Score Entry Page**: Total Stableford points (simplified)
@@ -83,7 +83,13 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - ✅ Multi-tenant Society Architecture (data isolated by society_id)
 - ✅ Society Management UI for admins
 - ✅ Shareable Invite Links (customizable expiration 1-30 days)
-- ✅ **Edit Competition** - Edit name, description, dates, min_rounds (TESTED - April 10, 2026)
+- ✅ Edit Competition (name, description, dates, min_rounds)
+- ✅ **Streamlined Login** - Returning users with society go directly to dashboard (April 10, 2026)
+
+## Login Flow
+1. **Returning user with society**: Enter name → Goes directly to dashboard
+2. **New user / user without society**: Enter name → Shows Join/Create Society options
+3. Users can join via invite link at `/join/:code`
 
 ## First-Time Setup (Production)
 When deploying to production with an empty database:

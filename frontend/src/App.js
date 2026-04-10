@@ -68,7 +68,13 @@ function App() {
       if (joinCode) payload.join_code = joinCode;
       
       const response = await axios.post(`${API}/login`, payload);
-      setUser(response.data.player);
+      
+      // Only set user if they have a society (or are joining/creating one)
+      // This prevents redirect to dashboard for users without a society
+      if (!response.data.needs_society) {
+        setUser(response.data.player);
+      }
+      
       return response.data;
     } catch (error) {
       throw error;

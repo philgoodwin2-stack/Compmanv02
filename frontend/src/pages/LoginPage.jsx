@@ -34,7 +34,9 @@ export default function LoginPage() {
         setNeedsCode(true);
         toast.info("Please join or create a society to continue");
       } else {
+        // User already has a society - go straight to dashboard
         toast.success(result.message);
+        // Navigation happens automatically via App.js redirect when user state is set
       }
     } catch (error) {
       toast.error(error.response?.data?.detail || "Login failed");
@@ -282,29 +284,8 @@ export default function LoginPage() {
 
             <div className="mt-6 pt-6 border-t">
               <p className="text-sm text-muted-foreground text-center mb-3">
-                New to Stableford Golf?
+                First time here? Enter your name above, then join or create a society.
               </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1 rounded-none"
-                  onClick={() => setNeedsCode(true)}
-                >
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Join Society
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 rounded-none"
-                  onClick={() => {
-                    setNeedsCode(true);
-                    setMode("create");
-                  }}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Society
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>
