@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trophy, Users, LogOut, Flag, Calendar, ChevronRight, CalendarIcon, Trash2, History, MapPin } from "lucide-react";
+import { Plus, Trophy, Users, LogOut, Flag, Calendar, ChevronRight, CalendarIcon, Trash2, History, MapPin, Pencil } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -35,6 +35,8 @@ export default function DashboardPage() {
   const [competitions, setCompetitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editCompetition, setEditCompetition] = useState(null);
   const [newCompetition, setNewCompetition] = useState({
     name: "",
     description: "",
@@ -120,6 +122,43 @@ export default function DashboardPage() {
     e.preventDefault();
     setDeleteCompId(competitionId);
     setShowDeleteDialog(true);
+  };
+
+  const openEditDialog = (e, competition) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setEditCompetition({
+      ...competition,
+      start_date: competition.start_date ? new Date(competition.start_date) : null,
+      end_date: competition.end_date ? new Date(competition.end_date) : null,
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleEditCompetition = async () => {
+    if (!editCompetition) return;
+    if (!editCompetition.name?.trim()) {
+      toast.error("Competition name is required");
+      return;
+    }
+
+    try {
+      const payload = {
+        name: editCompetition.name.trim(),
+        description: editCompetition.description || "",
+        start_date: editCompetition.start_date ? format(editCompetition.start_date, "yyyy-MM-dd") : null,
+        end_date: editCompetition.end_date ? format(editCompetition.end_date, "yyyy-MM-dd") : null,
+        min_rounds: editCompetition.min_rounds || 13,
+      };
+      await axios.put(`${API}/competitions/${editCompetition.id}`, payload);
+      toast.success("Competition updated!");
+      setShowEditDialog(false);
+      setEditCompetition(null);
+      fetchCompetitions();
+    } catch (error) {
+      toast.error("Failed to update competition");
+      console.error("Update error:", error);
+    }
   };
 
   return (
@@ -440,6 +479,16 @@ export default function DashboardPage() {
                         {competition.status}
                       </Badge>
                       <Button
+                        data-testid={`edit-competition-${competition.id}`}
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => openEditDialog(e, competition)}
+                        className="h-8 px-3"
+                      >
+                        <Pencil className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
                         data-testid={`delete-competition-${competition.id}`}
                         variant="destructive"
                         size="sm"
@@ -519,6 +568,169 @@ export default function DashboardPage() {
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Delete Competition
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Competition Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold uppercase tracking-tight">
+              Edit Competition
+            </DialogTitle>
+          </DialogHeader>
+          {editCompetition && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Competition Name</Label>
+                <Input
+                  data-testid="edit-competition-name-input"
+                  id="edit-name"
+                  value={editCompetition.name || ""}
+                  onChange={(e) => setEditCompetition({ ...editCompetition, name: e.target.value })}
+                  placeholder="e.g., Summer Championship 2026"
+                  className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Description (optional)</Label>
+                <Input
+                  data-testid="edit-competition-description-input"
+                  id="edit-description"
+                  value={editCompetition.description || ""}
+                  onChange={(e) => setEditCompetition({ ...editCompetition, description: e.target.value })}
+                  placeholder="Brief description of the competition"
+                  className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Competition Dates</Label>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <div className="flex">
+                      <Input
+                        data-testid="edit-start-date-input"
+                        type="text"
+                        placeholder="DD/MM/YYYY"
+                        value={editCompetition.start_date ? format(editCompetition.start_date, "dd/MM/yyyy") : ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const parts = val.split('/');
+                          if (parts.length === 3) {
+                            const day = parseInt(parts[0]);
+                            const month = parseInt(parts[1]) - 1;
+                            const year = parseInt(parts[2]);
+                            if (day && month >= 0 && year) {
+                              const date = new Date(year, month, day);
+                              if (!isNaN(date.getTime())) {
+                                setEditCompetition({ ...editCompetition, start_date: date });
+                              }
+                            }
+                          }
+                        }}
+                        className="flex-1 rounded-none rounded-l border-r-0"
+                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="rounded-none rounded-r px-2"
+                          >
+                            <CalendarIcon className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={editCompetition.start_date}
+                            onSelect={(date) => setEditCompetition({ ...editCompetition, start_date: date })}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Start Date</p>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex">
+                      <Input
+                        data-testid="edit-end-date-input"
+                        type="text"
+                        placeholder="DD/MM/YYYY"
+                        value={editCompetition.end_date ? format(editCompetition.end_date, "dd/MM/yyyy") : ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const parts = val.split('/');
+                          if (parts.length === 3) {
+                            const day = parseInt(parts[0]);
+                            const month = parseInt(parts[1]) - 1;
+                            const year = parseInt(parts[2]);
+                            if (day && month >= 0 && year) {
+                              const date = new Date(year, month, day);
+                              if (!isNaN(date.getTime())) {
+                                setEditCompetition({ ...editCompetition, end_date: date });
+                              }
+                            }
+                          }
+                        }}
+                        className="flex-1 rounded-none rounded-l border-r-0"
+                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="rounded-none rounded-r px-2"
+                          >
+                            <CalendarIcon className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={editCompetition.end_date}
+                            onSelect={(date) => setEditCompetition({ ...editCompetition, end_date: date })}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">End Date</p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-min-rounds">Minimum Rounds Required</Label>
+                <Input
+                  data-testid="edit-min-rounds-input"
+                  id="edit-min-rounds"
+                  type="number"
+                  min="1"
+                  max="52"
+                  value={editCompetition.min_rounds || 13}
+                  onChange={(e) => setEditCompetition({ ...editCompetition, min_rounds: parseInt(e.target.value) || 13 })}
+                  className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
+                />
+                <p className="text-xs text-muted-foreground">Players must complete at least this many rounds to qualify</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowEditDialog(false)}
+              className="rounded-none"
+            >
+              Cancel
+            </Button>
+            <Button
+              data-testid="save-competition-btn"
+              onClick={handleEditCompetition}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest"
+            >
+              <Pencil className="w-4 h-4 mr-2" />
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
