@@ -334,6 +334,36 @@ async def join_society(society_id: str, player_id: str):
     
     return {"message": "Joined society successfully", "is_admin": False}
 
+@api_router.post("/societies/{society_id}/join-as-global-admin")
+async def join_society_as_global_admin(society_id: str, username: str, user_id: str):
+    """Join a society as a global admin - creates a new player record in that society"""
+    # Verify user is global admin
+    if not await check_global_admin(user_id):
+        raise HTTPException(status_code=403, detail="Only global admins can use this endpoint")
+    
+    society = await db.societies.find_one({"id": society_id}, {"_id": 0})
+    if not society:
+        raise HTTPException(status_code=404, detail="Society not found")
+    
+    # Check if user already exists in this society
+    existing = await db.players.find_one(
+        {"username": username, "society_id": society_id},
+        {"_id": 0}
+    )
+    if existing:
+        return existing  # Already a member, return existing player
+    
+    # Create new player record in this society with global admin status
+    new_player = Player(
+        username=username, 
+        society_id=society_id,
+        is_admin=True,  # Global admins become society admins too
+        is_global_admin=True
+    )
+    await db.players.insert_one(new_player.model_dump())
+    
+    return new_player.model_dump()
+
 @api_router.put("/societies/{society_id}/admin/{player_id}")
 async def set_society_admin(society_id: str, player_id: str, current_admin_id: str = None):
     """Set a new admin for the society (current admin only)"""

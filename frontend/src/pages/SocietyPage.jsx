@@ -142,12 +142,15 @@ export default function SocietyPage() {
   const handleJoinSocietyAsGlobalAdmin = async (societyId) => {
     setSwitchingTo(societyId);
     try {
-      // Join the society as a new player
-      await axios.post(`${API}/societies/${societyId}/join?username=${encodeURIComponent(user.username)}`);
-      // Then switch to it
+      // Use special endpoint for global admins - creates new player in that society
+      const response = await axios.post(
+        `${API}/societies/${societyId}/join-as-global-admin?username=${encodeURIComponent(user.username)}&user_id=${user.id}`
+      );
+      // Then switch to the new society using the new player's context
       await switchSociety(societyId);
       toast.success("Joined and switched to society!");
-      navigate("/dashboard");
+      // Refresh the page to get updated context
+      window.location.href = "/dashboard";
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to join society");
     } finally {
