@@ -205,6 +205,7 @@ export default function PlayersPage() {
   const [editingPlayingHcp, setEditingPlayingHcp] = useState("");
   const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "" });
   const [systemHasAdmins, setSystemHasAdmins] = useState(true); // Default to true to hide controls until checked
+  const [showAllPlayers, setShowAllPlayers] = useState(false); // Global admin can toggle to see all
 
   // Check if current user is admin or global admin
   const isAdmin = user?.is_admin === true || user?.is_global_admin === true;
@@ -213,7 +214,7 @@ export default function PlayersPage() {
   useEffect(() => {
     fetchPlayers();
     checkAdminStatus();
-  }, []);
+  }, [showAllPlayers]);
 
   const checkAdminStatus = async () => {
     try {
@@ -228,11 +229,14 @@ export default function PlayersPage() {
 
   const fetchPlayers = async () => {
     try {
-      const societyId = user?.society_id;
-      const url = societyId 
-        ? `${API}/players?society_id=${societyId}`
-        : `${API}/players`;
+      // Global admin with showAllPlayers can see all players
+      const url = (isGlobalAdmin && showAllPlayers)
+        ? `${API}/players`
+        : user?.society_id 
+          ? `${API}/players?society_id=${user.society_id}`
+          : `${API}/players`;
       const response = await axios.get(url);
+      setPlayers(response.data);
       setPlayers(response.data);
     } catch (error) {
       toast.error("Failed to load players");
@@ -531,14 +535,27 @@ export default function PlayersPage() {
         </div>
 
         {/* Actions */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold uppercase tracking-tight">All Players</h2>
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-            <DialogTrigger asChild>
+        <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+          <h2 className="text-3xl font-bold uppercase tracking-tight">
+            {isGlobalAdmin && showAllPlayers ? "All Players (Global)" : "Players"}
+          </h2>
+          <div className="flex items-center gap-3">
+            {isGlobalAdmin && (
               <Button
-                data-testid="add-player-btn"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest"
+                variant={showAllPlayers ? "default" : "outline"}
+                onClick={() => setShowAllPlayers(!showAllPlayers)}
+                className={`rounded-none ${showAllPlayers ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
               >
+                <Shield className="w-4 h-4 mr-2" />
+                {showAllPlayers ? "Showing All" : "Show All Players"}
+              </Button>
+            )}
+            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+              <DialogTrigger asChild>
+                <Button
+                  data-testid="add-player-btn"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest"
+                >
                 <Plus className="w-5 h-5 mr-2" />
                 Add Player
               </Button>
@@ -609,6 +626,7 @@ export default function PlayersPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {/* Players List */}
@@ -649,7 +667,7 @@ export default function PlayersPage() {
                           <Shield className="w-4 h-4 text-[#D4AF37] flex-shrink-0" title="Admin" />
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
                         <span>HCP: <strong className="text-foreground">{player.handicap.toFixed(1)}</strong></span>
                         <Badge className={player.is_active ? "bg-green-500/20 text-green-700 text-xs" : "bg-gray-400/20 text-gray-600 text-xs"}>
                           {player.is_active ? "Active" : "Excluded"}
@@ -657,6 +675,11 @@ export default function PlayersPage() {
                         {player.is_global_admin && (
                           <Badge className="bg-purple-600/20 text-purple-700 text-xs">
                             Global Admin
+                          </Badge>
+                        )}
+                        {showAllPlayers && player.society_id && (
+                          <Badge variant="outline" className="text-xs">
+                            {player.society_id.substring(0, 8)}...
                           </Badge>
                         )}
                       </div>

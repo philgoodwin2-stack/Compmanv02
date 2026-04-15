@@ -61,7 +61,10 @@ export default function SocietyPage() {
   const [inviteExpiry, setInviteExpiry] = useState("7");
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [userSocieties, setUserSocieties] = useState([]);
+  const [allSocieties, setAllSocieties] = useState([]);
   const [switchingTo, setSwitchingTo] = useState(null);
+  const [showDeleteSocietyDialog, setShowDeleteSocietyDialog] = useState(false);
+  const [deletingSociety, setDeletingSociety] = useState(false);
 
   const isAdmin = user?.is_admin === true || user?.is_global_admin === true;
   const isGlobalAdmin = user?.is_global_admin === true;
@@ -73,6 +76,9 @@ export default function SocietyPage() {
       fetchUserSocieties();
       if (user?.is_admin || user?.is_global_admin) {
         fetchInvites();
+      }
+      if (isGlobalAdmin) {
+        fetchAllSocieties();
       }
     } else {
       setLoading(false);
@@ -109,6 +115,15 @@ export default function SocietyPage() {
     }
   };
 
+  const fetchAllSocieties = async () => {
+    try {
+      const response = await axios.get(`${API}/societies`);
+      setAllSocieties(response.data);
+    } catch (error) {
+      console.error("Failed to load all societies");
+    }
+  };
+
   const handleSwitchSociety = async (societyId) => {
     if (societyId === user?.society_id) return;
     
@@ -119,6 +134,22 @@ export default function SocietyPage() {
       navigate("/dashboard");
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to switch society");
+    } finally {
+      setSwitchingTo(null);
+    }
+  };
+
+  const handleJoinSocietyAsGlobalAdmin = async (societyId) => {
+    setSwitchingTo(societyId);
+    try {
+      // Join the society as a new player
+      await axios.post(`${API}/societies/${societyId}/join?username=${encodeURIComponent(user.username)}`);
+      // Then switch to it
+      await switchSociety(societyId);
+      toast.success("Joined and switched to society!");
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to join society");
     } finally {
       setSwitchingTo(null);
     }
@@ -437,6 +468,74 @@ export default function SocietyPage() {
                     ) : null}
                   </button>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* All Societies (Global Admin only) */}
+        {isGlobalAdmin && allSocieties.length > 0 && (
+          <Card className="border-purple-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Shield className="w-5 h-5 text-purple-600" />
+                All Societies
+                <Badge className="bg-purple-600 text-white text-xs ml-2">Global Admin</Badge>
+              </CardTitle>
+              <CardDescription>
+                You can manage any society as a global admin.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {allSocieties.map((s) => {
+                  const isMember = userSocieties.some(us => us.society_id === s.id);
+                  const isCurrent = s.id === user?.society_id;
+                  return (
+                    <div
+                      key={s.id}
+                      className={`flex items-center justify-between p-3 rounded-lg ${
+                        isCurrent
+                          ? 'bg-purple-100 border-2 border-purple-400'
+                          : 'bg-secondary/30 border-2 border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Building2 className={`w-5 h-5 ${isCurrent ? 'text-purple-600' : 'text-muted-foreground'}`} />
+                        <div>
+                          <p className={`font-medium ${isCurrent ? 'text-purple-700' : ''}`}>
+                            {s.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Code: {s.join_code}
+                          </p>
+                        </div>
+                      </div>
+                      {isCurrent ? (
+                        <Badge className="bg-purple-600">Current</Badge>
+                      ) : isMember ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSwitchSociety(s.id)}
+                          disabled={switchingTo === s.id}
+                        >
+                          {switchingTo === s.id ? "Switching..." : "Switch"}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-purple-400 text-purple-600 hover:bg-purple-50"
+                          onClick={() => handleJoinSocietyAsGlobalAdmin(s.id)}
+                          disabled={switchingTo === s.id}
+                        >
+                          {switchingTo === s.id ? "Joining..." : "Join & Switch"}
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
