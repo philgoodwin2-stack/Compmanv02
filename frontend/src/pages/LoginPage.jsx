@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Flag, Trophy, Users, Plus, LogIn } from "lucide-react";
+import { Flag, Trophy, Users, Plus, LogIn, UserPlus, ArrowLeft } from "lucide-react";
 import axios from "axios";
 
 export default function LoginPage() {
@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState("login"); // "login", "join", or "create"
   const [needsCode, setNeedsCode] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
   const { login } = useUser();
 
   const handleLogin = async (e) => {
@@ -40,6 +41,39 @@ export default function LoginPage() {
       }
     } catch (error) {
       toast.error(error.response?.data?.detail || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNewUserCheck = async (e) => {
+    e.preventDefault();
+    if (!username.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Check if username exists
+      const response = await axios.get(`${API}/check-username/${encodeURIComponent(username.trim())}`);
+      
+      if (response.data.exists) {
+        if (response.data.has_society) {
+          toast.error("This name is already taken. Please use 'Returning User' to login or choose a different name.");
+        } else {
+          // User exists but has no society - let them join/create
+          setNeedsCode(true);
+          setIsNewUser(false);
+          toast.info("Account found! Please join or create a society.");
+        }
+      } else {
+        // Username is available - proceed to society selection
+        setNeedsCode(true);
+        toast.success("Name available! Now join or create a society.");
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to check username");
     } finally {
       setLoading(false);
     }
@@ -228,6 +262,83 @@ export default function LoginPage() {
     );
   }
 
+  // New User registration flow
+  if (isNewUser) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        {/* Hero Section */}
+        <div className="golf-header text-white py-12 px-4 flex-shrink-0">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="flex justify-center mb-4">
+              <div className="bg-white/10 p-3 rounded-full">
+                <Flag className="w-10 h-10 text-[#D4AF37]" />
+              </div>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight uppercase mb-2">
+              Stableford Golf
+            </h1>
+            <p className="text-lg md:text-xl text-white/80 font-light">
+              Create your account
+            </p>
+          </div>
+        </div>
+
+        {/* New User Form */}
+        <div className="flex-1 flex items-center justify-center p-4 bg-secondary/30">
+          <Card className="w-full max-w-md shadow-lg">
+            <CardHeader className="text-center pb-2">
+              <CardTitle className="text-2xl font-bold uppercase tracking-tight">
+                New Player
+              </CardTitle>
+              <CardDescription className="text-sm mt-1">
+                Choose a name to get started
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <form onSubmit={handleNewUserCheck} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Your Name</Label>
+                  <Input
+                    data-testid="new-username-input"
+                    type="text"
+                    placeholder="e.g., Phil G"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="rounded-none"
+                    autoFocus
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This will be your display name in competitions
+                  </p>
+                </div>
+                <Button
+                  data-testid="check-name-button"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-none uppercase font-bold tracking-widest py-5"
+                >
+                  {loading ? "Checking..." : "Continue"}
+                </Button>
+              </form>
+
+              <Button
+                variant="ghost"
+                className="w-full mt-4 text-muted-foreground"
+                onClick={() => {
+                  setIsNewUser(false);
+                  setUsername("");
+                }}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to login
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
@@ -252,41 +363,61 @@ export default function LoginPage() {
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl font-bold uppercase tracking-tight">
-              Welcome Back
+              Welcome
             </CardTitle>
             <CardDescription className="text-sm mt-1">
-              Enter your name to continue
+              Sign in to continue
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-4">
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Your Name</Label>
-                <Input
-                  data-testid="username-input"
-                  type="text"
-                  placeholder="e.g., Phil G"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="rounded-none"
-                  autoFocus
-                />
-              </div>
-              <Button
-                data-testid="login-button"
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-none uppercase font-bold tracking-widest py-5"
-              >
-                {loading ? "Loading..." : "Enter"}
-              </Button>
-            </form>
-
-            <div className="mt-6 pt-6 border-t">
-              <p className="text-sm text-muted-foreground text-center mb-3">
-                First time here? Enter your name above, then join or create a society.
-              </p>
+          <CardContent className="pt-4 space-y-4">
+            {/* Returning User Section */}
+            <div className="space-y-3">
+              <form onSubmit={handleLogin} className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Your Name</Label>
+                  <Input
+                    data-testid="username-input"
+                    type="text"
+                    placeholder="e.g., Phil G"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="rounded-none"
+                    autoFocus
+                  />
+                </div>
+                <Button
+                  data-testid="login-button"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-none uppercase font-bold tracking-widest py-5"
+                >
+                  {loading ? "Loading..." : "Sign In"}
+                </Button>
+              </form>
             </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  Or
+                </span>
+              </div>
+            </div>
+
+            {/* New User Button */}
+            <Button
+              data-testid="new-user-button"
+              type="button"
+              variant="outline"
+              onClick={() => setIsNewUser(true)}
+              className="w-full rounded-none py-5"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              I'm a New Player
+            </Button>
           </CardContent>
         </Card>
       </div>

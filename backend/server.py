@@ -1963,6 +1963,26 @@ async def login(login_data: LoginRequest):
     
     return LoginResponse(player=Player(**player), message="Welcome back")
 
+@api_router.get("/check-username/{username}")
+async def check_username(username: str):
+    """Check if a username already exists in the system"""
+    # Check for any player with this username (with or without society)
+    player = await db.players.find_one({"username": username}, {"_id": 0})
+    
+    if player:
+        has_society = player.get("society_id") is not None
+        return {
+            "exists": True,
+            "has_society": has_society,
+            "message": "This name is already taken" if has_society else "This user exists but needs to join a society"
+        }
+    
+    return {
+        "exists": False,
+        "has_society": False,
+        "message": "Username is available"
+    }
+
 class UserSociety(BaseModel):
     society_id: str
     society_name: str

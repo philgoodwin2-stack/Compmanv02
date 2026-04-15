@@ -17,7 +17,6 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - Stableford scoring calculation based on handicap
 - Admin role system for protected operations (per-society)
 - Multi-tenant architecture with `society_id` isolation
-- First-admin setup: if no admins exist, any user can become admin
 
 ## What's Been Implemented
 
@@ -27,91 +26,61 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - `POST /api/societies` - Create a new society
 - `GET /api/societies` - List all societies
 - `GET /api/societies/{society_id}` - Get society details
-- `GET /api/societies/code/{join_code}` - Lookup society by join code
-- `POST /api/societies/{society_id}/join` - Join a society with code
-- `PUT /api/societies/{society_id}` - Update society name, regenerate join code (Admin only)
-- `PUT /api/societies/{society_id}/admin/{player_id}` - Transfer admin rights (Admin only)
-- `DELETE /api/societies/{society_id}/members/{player_id}` - Remove member (Admin only)
-- `DELETE /api/societies/{society_id}` - **Delete society and all data** (Admin only)
+- `DELETE /api/societies/{society_id}` - Delete society and all data (Admin only)
 - `GET /api/user-societies/{username}` - Get all societies a user belongs to
 - `POST /api/switch-society` - Switch to a different society
 
-#### Invite Link Endpoints
-- `POST /api/societies/{society_id}/invites` - Create shareable invite link (Admin only)
-- `GET /api/societies/{society_id}/invites` - List active invite links (Admin only)
-- `GET /api/invites/{code}` - Get invite details (Public)
-- `POST /api/invites/{code}/join` - Join society via invite link (Public)
-- `DELETE /api/societies/{society_id}/invites/{invite_id}` - Revoke invite link (Admin only)
-
-#### Player & Auth Endpoints
+#### Auth Endpoints
 - `/api/login` - Simple username login (creates player if not exists)
-- `/api/players` - CRUD for player management with handicap
-- `/api/players/{player_id}/toggle-admin` - Toggle admin status (allows first admin)
+- `GET /api/check-username/{username}` - **Check if username exists before registration**
 - `/api/admin-status` - Check if any admins exist in system
 
 #### Competition & Scoring Endpoints
-- `GET /api/competitions` - List competitions (filtered by society_id)
-- `POST /api/competitions` - Create competition (auto-links to current society)
-- `PUT /api/competitions/{id}` - Edit competition (name, description, dates, min_rounds, society_id)
+- `GET/POST /api/competitions` - List/create competitions
+- `PUT /api/competitions/{id}` - Edit competition (incl. society_id assignment)
 - `DELETE /api/competitions/{id}` - Delete competition
-- `/api/competitions/{comp_id}/toggle-round` - Toggle round inclusion in leaderboard
-- `/api/rounds` - Round management with course name, tee, slope rating
-- `/api/scores` - Simplified total Stableford points entry
-- `/api/leaderboard/{competition_id}` - Ranked leaderboard with round details
-
-#### Handicap Endpoints
-- `/api/handicap-history` - WHS handicap tracking history with playing handicap
-- `/api/players/{player_id}/differentials/{record_idx}/toggle-handicap` - Toggle differential for handicap calc
-- `/api/players/{player_id}/import-differentials` - Import comma-separated differentials
 
 ### Frontend Pages
-- **Login Page**: Streamlined login - returning users go straight to dashboard
-- **Dashboard**: Competition overview with stats, Edit Competition dialog (with society selector)
-- **Players Page**: Card-based layout with admin controls, handicap history
-- **Competition Page**: Tabs for leaderboard, rounds, players
-- **Score Entry Page**: Total Stableford points (simplified)
-- **Handicap Tracking Page**: Handicap changes history by date
-- **Courses Page**: Course management with tees and stroke indices
-- **Society Page**: Society management + Society Switcher + **Delete Society** (admin only)
-- **Join Invite Page**: `/join/:code` - Public page for joining via invite link
+- **Login Page**: Two-flow system - "Sign In" for returning users, "I'm a New Player" for new users
+- **Dashboard**: Competition overview with Edit dialog (society selector)
+- **Society Page**: Society management + Society Switcher + Delete Society
 
 ### Features Completed (April 2026)
-- ✅ PWA with mobile bottom navigation (Safari-compatible flex layout)
-- ✅ Admin role system with first-admin bootstrap
-- ✅ Card-based Players page for mobile
-- ✅ Native HTML buttons for better Safari touch support
-- ✅ Import differentials functionality
-- ✅ Handicap history with WHS calculations
-- ✅ "The Open Championship" style leaderboard with dropped rounds
-- ✅ Multi-tenant Society Architecture (data isolated by society_id)
+- ✅ Multi-tenant Society Architecture
 - ✅ Society Management UI for admins
-- ✅ Shareable Invite Links (customizable expiration 1-30 days)
-- ✅ Edit Competition (name, description, dates, min_rounds)
-- ✅ Streamlined Login - Returning users with society go directly to dashboard
-- ✅ Society Switcher - Users in multiple societies can switch between them
-- ✅ Competition-Society Linking - Edit dialog has society dropdown
-- ✅ **Delete Society** - Admin can permanently delete society and all data (April 10, 2026)
+- ✅ Shareable Invite Links
+- ✅ Society Switcher for multi-society users
+- ✅ Competition-Society Linking via Edit dialog
+- ✅ Delete Society feature
+- ✅ **New User Registration Flow** - Check username availability before asking for society (April 15, 2026)
 
-## Delete Society Feature
-When an admin deletes a society:
-- All competitions (including scores and rounds) are deleted
-- All courses are deleted
-- All invite links are deleted
-- All members are unlinked (accounts remain, society_id set to null)
-- The society itself is deleted
+## Login Flow
+
+### Returning User (Sign In)
+1. Enter name → Click "Sign In"
+2. If user exists with society → Direct to dashboard
+3. If user exists without society → Show Join/Create options
+
+### New User (I'm a New Player)
+1. Click "I'm a New Player"
+2. Enter desired name → Click "Continue"
+3. **System checks if name is taken:**
+   - If taken (has society) → Error: "This name is already taken"
+   - If taken (no society) → "Account found! Please join or create a society"
+   - If available → "Name available! Now join or create a society"
+4. User joins existing society with code OR creates new society
 
 ## Test Users (Preview Environment)
-- `TestAdmin` - Society: "Test Golf Society", Code: NPFUJH (is_admin: true)
-- `phil g` - Belongs to 7 societies (can test society switching)
-- See `/app/memory/test_credentials.md` for full list
+- `TestAdmin` - Society: "Test Golf Society" (is_admin: true)
+- `phil g` - Belongs to multiple societies
 
 ## Next Tasks (Prioritized)
 ### P1 - High Priority
 1. Stripe $1 Payment Integration (awaiting user instruction)
-2. Refactor bloated files (`server.py`, `CompetitionPage.jsx`, `PlayersPage.jsx` >1000 lines)
+2. Refactor bloated files
 
 ### P2 - Medium Priority
-3. Bulk import tool with correct course data mapping (Par, Slope, Rating)
+3. Bulk import tool with course data mapping
 4. Export Leaderboard/Stats to CSV/PDF
 
 ### P3 - Future/Backlog
