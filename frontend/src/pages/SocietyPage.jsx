@@ -63,14 +63,15 @@ export default function SocietyPage() {
   const [userSocieties, setUserSocieties] = useState([]);
   const [switchingTo, setSwitchingTo] = useState(null);
 
-  const isAdmin = user?.is_admin === true;
+  const isAdmin = user?.is_admin === true || user?.is_global_admin === true;
+  const isGlobalAdmin = user?.is_global_admin === true;
 
   useEffect(() => {
     if (user?.society_id) {
       fetchSociety();
       fetchMembers();
       fetchUserSocieties();
-      if (user?.is_admin) {
+      if (user?.is_admin || user?.is_global_admin) {
         fetchInvites();
       }
     } else {
@@ -491,9 +492,15 @@ export default function SocietyPage() {
 
             {/* Your Status */}
             <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium">{user?.username}</span>
-                {isAdmin && (
+                {isGlobalAdmin && (
+                  <Badge className="bg-purple-600 text-white">
+                    <Shield className="w-3 h-3 mr-1" />
+                    Global Admin
+                  </Badge>
+                )}
+                {isAdmin && !isGlobalAdmin && (
                   <Badge className="bg-[#D4AF37] text-white">
                     <Crown className="w-3 h-3 mr-1" />
                     Admin

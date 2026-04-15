@@ -11,68 +11,56 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - **Database**: MongoDB (Motor async driver)
 - **PWA**: Progressive Web App with manifest, service worker, mobile navigation
 
-### Key Components
-- User session via localStorage (simple username entry)
-- REST API with `/api` prefix for all endpoints
-- Stableford scoring calculation based on handicap
-- Admin role system for protected operations (per-society)
-- Multi-tenant architecture with `society_id` isolation
+### Admin System
+- **Society Admin**: Has admin rights within their specific society
+- **Global Admin**: Has admin rights across ALL societies (super-admin)
 
 ## What's Been Implemented
 
 ### Backend Endpoints
 
 #### Society Endpoints
-- `POST /api/societies` - Create a new society
-- `GET /api/societies` - List all societies
-- `GET /api/societies/{society_id}` - Get society details
-- `DELETE /api/societies/{society_id}` - Delete society and all data (Admin only)
+- `POST/GET/PUT/DELETE /api/societies` - Full CRUD for societies
+- `DELETE /api/societies/{id}/members/{player_id}` - Remove member (Admin or Global Admin)
 - `GET /api/user-societies/{username}` - Get all societies a user belongs to
 - `POST /api/switch-society` - Switch to a different society
 
 #### Auth Endpoints
-- `/api/login` - Simple username login (creates player if not exists)
-- `GET /api/check-username/{username}` - **Check if username exists before registration**
-- `/api/admin-status` - Check if any admins exist in system
+- `/api/login` - Simple username login
+- `GET /api/check-username/{username}` - Check if username exists before registration
+- `PUT /api/players/{id}/toggle-admin` - Toggle society admin status
+- `PUT /api/players/{id}/toggle-global-admin` - Toggle global admin status (Global Admin only)
 
-#### Competition & Scoring Endpoints
-- `GET/POST /api/competitions` - List/create competitions
-- `PUT /api/competitions/{id}` - Edit competition (incl. society_id assignment)
-- `DELETE /api/competitions/{id}` - Delete competition
+### Admin Rights
 
-### Frontend Pages
-- **Login Page**: Two-flow system - "Sign In" for returning users, "I'm a New Player" for new users
-- **Dashboard**: Competition overview with Edit dialog (society selector)
-- **Society Page**: Society management + Society Switcher + Delete Society
+| Action | Society Admin | Global Admin |
+|--------|--------------|--------------|
+| Edit society details | Own society only | All societies |
+| Remove members | Own society only | All societies |
+| Delete society | Own society only | All societies |
+| Create invite links | Own society only | All societies |
+| Revoke invite links | Own society only | All societies |
+| Grant society admin | ❌ | ✅ |
+| Grant global admin | ❌ | ✅ |
 
 ### Features Completed (April 2026)
 - ✅ Multi-tenant Society Architecture
 - ✅ Society Management UI for admins
 - ✅ Shareable Invite Links
 - ✅ Society Switcher for multi-society users
-- ✅ Competition-Society Linking via Edit dialog
-- ✅ Delete Society feature
-- ✅ **New User Registration Flow** - Check username availability before asking for society (April 15, 2026)
+- ✅ New User Registration Flow with username availability check
+- ✅ **Global Admin System** - Super-admin with rights across all societies (April 15, 2026)
 
-## Login Flow
-
-### Returning User (Sign In)
-1. Enter name → Click "Sign In"
-2. If user exists with society → Direct to dashboard
-3. If user exists without society → Show Join/Create options
-
-### New User (I'm a New Player)
-1. Click "I'm a New Player"
-2. Enter desired name → Click "Continue"
-3. **System checks if name is taken:**
-   - If taken (has society) → Error: "This name is already taken"
-   - If taken (no society) → "Account found! Please join or create a society"
-   - If available → "Name available! Now join or create a society"
-4. User joins existing society with code OR creates new society
+## Global Admin Setup
+The first global admin can be created via API:
+```bash
+curl -X PUT "https://yourapp.com/api/players/{player_id}/toggle-global-admin"
+```
+After the first global admin exists, only global admins can grant global admin status to others.
 
 ## Test Users (Preview Environment)
-- `TestAdmin` - Society: "Test Golf Society" (is_admin: true)
-- `phil g` - Belongs to multiple societies
+- `TestAdmin` - **Global Admin** + Society: "Test Golf Society"
+- `phil g` - Belongs to multiple societies (regular user)
 
 ## Next Tasks (Prioritized)
 ### P1 - High Priority

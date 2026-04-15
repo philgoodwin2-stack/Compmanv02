@@ -67,6 +67,7 @@ class PlayerBase(BaseModel):
     handicap: float = 18.0
     is_active: bool = True
     is_admin: bool = False
+    is_global_admin: bool = False  # Global admin has rights across all societies
     team_logo: str = ""
     society_id: Optional[str] = None
 
@@ -78,6 +79,7 @@ class PlayerUpdate(BaseModel):
     handicap: Optional[float] = None
     is_active: Optional[bool] = None
     is_admin: Optional[bool] = None
+    is_global_admin: Optional[bool] = None
     team_logo: Optional[str] = None
     society_id: Optional[str] = None
 
@@ -239,12 +241,28 @@ class Course(CourseBase):
 
 # ============= ADMIN CHECK HELPER =============
 
-async def check_admin(user_id: str) -> bool:
-    """Check if a user is an admin"""
-    player = await db.players.find_one({"id": user_id})
+async def check_admin(user_id: str, society_id: str = None) -> bool:
+    """Check if a user is an admin (society admin or global admin)"""
+    player = await db.players.find_one({"id": user_id}, {"_id": 0})
     if not player:
         return False
+    
+    # Global admin has rights everywhere
+    if player.get("is_global_admin", False):
+        return True
+    
+    # Society admin only has rights in their society
+    if society_id and player.get("society_id") == society_id:
+        return player.get("is_admin", False)
+    
     return player.get("is_admin", False)
+
+async def check_global_admin(user_id: str) -> bool:
+    """Check if a user is a global admin"""
+    player = await db.players.find_one({"id": user_id}, {"_id": 0})
+    if not player:
+        return False
+    return player.get("is_global_admin", False)
 
 async def require_admin(user_id: str):
     """Raise exception if user is not admin"""
@@ -357,8 +375,10 @@ async def update_society(society_id: str, update_data: SocietyUpdate, admin_id: 
     if not society:
         raise HTTPException(status_code=404, detail="Society not found")
     
-    # Verify admin
-    if admin_id and society.get("admin_id") != admin_id:
+    # Verify admin (society admin OR global admin)
+    is_society_admin = admin_id and society.get("admin_id") == admin_id
+    is_global = await check_global_admin(admin_id) if admin_id else False
+    if admin_id and not is_society_admin and not is_global:
         raise HTTPException(status_code=403, detail="Only admin can update society details")
     
     update_fields = {}
@@ -388,8 +408,10 @@ async def remove_member(society_id: str, player_id: str, admin_id: str = None):
     if not society:
         raise HTTPException(status_code=404, detail="Society not found")
     
-    # Verify admin
-    if admin_id and society.get("admin_id") != admin_id:
+    # Verify admin (society admin OR global admin)
+    is_society_admin = admin_id and society.get("admin_id") == admin_id
+    is_global = await check_global_admin(admin_id) if admin_id else False
+    if admin_id and not is_society_admin and not is_global:
         raise HTTPException(status_code=403, detail="Only admin can remove members")
     
     # Can't remove admin
@@ -411,8 +433,10 @@ async def delete_society(society_id: str, admin_id: str = None):
     if not society:
         raise HTTPException(status_code=404, detail="Society not found")
     
-    # Verify admin
-    if admin_id and society.get("admin_id") != admin_id:
+    # Verify admin (society admin OR global admin)
+    is_society_admin = admin_id and society.get("admin_id") == admin_id
+    is_global = await check_global_admin(admin_id) if admin_id else False
+    if admin_id and not is_society_admin and not is_global:
         raise HTTPException(status_code=403, detail="Only admin can delete the society")
     
     # Delete all invite links for this society
@@ -458,8 +482,10 @@ async def create_invite_link(society_id: str, invite_data: InviteCreate, admin_i
     if not society:
         raise HTTPException(status_code=404, detail="Society not found")
     
-    # Verify admin
-    if admin_id and society.get("admin_id") != admin_id:
+    # Verify admin (society admin OR global admin)
+    is_society_admin = admin_id and society.get("admin_id") == admin_id
+    is_global = await check_global_admin(admin_id) if admin_id else False
+    if admin_id and not is_society_admin and not is_global:
         raise HTTPException(status_code=403, detail="Only admin can create invite links")
     
     # Calculate expiration
@@ -489,8 +515,10 @@ async def get_society_invites(society_id: str, admin_id: str = None):
     if not society:
         raise HTTPException(status_code=404, detail="Society not found")
     
-    # Verify admin
-    if admin_id and society.get("admin_id") != admin_id:
+    # Verify admin (society admin OR global admin)
+    is_society_admin = admin_id and society.get("admin_id") == admin_id
+    is_global = await check_global_admin(admin_id) if admin_id else False
+    if admin_id and not is_society_admin and not is_global:
         raise HTTPException(status_code=403, detail="Only admin can view invite links")
     
     now = datetime.now(timezone.utc).isoformat()
@@ -583,8 +611,10 @@ async def revoke_invite(society_id: str, invite_id: str, admin_id: str = None):
     if not society:
         raise HTTPException(status_code=404, detail="Society not found")
     
-    # Verify admin
-    if admin_id and society.get("admin_id") != admin_id:
+    # Verify admin (society admin OR global admin)
+    is_society_admin = admin_id and society.get("admin_id") == admin_id
+    is_global = await check_global_admin(admin_id) if admin_id else False
+    if admin_id and not is_society_admin and not is_global:
         raise HTTPException(status_code=403, detail="Only admin can revoke invite links")
     
     result = await db.invite_links.update_one(
@@ -802,6 +832,35 @@ async def toggle_admin_status(player_id: str, user_id: str = None):
     return {
         "message": f"{'Granted' if new_status else 'Revoked'} admin access for {player['username']}",
         "is_admin": new_status
+    }
+
+@api_router.put("/players/{player_id}/toggle-global-admin")
+async def toggle_global_admin_status(player_id: str, user_id: str = None):
+    """Toggle global admin status for a player (Global Admin only, or first setup)"""
+    # Check if any global admins exist
+    global_admin_count = await db.players.count_documents({"is_global_admin": True})
+    
+    # If no global admins exist, allow this to be the first one
+    if global_admin_count > 0 and user_id:
+        # Only existing global admins can grant global admin status
+        if not await check_global_admin(user_id):
+            raise HTTPException(status_code=403, detail="Only global admins can grant global admin status")
+    
+    player = await db.players.find_one({"id": player_id})
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    current_status = player.get("is_global_admin", False)
+    new_status = not current_status
+    
+    await db.players.update_one(
+        {"id": player_id},
+        {"$set": {"is_global_admin": new_status}}
+    )
+    
+    return {
+        "message": f"{'Granted' if new_status else 'Revoked'} global admin access for {player['username']}",
+        "is_global_admin": new_status
     }
 
 

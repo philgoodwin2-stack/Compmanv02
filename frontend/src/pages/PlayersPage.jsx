@@ -206,8 +206,9 @@ export default function PlayersPage() {
   const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "" });
   const [systemHasAdmins, setSystemHasAdmins] = useState(true); // Default to true to hide controls until checked
 
-  // Show admin controls for everyone (simple app without strict access control)
-  const isAdmin = true;
+  // Check if current user is admin or global admin
+  const isAdmin = user?.is_admin === true || user?.is_global_admin === true;
+  const isGlobalAdmin = user?.is_global_admin === true;
 
   useEffect(() => {
     fetchPlayers();
@@ -306,6 +307,20 @@ export default function PlayersPage() {
         toast.error("Admin access required");
       } else {
         toast.error("Failed to update admin status");
+      }
+    }
+  };
+
+  const handleToggleGlobalAdmin = async (player) => {
+    try {
+      const response = await axios.put(`${API}/players/${player.id}/toggle-global-admin?user_id=${user?.id}`);
+      toast.success(response.data.message);
+      fetchPlayers();
+    } catch (error) {
+      if (error.response?.status === 403) {
+        toast.error("Only global admins can grant global admin status");
+      } else {
+        toast.error("Failed to update global admin status");
       }
     }
   };
@@ -627,7 +642,10 @@ export default function PlayersPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-lg truncate">{player.username}</span>
-                        {player.is_admin && (
+                        {player.is_global_admin && (
+                          <Shield className="w-4 h-4 text-purple-600 flex-shrink-0" title="Global Admin" />
+                        )}
+                        {player.is_admin && !player.is_global_admin && (
                           <Shield className="w-4 h-4 text-[#D4AF37] flex-shrink-0" title="Admin" />
                         )}
                       </div>
@@ -636,6 +654,11 @@ export default function PlayersPage() {
                         <Badge className={player.is_active ? "bg-green-500/20 text-green-700 text-xs" : "bg-gray-400/20 text-gray-600 text-xs"}>
                           {player.is_active ? "Active" : "Excluded"}
                         </Badge>
+                        {player.is_global_admin && (
+                          <Badge className="bg-purple-600/20 text-purple-700 text-xs">
+                            Global Admin
+                          </Badge>
+                        )}
                       </div>
                     </div>
 
@@ -671,6 +694,17 @@ export default function PlayersPage() {
                         >
                           {player.is_admin ? <Shield className="w-4 h-4 mr-1" /> : <ShieldOff className="w-4 h-4 mr-1" />}
                           {player.is_admin ? "Admin" : "User"}
+                        </button>
+                      )}
+                      {isGlobalAdmin && (
+                        <button
+                          type="button"
+                          data-testid={`global-admin-toggle-${player.id}`}
+                          onClick={() => handleToggleGlobalAdmin(player)}
+                          className={`inline-flex items-center justify-center h-10 px-4 min-w-[80px] text-sm font-medium rounded-md border transition-colors active:scale-95 ${player.is_global_admin ? "border-purple-600 text-purple-600 bg-purple-600/10" : "border-gray-300 bg-white"}`}
+                        >
+                          <Shield className="w-4 h-4 mr-1" />
+                          {player.is_global_admin ? "Global" : "Make Global"}
                         </button>
                       )}
                     </div>
