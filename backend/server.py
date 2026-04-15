@@ -1966,17 +1966,35 @@ async def login(login_data: LoginRequest):
 @api_router.get("/check-username/{username}")
 async def check_username(username: str):
     """Check if a username already exists in the system"""
-    # Check for any player with this username (with or without society)
-    player = await db.players.find_one({"username": username}, {"_id": 0})
+    # Check for any player with this username that has a society (name is taken)
+    player_with_society = await db.players.find_one(
+        {"username": username, "society_id": {"$ne": None}}, 
+        {"_id": 0}
+    )
     
-    if player:
-        has_society = player.get("society_id") is not None
+    if player_with_society:
+        # Name is taken by someone in a society - they should use Sign In
         return {
             "exists": True,
-            "has_society": has_society,
-            "message": "This name is already taken" if has_society else "This user exists but needs to join a society"
+            "has_society": True,
+            "message": "This name is already taken. Please use 'Sign In' instead."
         }
     
+    # Check if player exists without a society (legacy account)
+    player_without_society = await db.players.find_one(
+        {"username": username, "society_id": None}, 
+        {"_id": 0}
+    )
+    
+    if player_without_society:
+        # Legacy account exists - they should use Sign In
+        return {
+            "exists": True,
+            "has_society": False,
+            "message": "This name is already registered. Please use 'Sign In' instead."
+        }
+    
+    # Username is completely available
     return {
         "exists": False,
         "has_society": False,

@@ -59,14 +59,8 @@ export default function LoginPage() {
       const response = await axios.get(`${API}/check-username/${encodeURIComponent(username.trim())}`);
       
       if (response.data.exists) {
-        if (response.data.has_society) {
-          toast.error("This name is already taken. Please use 'Returning User' to login or choose a different name.");
-        } else {
-          // User exists but has no society - let them join/create
-          setNeedsCode(true);
-          setIsNewUser(false);
-          toast.info("Account found! Please join or create a society.");
-        }
+        // Username already exists - tell them to use Sign In
+        toast.error("This name is already registered. Please use 'Sign In' to access your account.");
       } else {
         // Username is available - proceed to society selection
         setNeedsCode(true);
