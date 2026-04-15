@@ -744,32 +744,38 @@ export default function SocietyPage() {
                       </div>
                       
                       {/* Admin Actions */}
-                      {isAdmin && !member.is_admin && member.id !== user.id && (
+                      {isAdmin && member.id !== user.id && (
                         <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedMember(member);
-                              setShowTransferDialog(true);
-                            }}
-                            className="h-8 w-8 p-0"
-                            title="Make Admin"
-                          >
-                            <Shield className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedMember(member);
-                              setShowRemoveDialog(true);
-                            }}
-                            className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
-                            title="Remove Member"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          {/* Transfer Admin - only show for non-admins or if global admin */}
+                          {(!member.is_admin || isGlobalAdmin) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedMember(member);
+                                setShowTransferDialog(true);
+                              }}
+                              className="h-8 w-8 p-0"
+                              title="Make Admin"
+                            >
+                              <Shield className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {/* Remove - show for non-admins, or global admins can remove anyone */}
+                          {(!member.is_admin || isGlobalAdmin) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedMember(member);
+                                setShowRemoveDialog(true);
+                              }}
+                              className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                              title={member.is_admin ? "Remove Admin" : "Remove Member"}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>

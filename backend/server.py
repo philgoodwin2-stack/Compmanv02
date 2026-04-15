@@ -444,14 +444,20 @@ async def remove_member(society_id: str, player_id: str, admin_id: str = None):
     if admin_id and not is_society_admin and not is_global:
         raise HTTPException(status_code=403, detail="Only admin can remove members")
     
-    # Can't remove admin
+    # Can't remove society admin unless you're a global admin
     if player_id == society.get("admin_id"):
-        raise HTTPException(status_code=400, detail="Cannot remove admin. Transfer admin first.")
+        if not is_global:
+            raise HTTPException(status_code=400, detail="Cannot remove society admin. Transfer admin first or use a global admin.")
+        # Global admin is removing society admin - need to clear society's admin_id
+        await db.societies.update_one(
+            {"id": society_id},
+            {"$set": {"admin_id": None}}
+        )
     
-    # Remove player from society
+    # Remove player from society (and remove their admin status)
     await db.players.update_one(
         {"id": player_id},
-        {"$set": {"society_id": None}}
+        {"$set": {"society_id": None, "is_admin": False}}
     )
     
     return {"message": "Member removed successfully"}
