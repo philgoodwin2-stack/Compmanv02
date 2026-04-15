@@ -43,13 +43,14 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 | Grant society admin | ❌ | ✅ |
 | Grant global admin | ❌ | ✅ |
 
-### Features Completed (April 2026)
+### Features Completed
 - ✅ Multi-tenant Society Architecture
 - ✅ Society Management UI for admins
-- ✅ Shareable Invite Links
+- ✅ Shareable Invite Links with custom expiration
 - ✅ Society Switcher for multi-society users
 - ✅ New User Registration Flow with username availability check
-- ✅ **Global Admin System** - Super-admin with rights across all societies (April 15, 2026)
+- ✅ **Global Admin System** - Super-admin with rights across all societies
+- ✅ **Delete Society** - Admins can delete societies with full cascade deletion (Dec 2025)
 
 ## Global Admin Setup
 The first global admin can be created via API:
