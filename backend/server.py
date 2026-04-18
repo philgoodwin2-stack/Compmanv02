@@ -187,6 +187,12 @@ class ScorePointsUpdate(BaseModel):
     total_stableford: int
     playing_handicap: Optional[int] = None  # Shots received (if different from calculated)
 
+class ScoreMetadataUpdate(BaseModel):
+    total_gross: Optional[int] = None
+    playing_handicap: Optional[int] = None
+    player_handicap: Optional[float] = None
+    total_stableford: Optional[int] = None
+
 class Score(ScoreBase):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -1697,6 +1703,29 @@ async def update_score_holes(score_id: str, holes_data: List[HoleScore]):
             "total_stableford": total_stableford
         }}
     )
+    
+    updated_score = await db.scores.find_one({"id": score_id}, {"_id": 0})
+    return updated_score
+
+@api_router.put("/scores/{score_id}/metadata")
+async def update_score_metadata(score_id: str, data: ScoreMetadataUpdate):
+    """Update score metadata (gross, playing_handicap, player_handicap, stableford)"""
+    score = await db.scores.find_one({"id": score_id})
+    if not score:
+        raise HTTPException(status_code=404, detail="Score not found")
+    
+    update_fields = {}
+    if data.total_gross is not None:
+        update_fields["total_gross"] = data.total_gross
+    if data.playing_handicap is not None:
+        update_fields["playing_handicap"] = data.playing_handicap
+    if data.player_handicap is not None:
+        update_fields["player_handicap"] = data.player_handicap
+    if data.total_stableford is not None:
+        update_fields["total_stableford"] = data.total_stableford
+    
+    if update_fields:
+        await db.scores.update_one({"id": score_id}, {"$set": update_fields})
     
     updated_score = await db.scores.find_one({"id": score_id}, {"_id": 0})
     return updated_score
