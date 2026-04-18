@@ -1021,35 +1021,12 @@ async def recalculate_handicap(player_id: str):
                 record["playing_handicap"] = playing_hcp
                 record["score"] = stableford_pts
     
-    # Now recalculate handicaps
+    # Now recalculate handicaps using proper WHS formula
     for i, record in enumerate(sorted_history):
         available_diffs = [r["score_differential"] for r in sorted_history[:i+1]]
         
-        num_rounds = len(available_diffs)
-        if num_rounds <= 3:
-            num_to_use = 1
-        elif num_rounds <= 5:
-            num_to_use = 1
-        elif num_rounds <= 6:
-            num_to_use = 2
-        elif num_rounds <= 8:
-            num_to_use = 2
-        elif num_rounds <= 11:
-            num_to_use = 3
-        elif num_rounds <= 14:
-            num_to_use = 4
-        elif num_rounds <= 16:
-            num_to_use = 5
-        elif num_rounds <= 18:
-            num_to_use = 6
-        elif num_rounds <= 19:
-            num_to_use = 7
-        else:
-            num_to_use = 8
-        
-        sorted_diffs = sorted(available_diffs)[:num_to_use]
-        avg_diff = sum(sorted_diffs) / len(sorted_diffs)
-        new_handicap = round_half_up(avg_diff, 1)
+        # Use the proper WHS calculation function
+        new_handicap = calculate_handicap_index(available_diffs)
         
         record["handicap_after"] = new_handicap
         if i > 0:
@@ -1129,23 +1106,15 @@ async def import_score_differentials(player_id: str, request: ImportDifferential
         }
         handicap_history.append(handicap_record)
     
-    # Calculate handicaps using WHS rules (best 8 of last 20)
+    # Calculate handicaps using proper WHS rules
     all_differentials = [r["score_differential"] for r in handicap_history]
     
     for i, record in enumerate(handicap_history):
-        # Differentials available up to this point (from latest to this record)
+        # Differentials available up to this point
         available_diffs = all_differentials[:i+1]
         
-        if len(available_diffs) >= 3:
-            # WHS: Best 8 of 20 (or proportional for fewer rounds)
-            num_to_use = min(8, max(1, len(available_diffs) // 2))
-            sorted_diffs = sorted(available_diffs)[:num_to_use]
-            avg_diff = sum(sorted_diffs) / len(sorted_diffs)
-            new_handicap = round_half_up(avg_diff, 1)  # WHS: average of best differentials
-        else:
-            # Not enough rounds, use simple average
-            avg_diff = sum(available_diffs) / len(available_diffs)
-            new_handicap = round_half_up(avg_diff, 1)
+        # Use proper WHS calculation with adjustments
+        new_handicap = calculate_handicap_index(available_diffs)
         
         record["handicap_after"] = new_handicap
         if i > 0:
@@ -1239,15 +1208,8 @@ async def update_score_differential(player_id: str, request: UpdateDifferentialR
         # Get all differentials up to and including this record
         available_diffs = [r["score_differential"] for r in sorted_history[:i+1]]
         
-        if len(available_diffs) >= 3:
-            # WHS: Best 8 of 20 (or proportional for fewer rounds)
-            num_to_use = min(8, max(1, len(available_diffs) // 2))
-            sorted_diffs = sorted(available_diffs)[:num_to_use]
-            avg_diff = sum(sorted_diffs) / len(sorted_diffs)
-            new_handicap = round_half_up(avg_diff, 1)
-        else:
-            avg_diff = sum(available_diffs) / len(available_diffs)
-            new_handicap = round_half_up(avg_diff, 1)
+        # Use proper WHS calculation with adjustments
+        new_handicap = calculate_handicap_index(available_diffs)
         
         record["handicap_after"] = new_handicap
         if i > 0:
@@ -1301,14 +1263,8 @@ async def delete_score_differential(player_id: str, date: str, user_id: str = No
         for i, record in enumerate(sorted_history):
             available_diffs = [r["score_differential"] for r in sorted_history[:i+1]]
             
-            if len(available_diffs) >= 3:
-                num_to_use = min(8, max(1, len(available_diffs) // 2))
-                sorted_diffs = sorted(available_diffs)[:num_to_use]
-                avg_diff = sum(sorted_diffs) / len(sorted_diffs)
-                new_handicap = round_half_up(avg_diff, 1)
-            else:
-                avg_diff = sum(available_diffs) / len(available_diffs)
-                new_handicap = round_half_up(avg_diff, 1)
+            # Use proper WHS calculation with adjustments
+            new_handicap = calculate_handicap_index(available_diffs)
             
             record["handicap_after"] = new_handicap
             if i > 0:

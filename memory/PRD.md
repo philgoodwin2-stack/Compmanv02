@@ -51,6 +51,7 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - ✅ New User Registration Flow with username availability check
 - ✅ **Global Admin System** - Super-admin with rights across all societies
 - ✅ **Delete Society** - Admins can delete societies with full cascade deletion (Dec 2025)
+- ✅ **WHS Handicap Calculation Fix** - All handicap calculations now use proper WHS adjustments (-2.0 for 1-3 rounds, -1.0 for 4/6 rounds, etc.) (Dec 2025)
 
 ## Global Admin Setup
 The first global admin can be created via API:
