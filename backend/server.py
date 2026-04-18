@@ -193,6 +193,7 @@ class ScoreMetadataUpdate(BaseModel):
     player_handicap: Optional[float] = None
     total_stableford: Optional[int] = None
     score_differential: Optional[float] = None
+    player_id: Optional[str] = None
 
 class Score(ScoreBase):
     model_config = ConfigDict(extra="ignore")
@@ -1726,6 +1727,8 @@ async def update_score_metadata(score_id: str, data: ScoreMetadataUpdate):
         update_fields["total_stableford"] = data.total_stableford
     if data.score_differential is not None:
         update_fields["score_differential"] = data.score_differential
+    if data.player_id is not None:
+        update_fields["player_id"] = data.player_id
     
     if update_fields:
         await db.scores.update_one({"id": score_id}, {"$set": update_fields})
