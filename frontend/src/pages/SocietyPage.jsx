@@ -65,6 +65,10 @@ export default function SocietyPage() {
   const [switchingTo, setSwitchingTo] = useState(null);
   const [showDeleteSocietyDialog, setShowDeleteSocietyDialog] = useState(false);
   const [deletingSociety, setDeletingSociety] = useState(false);
+  const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
+  const [newPlayerName, setNewPlayerName] = useState("");
+  const [newPlayerHandicap, setNewPlayerHandicap] = useState("18.0");
+  const [addingPlayer, setAddingPlayer] = useState(false);
 
   const isAdmin = user?.is_admin === true || user?.is_global_admin === true;
   const isGlobalAdmin = user?.is_global_admin === true;
@@ -288,6 +292,31 @@ export default function SocietyPage() {
       toast.error(error.response?.data?.detail || "Failed to delete society");
     } finally {
       setDeletingSociety(false);
+    }
+  };
+
+  const handleAddPlayerToSociety = async () => {
+    if (!newPlayerName.trim()) {
+      toast.error("Please enter a player name");
+      return;
+    }
+    
+    setAddingPlayer(true);
+    try {
+      await axios.post(`${API}/players`, {
+        username: newPlayerName.trim(),
+        handicap: parseFloat(newPlayerHandicap) || 18.0,
+        society_id: user.society_id
+      });
+      toast.success(`${newPlayerName} added to society!`);
+      setShowAddPlayerDialog(false);
+      setNewPlayerName("");
+      setNewPlayerHandicap("18.0");
+      fetchMembers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to add player");
+    } finally {
+      setAddingPlayer(false);
     }
   };
 
@@ -714,10 +743,22 @@ export default function SocietyPage() {
         {/* Members List */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Members
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Members
+              </CardTitle>
+              {isGlobalAdmin && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowAddPlayerDialog(true)}
+                  className="gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Player
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -994,6 +1035,56 @@ export default function SocietyPage() {
                   Delete Society
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Player Dialog (Global Admin) */}
+      <Dialog open={showAddPlayerDialog} onOpenChange={setShowAddPlayerDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Player to Society</DialogTitle>
+            <DialogDescription>
+              Add a new player directly to {society?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-player-name">Player Name</Label>
+              <Input
+                id="new-player-name"
+                value={newPlayerName}
+                onChange={(e) => setNewPlayerName(e.target.value)}
+                placeholder="Enter player name"
+                data-testid="add-player-name-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-player-handicap">Handicap Index</Label>
+              <Input
+                id="new-player-handicap"
+                type="number"
+                step="0.1"
+                min="0"
+                max="54"
+                value={newPlayerHandicap}
+                onChange={(e) => setNewPlayerHandicap(e.target.value)}
+                placeholder="18.0"
+                data-testid="add-player-handicap-input"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddPlayerDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddPlayerToSociety}
+              disabled={addingPlayer || !newPlayerName.trim()}
+              data-testid="confirm-add-player-btn"
+            >
+              {addingPlayer ? "Adding..." : "Add Player"}
             </Button>
           </DialogFooter>
         </DialogContent>
