@@ -1786,6 +1786,65 @@ async def update_score_metadata(score_id: str, data: ScoreMetadataUpdate):
     updated_score = await db.scores.find_one({"id": score_id}, {"_id": 0})
     return updated_score
 
+@api_router.delete("/scores/{score_id}")
+async def delete_score_from_round(score_id: str):
+    """Delete a player's score from a round and recalculate their handicap"""
+    score = await db.scores.find_one({"id": score_id})
+    if not score:
+        raise HTTPException(status_code=404, detail="Score not found")
+    
+    player_id = score.get("player_id")
+    round_id = score.get("round_id")
+    
+    # Delete the score
+    await db.scores.delete_one({"id": score_id})
+    
+    # If player exists, remove from handicap history and recalculate
+    if player_id:
+        player = await db.players.find_one({"id": player_id})
+        if player:
+            handicap_history = player.get("handicap_history", [])
+            
+            # Filter out entries for this round
+            new_history = [h for h in handicap_history if h.get("round_id") != round_id]
+            
+            if len(new_history) != len(handicap_history):
+                # History was modified, recalculate handicaps
+                if new_history:
+                    # Sort by date
+                    sorted_history = sorted(new_history, key=lambda x: x.get("date", ""))
+                    
+                    # Recalculate handicaps for each record
+                    for i, record in enumerate(sorted_history):
+                        available_diffs = [r["score_differential"] for r in sorted_history[:i+1]]
+                        new_handicap = calculate_handicap_index(available_diffs)
+                        record["handicap_after"] = new_handicap
+                        if i > 0:
+                            record["handicap_before"] = sorted_history[i-1]["handicap_after"]
+                    
+                    final_handicap = sorted_history[-1]["handicap_after"]
+                    new_history = sorted_history
+                else:
+                    # No history left, keep current handicap
+                    final_handicap = player.get("handicap", 18.0)
+                
+                # Update player
+                await db.players.update_one(
+                    {"id": player_id},
+                    {"$set": {
+                        "handicap_history": new_history,
+                        "handicap": final_handicap
+                    }}
+                )
+                
+                return {
+                    "message": "Score deleted and handicap recalculated",
+                    "player_id": player_id,
+                    "new_handicap": final_handicap
+                }
+    
+    return {"message": "Score deleted", "player_id": player_id}
+
 @api_router.put("/scores/{score_id}/points", response_model=Score)
 async def update_score_points(score_id: str, points_data: ScorePointsUpdate):
     """Update score with just total Stableford points (simplified entry)"""
