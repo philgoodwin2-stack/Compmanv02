@@ -1291,6 +1291,28 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
     }
   };
 
+  const handleToggleScoreComp = async (scoreId, currentStatus) => {
+    try {
+      const response = await axios.put(`${API}/scores/${scoreId}/toggle-comp`);
+      toast.success(response.data.message);
+      fetchScores();
+      onRefresh();
+    } catch (error) {
+      toast.error("Failed to toggle competition inclusion");
+    }
+  };
+
+  const handleToggleScoreHandicap = async (scoreId, currentStatus) => {
+    try {
+      const response = await axios.put(`${API}/scores/${scoreId}/toggle-handicap`);
+      toast.success(response.data.message);
+      fetchScores();
+      onRefresh();
+    } catch (error) {
+      toast.error("Failed to toggle handicap inclusion");
+    }
+  };
+
   return (
     <Card className={`border-l-4 ${isIncluded ? 'border-l-primary' : 'border-l-gray-300 opacity-60'}`} data-testid={`round-card-${round.id}`}>
       <CardHeader className="pb-2">
@@ -1369,6 +1391,8 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
           <div className="space-y-2">
             {players.map((player) => {
               const playerScore = getPlayerScore(player.id);
+              const isScoreIncludedInComp = playerScore?.is_included_in_comp !== false;
+              const isScoreIncludedInHandicap = playerScore?.is_included_in_handicap !== false;
               return (
                 <div
                   key={player.id}
@@ -1380,10 +1404,43 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
                       HCP {player.handicap.toFixed(1)}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     {playerScore ? (
                       <>
-                        <span className="font-mono text-xl font-bold text-primary">
+                        {/* Score-level toggles */}
+                        <div className="flex items-center gap-1 mr-2">
+                          <div className="flex items-center gap-1">
+                            <Label 
+                              htmlFor={`score-comp-${playerScore.id}`} 
+                              className={`text-[10px] ${isScoreIncludedInComp ? 'text-primary' : 'text-muted-foreground'}`}
+                            >
+                              Comp
+                            </Label>
+                            <Switch
+                              id={`score-comp-${playerScore.id}`}
+                              checked={isScoreIncludedInComp}
+                              onCheckedChange={() => handleToggleScoreComp(playerScore.id, isScoreIncludedInComp)}
+                              data-testid={`toggle-score-comp-${playerScore.id}`}
+                              className="scale-75"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Label 
+                              htmlFor={`score-hcp-${playerScore.id}`} 
+                              className={`text-[10px] ${isScoreIncludedInHandicap ? 'text-primary' : 'text-muted-foreground'}`}
+                            >
+                              HCP
+                            </Label>
+                            <Switch
+                              id={`score-hcp-${playerScore.id}`}
+                              checked={isScoreIncludedInHandicap}
+                              onCheckedChange={() => handleToggleScoreHandicap(playerScore.id, isScoreIncludedInHandicap)}
+                              data-testid={`toggle-score-hcp-${playerScore.id}`}
+                              className="scale-75"
+                            />
+                          </div>
+                        </div>
+                        <span className={`font-mono text-xl font-bold ${isScoreIncludedInComp ? 'text-primary' : 'text-muted-foreground line-through'}`}>
                           {playerScore.total_stableford} pts
                         </span>
                         <Button

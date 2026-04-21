@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Flag, Trophy } from "lucide-react";
 
@@ -22,6 +23,8 @@ export default function ScoreEntryPage() {
 
   const [stablefordPoints, setStablefordPoints] = useState(0);
   const [playingHandicap, setPlayingHandicap] = useState(null);
+  const [isIncludedInComp, setIsIncludedInComp] = useState(true);
+  const [isIncludedInHandicap, setIsIncludedInHandicap] = useState(true);
 
   useEffect(() => {
     fetchData();
@@ -47,6 +50,8 @@ export default function ScoreEntryPage() {
         const existingScore = scoresRes.data[0];
         setScore(existingScore);
         setStablefordPoints(existingScore.total_stableford || 0);
+        setIsIncludedInComp(existingScore.is_included_in_comp !== false);
+        setIsIncludedInHandicap(existingScore.is_included_in_handicap !== false);
       } else {
         // Create new score
         try {
@@ -89,6 +94,28 @@ export default function ScoreEntryPage() {
       toast.error("Failed to save score");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleComp = async () => {
+    if (!score) return;
+    try {
+      const response = await axios.put(`${API}/scores/${score.id}/toggle-comp`);
+      setIsIncludedInComp(response.data.is_included_in_comp);
+      toast.success(response.data.message);
+    } catch (error) {
+      toast.error("Failed to toggle competition inclusion");
+    }
+  };
+
+  const handleToggleHandicap = async () => {
+    if (!score) return;
+    try {
+      const response = await axios.put(`${API}/scores/${score.id}/toggle-handicap`);
+      setIsIncludedInHandicap(response.data.is_included_in_handicap);
+      toast.success(response.data.message);
+    } catch (error) {
+      toast.error("Failed to toggle handicap inclusion");
     }
   };
 
@@ -195,6 +222,43 @@ export default function ScoreEntryPage() {
               <p className="text-xs text-muted-foreground mt-1">
                 Leave empty to use 95% of Course Handicap
               </p>
+            </div>
+
+            {/* Score Inclusion Toggles */}
+            <div className="bg-secondary/30 rounded-lg p-4">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-3 block text-center">
+                Score Settings
+              </Label>
+              <div className="flex justify-center gap-8">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="include-in-comp"
+                    checked={isIncludedInComp}
+                    onCheckedChange={handleToggleComp}
+                    data-testid="toggle-score-comp"
+                  />
+                  <Label 
+                    htmlFor="include-in-comp" 
+                    className={`text-sm ${isIncludedInComp ? 'text-primary font-medium' : 'text-muted-foreground'}`}
+                  >
+                    Include in Competition
+                  </Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="include-in-handicap"
+                    checked={isIncludedInHandicap}
+                    onCheckedChange={handleToggleHandicap}
+                    data-testid="toggle-score-handicap"
+                  />
+                  <Label 
+                    htmlFor="include-in-handicap" 
+                    className={`text-sm ${isIncludedInHandicap ? 'text-primary font-medium' : 'text-muted-foreground'}`}
+                  >
+                    Include in Handicap
+                  </Label>
+                </div>
+              </div>
             </div>
 
             {/* Quick Entry Buttons */}

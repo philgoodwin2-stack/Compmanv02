@@ -175,6 +175,8 @@ class ScoreBase(BaseModel):
     holes: List[HoleScore] = []
     total_strokes: int = 0
     total_stableford: int = 0
+    is_included_in_comp: bool = True  # Whether this score counts for competition leaderboard
+    is_included_in_handicap: bool = True  # Whether this score counts for player's handicap
 
 class ScoreCreate(BaseModel):
     round_id: str
@@ -1786,7 +1788,124 @@ async def update_score_metadata(score_id: str, data: ScoreMetadataUpdate):
     updated_score = await db.scores.find_one({"id": score_id}, {"_id": 0})
     return updated_score
 
-@api_router.delete("/scores/{score_id}")
+@api_router.put("/scores/{score_id}/toggle-comp")
+async def toggle_score_comp_inclusion(score_id: str):
+    """Toggle whether a score counts for competition leaderboard"""
+    score = await db.scores.find_one({"id": score_id})
+    if not score:
+        raise HTTPException(status_code=404, detail="Score not found")
+    
+    current_status = score.get("is_included_in_comp", True)
+    new_status = not current_status
+    
+    await db.scores.update_one(
+        {"id": score_id},
+        {"$set": {"is_included_in_comp": new_status}}
+    )
+    
+    return {
+        "message": f"Score {'included in' if new_status else 'excluded from'} competition",
+        "is_included_in_comp": new_status
+    }
+
+@api_router.put("/scores/{score_id}/toggle-handicap")
+async def toggle_score_handicap_inclusion(score_id: str):
+    """Toggle whether a score counts for player's handicap calculation"""
+    score = await db.scores.find_one({"id": score_id})
+    if not score:
+        raise HTTPException(status_code=404, detail="Score not found")
+    
+    current_status = score.get("is_included_in_handicap", True)
+    new_status = not current_status
+    player_id = score.get("player_id")
+    round_id = score.get("round_id")
+    
+    await db.scores.update_one(
+        {"id": score_id},
+        {"$set": {"is_included_in_handicap": new_status}}
+    )
+    
+    # Recalculate player's handicap based on the change
+    if player_id:
+        player = await db.players.find_one({"id": player_id})
+        if player:
+            handicap_history = player.get("handicap_history", [])
+            
+            if new_status:
+                # Score now counts - need to add to handicap history if not present
+                # Get the round to get the date
+                round_doc = await db.rounds.find_one({"id": round_id})
+                score_diff = score.get("score_differential")
+                
+                if round_doc and score_diff is not None:
+                    # Check if this round already exists in history
+                    existing_entry = next((h for h in handicap_history if h.get("round_id") == round_id), None)
+                    
+                    if not existing_entry:
+                        # Add new entry
+                        new_entry = {
+                            "date": round_doc.get("date", datetime.now(timezone.utc).isoformat()[:10]),
+                            "course": round_doc.get("course_name", "Unknown"),
+                            "score_differential": score_diff,
+                            "round_id": round_id,
+                            "handicap_before": player.get("handicap", 18.0)
+                        }
+                        handicap_history.append(new_entry)
+                        
+                        # Sort by date
+                        handicap_history.sort(key=lambda x: x.get("date", ""))
+                        
+                        # Recalculate handicaps
+                        for i, record in enumerate(handicap_history):
+                            available_diffs = [r["score_differential"] for r in handicap_history[:i+1]]
+                            new_handicap = calculate_handicap_index(available_diffs)
+                            record["handicap_after"] = new_handicap
+                            if i > 0:
+                                record["handicap_before"] = handicap_history[i-1]["handicap_after"]
+                        
+                        final_handicap = handicap_history[-1]["handicap_after"] if handicap_history else player.get("handicap", 18.0)
+                        
+                        await db.players.update_one(
+                            {"id": player_id},
+                            {"$set": {
+                                "handicap_history": handicap_history,
+                                "handicap": final_handicap
+                            }}
+                        )
+            else:
+                # Score no longer counts - remove from handicap history
+                new_history = [h for h in handicap_history if h.get("round_id") != round_id]
+                
+                if len(new_history) != len(handicap_history):
+                    # History was modified, recalculate
+                    if new_history:
+                        # Sort by date
+                        new_history.sort(key=lambda x: x.get("date", ""))
+                        
+                        # Recalculate handicaps
+                        for i, record in enumerate(new_history):
+                            available_diffs = [r["score_differential"] for r in new_history[:i+1]]
+                            new_handicap = calculate_handicap_index(available_diffs)
+                            record["handicap_after"] = new_handicap
+                            if i > 0:
+                                record["handicap_before"] = new_history[i-1]["handicap_after"]
+                        
+                        final_handicap = new_history[-1]["handicap_after"]
+                    else:
+                        final_handicap = player.get("handicap", 18.0)
+                    
+                    await db.players.update_one(
+                        {"id": player_id},
+                        {"$set": {
+                            "handicap_history": new_history,
+                            "handicap": final_handicap
+                        }}
+                    )
+    
+    return {
+        "message": f"Score {'counts for' if new_status else 'excluded from'} handicap",
+        "is_included_in_handicap": new_status
+    }
 async def delete_score_from_round(score_id: str):
     """Delete a player's score from a round and recalculate their handicap"""
     score = await db.scores.find_one({"id": score_id})
@@ -1907,8 +2026,11 @@ async def update_score_points(score_id: str, points_data: ScorePointsUpdate):
             existing_record_idx = idx
             break
     
-    # Only update handicap if this round counts
-    if counts_for_handicap:
+    # Only update handicap if this round counts AND score is included in handicap
+    # First check if score is included in handicap (score-level toggle)
+    score_included_in_handicap = score.get("is_included_in_handicap", True)
+    
+    if counts_for_handicap and score_included_in_handicap:
         # Get all differentials for calculation
         all_differentials = [r.get("score_differential", 0) for r in handicap_history]
         
@@ -1935,8 +2057,8 @@ async def update_score_points(score_id: str, points_data: ScorePointsUpdate):
     points_diff = points_data.total_stableford - 36
     gross_score = course_par + actual_playing_hcp - points_diff
     
-    # Create handicap record (only if counts for handicap)
-    if counts_for_handicap:
+    # Create handicap record (only if counts for handicap at both round and score level)
+    if counts_for_handicap and score_included_in_handicap:
         handicap_record = {
             "date": round_date,
             "round_id": score["round_id"],
@@ -2008,9 +2130,13 @@ async def get_leaderboard(competition_id: str):
     # Create a map of round_id to index for ordering (using all rounds for display)
     round_index_map = {r["id"]: idx for idx, r in enumerate(all_rounds)}
     
-    # Aggregate by player
+    # Aggregate by player (only include scores where is_included_in_comp is True)
     player_scores = {}
     for score in scores:
+        # Skip scores that are excluded from competition
+        if not score.get("is_included_in_comp", True):
+            continue
+            
         pid = score["player_id"]
         if pid not in player_scores:
             player_scores[pid] = {
