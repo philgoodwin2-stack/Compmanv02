@@ -1277,6 +1277,20 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
     return scores.find((s) => s.player_id === playerId);
   };
 
+  const handleDeleteScore = async (scoreId, playerUsername) => {
+    if (!confirm(`Remove ${playerUsername}'s score from this round? This will also recalculate their handicap.`)) {
+      return;
+    }
+    try {
+      await axios.delete(`${API}/scores/${scoreId}`);
+      toast.success(`${playerUsername}'s score removed`);
+      fetchScores();
+      onRefresh();
+    } catch (error) {
+      toast.error("Failed to delete score");
+    }
+  };
+
   return (
     <Card className={`border-l-4 ${isIncluded ? 'border-l-primary' : 'border-l-gray-300 opacity-60'}`} data-testid={`round-card-${round.id}`}>
       <CardHeader className="pb-2">
@@ -1381,6 +1395,15 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
                         >
                           Edit
                           <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
+                        <Button
+                          data-testid={`delete-score-${round.id}-${player.id}`}
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteScore(playerScore.id, player.username)}
+                          className="text-destructive hover:bg-destructive/10 rounded-none"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </>
                     ) : (
