@@ -1487,12 +1487,62 @@ async def create_round(round_data: RoundCreate):
 
 @api_router.delete("/rounds/{round_id}")
 async def delete_round(round_id: str):
-    result = await db.rounds.delete_one({"id": round_id})
-    if result.deleted_count == 0:
+    # Get the round first to find affected scores
+    round_doc = await db.rounds.find_one({"id": round_id})
+    if not round_doc:
         raise HTTPException(status_code=404, detail="Round not found")
+    
+    # Get all scores for this round to find affected players
+    scores = await db.scores.find({"round_id": round_id}).to_list(100)
+    affected_player_ids = [score["player_id"] for score in scores if score.get("player_id")]
+    
+    # Delete the round
+    await db.rounds.delete_one({"id": round_id})
+    
     # Delete associated scores
     await db.scores.delete_many({"round_id": round_id})
-    return {"message": "Round and associated scores deleted"}
+    
+    # Remove handicap history entries for this round and recalculate handicaps
+    for player_id in affected_player_ids:
+        player = await db.players.find_one({"id": player_id})
+        if not player:
+            continue
+        
+        handicap_history = player.get("handicap_history", [])
+        
+        # Filter out entries for this round
+        new_history = [h for h in handicap_history if h.get("round_id") != round_id]
+        
+        if len(new_history) != len(handicap_history):
+            # History was modified, recalculate handicaps
+            if new_history:
+                # Sort by date
+                sorted_history = sorted(new_history, key=lambda x: x.get("date", ""))
+                
+                # Recalculate handicaps for each record
+                for i, record in enumerate(sorted_history):
+                    available_diffs = [r["score_differential"] for r in sorted_history[:i+1]]
+                    new_handicap = calculate_handicap_index(available_diffs)
+                    record["handicap_after"] = new_handicap
+                    if i > 0:
+                        record["handicap_before"] = sorted_history[i-1]["handicap_after"]
+                
+                final_handicap = sorted_history[-1]["handicap_after"]
+                new_history = sorted_history
+            else:
+                # No history left, reset to default handicap
+                final_handicap = player.get("handicap", 18.0)
+            
+            # Update player
+            await db.players.update_one(
+                {"id": player_id},
+                {"$set": {
+                    "handicap_history": new_history,
+                    "handicap": final_handicap
+                }}
+            )
+    
+    return {"message": "Round deleted, scores removed, and handicaps recalculated", "affected_players": len(affected_player_ids)}
 
 
 @api_router.put("/rounds/{round_id}/toggle-inclusion")
