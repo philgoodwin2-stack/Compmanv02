@@ -24,8 +24,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag, History, TrendingDown, TrendingUp, Upload, Save, X, RefreshCw, Star, Shield, ShieldOff } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Users, Flag, History, TrendingDown, TrendingUp, Upload, Save, X, RefreshCw, Star, Shield, ShieldOff, ArrowRightLeft } from "lucide-react";
 
 // Sports team logos - Football, Rugby, GAA and more
 const TEAM_LOGOS = [
@@ -207,6 +214,10 @@ export default function PlayersPage() {
   const [systemHasAdmins, setSystemHasAdmins] = useState(true); // Default to true to hide controls until checked
   const [showAllPlayers, setShowAllPlayers] = useState(false); // Global admin can toggle to see all
   const [societies, setSocieties] = useState([]); // For displaying society names
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [playerToMove, setPlayerToMove] = useState(null);
+  const [targetSocietyId, setTargetSocietyId] = useState("");
+  const [movingPlayer, setMovingPlayer] = useState(false);
 
   // Check if current user is admin or global admin
   const isAdmin = user?.is_admin === true || user?.is_global_admin === true;
@@ -359,6 +370,34 @@ export default function PlayersPage() {
       fetchPlayers();
     } catch (error) {
       toast.error("Failed to delete player");
+    }
+  };
+
+  const openMoveDialog = (player) => {
+    setPlayerToMove(player);
+    setTargetSocietyId(player.society_id || "");
+    setShowMoveDialog(true);
+  };
+
+  const handleMovePlayer = async () => {
+    if (!playerToMove) return;
+    
+    setMovingPlayer(true);
+    try {
+      const newSocietyId = targetSocietyId === "none" ? null : targetSocietyId;
+      await axios.put(`${API}/players/${playerToMove.id}`, {
+        ...playerToMove,
+        society_id: newSocietyId
+      });
+      toast.success(`${playerToMove.username} moved to ${newSocietyId ? getSocietyName(newSocietyId) : "No Society"}`);
+      setShowMoveDialog(false);
+      setPlayerToMove(null);
+      setTargetSocietyId("");
+      fetchPlayers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to move player");
+    } finally {
+      setMovingPlayer(false);
     }
   };
 
@@ -759,6 +798,17 @@ export default function PlayersPage() {
                           className="inline-flex items-center justify-center h-10 w-10 p-0 text-blue-600 rounded-md hover:bg-blue-50 active:scale-95 active:bg-blue-100"
                         >
                           <Upload className="w-5 h-5" />
+                        </button>
+                      )}
+                      {isGlobalAdmin && showAllPlayers && (
+                        <button
+                          type="button"
+                          data-testid={`move-player-${player.id}`}
+                          onClick={() => openMoveDialog(player)}
+                          className="inline-flex items-center justify-center h-10 w-10 p-0 text-green-600 rounded-md hover:bg-green-50 active:scale-95 active:bg-green-100"
+                          title="Move to different society"
+                        >
+                          <ArrowRightLeft className="w-5 h-5" />
                         </button>
                       )}
                       <button
@@ -1173,6 +1223,59 @@ export default function PlayersPage() {
                 <Upload className="w-4 h-4 mr-2" />
                 Import Differentials
               </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Move Player Dialog */}
+        <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">
+                Move Player to Society
+              </DialogTitle>
+            </DialogHeader>
+            {playerToMove && (
+              <div className="space-y-4 py-4">
+                <div className="p-3 bg-secondary/30 rounded-lg">
+                  <p className="font-medium">{playerToMove.username}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Currently in: {getSocietyName(playerToMove.society_id)}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Move to Society</Label>
+                  <Select value={targetSocietyId} onValueChange={setTargetSocietyId}>
+                    <SelectTrigger data-testid="move-society-select">
+                      <SelectValue placeholder="Select a society" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Society (Remove)</SelectItem>
+                      {societies.map((society) => (
+                        <SelectItem key={society.id} value={society.id}>
+                          {society.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowMoveDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleMovePlayer}
+                disabled={movingPlayer}
+                className="bg-green-600 hover:bg-green-700"
+                data-testid="confirm-move-btn"
+              >
+                {movingPlayer ? "Moving..." : "Move Player"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
