@@ -59,6 +59,7 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - ✅ **Society Badge on Competition** - Competition header shows society name badge (Dec 2025)
 - ✅ **Delete Round Cascade** - Deleting a round removes WHS handicap history entries and recalculates handicaps (Dec 2025)
 - ✅ **Delete Player Score from Round** - Trash icon button next to each player score in Rounds tab; deletes score and recalculates handicap (21 Apr 2026)
+- ✅ **Player-Level Comp/HCP Toggles** - Individual score exclusion from competition leaderboard and/or handicap calculation. Toggles available in both Rounds tab (next to each player's score) and Score Entry page (21 Apr 2026)
 
 ## Global Admin Setup
 The first global admin can be created via API:
