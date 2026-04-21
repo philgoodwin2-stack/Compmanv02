@@ -206,6 +206,7 @@ export default function PlayersPage() {
   const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "" });
   const [systemHasAdmins, setSystemHasAdmins] = useState(true); // Default to true to hide controls until checked
   const [showAllPlayers, setShowAllPlayers] = useState(false); // Global admin can toggle to see all
+  const [societies, setSocieties] = useState([]); // For displaying society names
 
   // Check if current user is admin or global admin
   const isAdmin = user?.is_admin === true || user?.is_global_admin === true;
@@ -214,7 +215,25 @@ export default function PlayersPage() {
   useEffect(() => {
     fetchPlayers();
     checkAdminStatus();
+    if (isGlobalAdmin) {
+      fetchSocieties();
+    }
   }, [showAllPlayers]);
+
+  const fetchSocieties = async () => {
+    try {
+      const response = await axios.get(`${API}/societies`);
+      setSocieties(response.data);
+    } catch (error) {
+      console.error("Failed to fetch societies");
+    }
+  };
+
+  const getSocietyName = (societyId) => {
+    if (!societyId) return "No Society";
+    const society = societies.find(s => s.id === societyId);
+    return society ? society.name : societyId.substring(0, 8) + "...";
+  };
 
   const checkAdminStatus = async () => {
     try {
@@ -677,9 +696,9 @@ export default function PlayersPage() {
                             Global Admin
                           </Badge>
                         )}
-                        {showAllPlayers && player.society_id && (
+                        {showAllPlayers && (
                           <Badge variant="outline" className="text-xs">
-                            {player.society_id.substring(0, 8)}...
+                            {getSocietyName(player.society_id)}
                           </Badge>
                         )}
                       </div>
