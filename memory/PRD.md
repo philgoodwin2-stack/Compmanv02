@@ -51,7 +51,14 @@ Build an app to capture golf scores and run a competition. It's a stableford com
 - ✅ New User Registration Flow with username availability check
 - ✅ **Global Admin System** - Super-admin with rights across all societies
 - ✅ **Delete Society** - Admins can delete societies with full cascade deletion (Dec 2025)
-- ✅ **WHS Handicap Calculation Fix** - All handicap calculations now use proper WHS adjustments (-2.0 for 1-3 rounds, -1.0 for 4/6 rounds, etc.) (Dec 2025)
+- ✅ **WHS Handicap Calculation Fix** - All handicap calculations now use proper WHS truncation (not rounding) and adjustments (Dec 2025)
+- ✅ **Score Metadata Editor** - PUT /api/scores/{score_id}/metadata to directly update gross, PHP, differential (Dec 2025)
+- ✅ **Show All Players (Global)** - Global admins can view all players across societies with society badges (Dec 2025)
+- ✅ **Add Player to Society** - Global admins can add players directly to any society (Dec 2025)
+- ✅ **Move Player Between Societies** - Global admins can transfer players between societies (Dec 2025)
+- ✅ **Society Badge on Competition** - Competition header shows society name badge (Dec 2025)
+- ✅ **Delete Round Cascade** - Deleting a round removes WHS handicap history entries and recalculates handicaps (Dec 2025)
+- ✅ **Delete Player Score from Round** - Trash icon button next to each player score in Rounds tab; deletes score and recalculates handicap (21 Apr 2026)
 
 ## Global Admin Setup
 The first global admin can be created via API:
