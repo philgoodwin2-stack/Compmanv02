@@ -75,6 +75,7 @@ export default function CompetitionPage() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [allPlayers, setAllPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [societies, setSocieties] = useState([]);
 
   const [showAddRoundDialog, setShowAddRoundDialog] = useState(false);
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
@@ -103,24 +104,32 @@ export default function CompetitionPage() {
       const playersUrl = societyId ? `${API}/players?society_id=${societyId}` : `${API}/players`;
       const coursesUrl = societyId ? `${API}/courses?society_id=${societyId}` : `${API}/courses`;
       
-      const [compRes, roundsRes, leaderboardRes, playersRes, coursesRes] = await Promise.all([
+      const [compRes, roundsRes, leaderboardRes, playersRes, coursesRes, societiesRes] = await Promise.all([
         axios.get(`${API}/competitions/${id}`),
         axios.get(`${API}/rounds?competition_id=${id}`),
         axios.get(`${API}/leaderboard/${id}`),
         axios.get(playersUrl),
         axios.get(coursesUrl),
+        axios.get(`${API}/societies`),
       ]);
       setCompetition(compRes.data);
       setRounds(roundsRes.data);
       setLeaderboard(leaderboardRes.data);
       setAllPlayers(playersRes.data);
       setCourses(coursesRes.data);
+      setSocieties(societiesRes.data);
     } catch (error) {
       toast.error("Failed to load competition");
       navigate("/dashboard");
     } finally {
       setLoading(false);
     }
+  };
+
+  const getSocietyName = (societyId) => {
+    if (!societyId) return null;
+    const society = societies.find(s => s.id === societyId);
+    return society ? society.name : null;
   };
 
   const handleCourseSelect = (courseId) => {
@@ -353,6 +362,11 @@ export default function CompetitionPage() {
                   <Badge className={`${getStatusColor(competition.status)} uppercase text-xs font-bold flex-shrink-0`}>
                     {competition.status}
                   </Badge>
+                  {getSocietyName(competition.society_id) && (
+                    <Badge variant="outline" className="text-white/80 border-white/30 text-xs flex-shrink-0">
+                      {getSocietyName(competition.society_id)}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-white/60 text-xs sm:text-sm mt-1 flex items-center gap-1 flex-wrap">
                   <CalendarIcon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
