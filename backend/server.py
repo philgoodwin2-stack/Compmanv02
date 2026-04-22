@@ -1906,6 +1906,8 @@ async def toggle_score_handicap_inclusion(score_id: str):
         "message": f"Score {'counts for' if new_status else 'excluded from'} handicap",
         "is_included_in_handicap": new_status
     }
+
+@api_router.delete("/scores/{score_id}")
 async def delete_score_from_round(score_id: str):
     """Delete a player's score from a round and recalculate their handicap"""
     score = await db.scores.find_one({"id": score_id})
