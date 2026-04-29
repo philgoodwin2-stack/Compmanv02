@@ -1,49 +1,58 @@
-# BudgetPro - Personal Finance Tracker
+# Golf Stableford Competition App - PRD
 
 ## Overview
-A personal budget tracking application to monitor income, expenses, and spending trends over time.
-
-## Core Features
-- **Dashboard**: Overview of financial health with net balance, income, expenses, budget progress, and recent transactions
-- **Transactions**: Track income and expenses with categories, descriptions, and dates
-- **Budgets**: Set monthly spending limits per category and track progress
-- **Analytics**: View spending trends over 6 months, category breakdowns
+A PWA for capturing golf scores and running Stableford competitions with WHS handicap tracking.
 
 ## Tech Stack
-- **Frontend**: React, Tailwind CSS, Shadcn UI, Dark Theme
-- **Backend**: FastAPI, MongoDB
-- **Styling**: Dark finance app aesthetic (#0a0a0a background, emerald/red accents)
+- **Frontend**: React, Tailwind CSS, Shadcn UI
+- **Backend**: FastAPI, MongoDB (local instance)
+- **Features**: PWA, Mobile-first responsive design, Multi-tenant Architecture
 
-## Categories
+## Core Features
+- Stableford points scoring
+- Multiple rounds/tournaments
+- WHS handicap tracking (truncation-based calculation)
+- Username-based access
+- Player include/exclude management
+- Masters-style leaderboard with scores by date
+- Multi-tenant Society system (data isolated by groups)
+- Global Admin RBAC system
 
-### Income Categories
-- Salary, Freelance, Investments, Gifts, Other Income
-
-### Expense Categories  
-- Rent/Mortgage, Utilities, Groceries, Transport, Entertainment
-- Dining Out, Shopping, Healthcare, Subscriptions, Education, Other
-
-## API Endpoints
-- `GET /api/categories` - List all categories
-- `GET/POST/PUT/DELETE /api/transactions` - CRUD transactions
-- `GET/POST/DELETE /api/budgets` - Manage monthly budgets
-- `GET /api/summary` - Dashboard summary with budget progress
-- `GET /api/analytics/trends` - 6 month income/expense trends
-- `GET /api/analytics/by-category` - Category breakdown
+## Key DB Schema
+- `societies`: {id, name, join_code, admin_id, created_at}
+- `players`: {id, username, handicap, active, is_admin, is_global_admin, society_id, handicap_history}
+- `courses`: {id, name, tees, holes, society_id}
+- `competitions`: {id, name, start_date, end_date, min_rounds, society_id}
+- `rounds`: {id, date, course_id, competition_id}
+- `scores`: {id, round_id, player_id, total_gross, playing_handicap, score_differential, is_included_in_comp, is_included_in_handicap, holes}
 
 ## Features Completed
-- ✅ Dashboard with financial overview (Apr 2026)
-- ✅ Transaction tracking (add, edit, delete) (Apr 2026)
-- ✅ Monthly budget management (Apr 2026)
-- ✅ Spending analytics and trends (Apr 2026)
-- ✅ Dark finance theme styling (Apr 2026)
-- ✅ Month navigation across all pages (Apr 2026)
-- ✅ Category icons and colors (Apr 2026)
+- ✅ Multi-tenant Society Architecture
+- ✅ Global Admin System
+- ✅ Delete Society with cascade deletion
+- ✅ WHS Handicap Calculation (truncation-based)
+- ✅ Score Metadata Editor
+- ✅ Show All Players (Global Admin view)
+- ✅ Add Player to Society
+- ✅ Move Player Between Societies
+- ✅ Society Badge on Competition
+- ✅ Delete Round Cascade (removes WHS history)
+- ✅ Delete Player Score from Round
+- ✅ Player-Level Comp/HCP Toggles
+- ✅ Simplified Handicap Tracking Page with Playing HCP Calculator
+- ✅ Masters-Style Leaderboard with scores by date columns
+- ✅ Spreadsheet view toggle on Handicap page
 
-## Future Enhancements
-- P2: Recurring transactions
-- P2: Multiple bank account tracking
-- P2: Bill reminders
-- P2: Export to CSV/PDF
-- P3: Mobile app (React Native)
-- P3: Bank integration (Plaid/Open Banking)
+## Upcoming Tasks
+- P1: Stripe $1 Payment Integration (awaiting instruction)
+- P1: Refactor bloated files (server.py ~2400 lines)
+- P2: Bulk import tool with course data mapping
+- P2: Export Leaderboard/Stats to CSV/PDF
+
+## Future/Backlog
+- P3: Match play scoring format
+- P3: Team competitions
+
+## Test Credentials
+- Username: TestAdmin (is_global_admin: true)
+- Username: Nathan D (regular player)
