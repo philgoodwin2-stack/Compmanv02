@@ -1,87 +1,49 @@
-# Golf Stableford Competition App - PRD
+# BudgetPro - Personal Finance Tracker
 
-## Original Problem Statement
-Build an app to capture golf scores and run a competition. It's a stableford comp with multiple rounds and handicap tracking. It should have username access with ability to include/exclude players. Multi-tenant Society system for data isolation by groups.
+## Overview
+A personal budget tracking application to monitor income, expenses, and spending trends over time.
 
-## Architecture
+## Core Features
+- **Dashboard**: Overview of financial health with net balance, income, expenses, budget progress, and recent transactions
+- **Transactions**: Track income and expenses with categories, descriptions, and dates
+- **Budgets**: Set monthly spending limits per category and track progress
+- **Analytics**: View spending trends over 6 months, category breakdowns
 
-### Tech Stack
-- **Frontend**: React 19 with Tailwind CSS, Shadcn UI components
-- **Backend**: FastAPI (Python)
-- **Database**: MongoDB (Motor async driver)
-- **PWA**: Progressive Web App with manifest, service worker, mobile navigation
+## Tech Stack
+- **Frontend**: React, Tailwind CSS, Shadcn UI, Dark Theme
+- **Backend**: FastAPI, MongoDB
+- **Styling**: Dark finance app aesthetic (#0a0a0a background, emerald/red accents)
 
-### Admin System
-- **Society Admin**: Has admin rights within their specific society
-- **Global Admin**: Has admin rights across ALL societies (super-admin)
+## Categories
 
-## What's Been Implemented
+### Income Categories
+- Salary, Freelance, Investments, Gifts, Other Income
 
-### Backend Endpoints
+### Expense Categories  
+- Rent/Mortgage, Utilities, Groceries, Transport, Entertainment
+- Dining Out, Shopping, Healthcare, Subscriptions, Education, Other
 
-#### Society Endpoints
-- `POST/GET/PUT/DELETE /api/societies` - Full CRUD for societies
-- `DELETE /api/societies/{id}/members/{player_id}` - Remove member (Admin or Global Admin)
-- `GET /api/user-societies/{username}` - Get all societies a user belongs to
-- `POST /api/switch-society` - Switch to a different society
+## API Endpoints
+- `GET /api/categories` - List all categories
+- `GET/POST/PUT/DELETE /api/transactions` - CRUD transactions
+- `GET/POST/DELETE /api/budgets` - Manage monthly budgets
+- `GET /api/summary` - Dashboard summary with budget progress
+- `GET /api/analytics/trends` - 6 month income/expense trends
+- `GET /api/analytics/by-category` - Category breakdown
 
-#### Auth Endpoints
-- `/api/login` - Simple username login
-- `GET /api/check-username/{username}` - Check if username exists before registration
-- `PUT /api/players/{id}/toggle-admin` - Toggle society admin status
-- `PUT /api/players/{id}/toggle-global-admin` - Toggle global admin status (Global Admin only)
+## Features Completed
+- ✅ Dashboard with financial overview (Apr 2026)
+- ✅ Transaction tracking (add, edit, delete) (Apr 2026)
+- ✅ Monthly budget management (Apr 2026)
+- ✅ Spending analytics and trends (Apr 2026)
+- ✅ Dark finance theme styling (Apr 2026)
+- ✅ Month navigation across all pages (Apr 2026)
+- ✅ Category icons and colors (Apr 2026)
 
-### Admin Rights
-
-| Action | Society Admin | Global Admin |
-|--------|--------------|--------------|
-| Edit society details | Own society only | All societies |
-| Remove members | Own society only | All societies |
-| Delete society | Own society only | All societies |
-| Create invite links | Own society only | All societies |
-| Revoke invite links | Own society only | All societies |
-| Grant society admin | ❌ | ✅ |
-| Grant global admin | ❌ | ✅ |
-
-### Features Completed
-- ✅ Multi-tenant Society Architecture
-- ✅ Society Management UI for admins
-- ✅ Shareable Invite Links with custom expiration
-- ✅ Society Switcher for multi-society users
-- ✅ New User Registration Flow with username availability check
-- ✅ **Global Admin System** - Super-admin with rights across all societies
-- ✅ **Delete Society** - Admins can delete societies with full cascade deletion (Dec 2025)
-- ✅ **WHS Handicap Calculation Fix** - All handicap calculations now use proper WHS truncation (not rounding) and adjustments (Dec 2025)
-- ✅ **Score Metadata Editor** - PUT /api/scores/{score_id}/metadata to directly update gross, PHP, differential (Dec 2025)
-- ✅ **Show All Players (Global)** - Global admins can view all players across societies with society badges (Dec 2025)
-- ✅ **Add Player to Society** - Global admins can add players directly to any society (Dec 2025)
-- ✅ **Move Player Between Societies** - Global admins can transfer players between societies (Dec 2025)
-- ✅ **Society Badge on Competition** - Competition header shows society name badge (Dec 2025)
-- ✅ **Delete Round Cascade** - Deleting a round removes WHS handicap history entries and recalculates handicaps (Dec 2025)
-- ✅ **Delete Player Score from Round** - Trash icon button next to each player score in Rounds tab; deletes score and recalculates handicap (21 Apr 2026)
-- ✅ **Player-Level Comp/HCP Toggles** - Individual score exclusion from competition leaderboard and/or handicap calculation. Toggles available in both Rounds tab (next to each player's score) and Score Entry page (21 Apr 2026)
-- ✅ **Simplified Handicap Tracking Page** - Shows only logged-in player's handicap progression with Playing Handicap Calculator (course dropdown to calculate Course HCP and Playing HCP 95%) (Apr 2026)
-
-## Global Admin Setup
-The first global admin can be created via API:
-```bash
-curl -X PUT "https://yourapp.com/api/players/{player_id}/toggle-global-admin"
-```
-After the first global admin exists, only global admins can grant global admin status to others.
-
-## Test Users (Preview Environment)
-- `TestAdmin` - **Global Admin** + Society: "Test Golf Society"
-- `phil g` - Belongs to multiple societies (regular user)
-
-## Next Tasks (Prioritized)
-### P1 - High Priority
-1. Stripe $1 Payment Integration (awaiting user instruction)
-2. Refactor bloated files
-
-### P2 - Medium Priority
-3. Bulk import tool with course data mapping
-4. Export Leaderboard/Stats to CSV/PDF
-
-### P3 - Future/Backlog
-5. Match play scoring format
-6. Team competitions
+## Future Enhancements
+- P2: Recurring transactions
+- P2: Multiple bank account tracking
+- P2: Bill reminders
+- P2: Export to CSV/PDF
+- P3: Mobile app (React Native)
+- P3: Bank integration (Plaid/Open Banking)

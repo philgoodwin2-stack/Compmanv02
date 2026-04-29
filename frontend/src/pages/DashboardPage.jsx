@@ -1,783 +1,303 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { API, useUser } from "@/App";
+import { API, useCategories } from "@/App";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
-import { Plus, Trophy, Users, LogOut, Flag, Calendar, ChevronRight, CalendarIcon, Trash2, History, MapPin, Pencil } from "lucide-react";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  Wallet,
+  ArrowUpRight,
+  ArrowDownRight,
+  Plus,
+  ChevronLeft,
+  ChevronRight
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { user, logout } = useUser();
-  const [competitions, setCompetitions] = useState([]);
-  const [societies, setSocieties] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editCompetition, setEditCompetition] = useState(null);
-  const [newCompetition, setNewCompetition] = useState({
-    name: "",
-    description: "",
-    num_holes: 18,
-    start_date: null,
-    end_date: null,
-    min_rounds: 13,
+  const categories = useCategories();
+  const [summary, setSummary] = useState(null);
+  const [recentTransactions, setRecentTransactions] = useState([]);
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchCompetitions();
-    fetchSocieties();
-  }, [user]);
+    fetchData();
+  }, [currentMonth]);
 
-  const fetchCompetitions = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const societyId = user?.society_id;
-      const url = societyId 
-        ? `${API}/competitions?society_id=${societyId}`
-        : `${API}/competitions`;
-      const response = await axios.get(url);
-      setCompetitions(response.data);
+      const [summaryRes, transactionsRes] = await Promise.all([
+        axios.get(`${API}/api/summary?month=${currentMonth}`),
+        axios.get(`${API}/api/transactions?month=${currentMonth}&limit=5`)
+      ]);
+      setSummary(summaryRes.data);
+      setRecentTransactions(transactionsRes.data);
     } catch (error) {
-      toast.error("Failed to load competitions");
+      console.error("Failed to fetch data:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchSocieties = async () => {
-    try {
-      const response = await axios.get(`${API}/societies`);
-      setSocieties(response.data);
-    } catch (error) {
-      console.error("Failed to load societies");
-    }
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP'
+    }).format(amount);
   };
 
-  const handleCreateCompetition = async () => {
-    if (!newCompetition.name.trim()) {
-      toast.error("Please enter a competition name");
-      return;
-    }
-
-    try {
-      const payload = {
-        ...newCompetition,
-        start_date: newCompetition.start_date ? format(newCompetition.start_date, "yyyy-MM-dd") : null,
-        end_date: newCompetition.end_date ? format(newCompetition.end_date, "yyyy-MM-dd") : null,
-        society_id: user?.society_id || null,
-      };
-      await axios.post(`${API}/competitions`, payload);
-      toast.success("Competition created!");
-      setShowCreateDialog(false);
-      setNewCompetition({ name: "", description: "", num_holes: 18, start_date: null, end_date: null, min_rounds: 13 });
-      fetchCompetitions();
-    } catch (error) {
-      toast.error("Failed to create competition");
-    }
+  const formatMonth = (monthStr) => {
+    const [year, month] = monthStr.split('-');
+    const date = new Date(year, parseInt(month) - 1);
+    return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "active":
-        return "bg-green-500 text-white";
-      case "completed":
-        return "bg-gray-500 text-white";
-      default:
-        return "bg-[#D4AF37] text-black";
-    }
+  const navigateMonth = (direction) => {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const date = new Date(year, month - 1 + direction);
+    setCurrentMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
   };
 
-  const [deleteCompId, setDeleteCompId] = useState(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-  const handleDeleteCompetition = async () => {
-    if (!deleteCompId) return;
-
-    try {
-      await axios.delete(`${API}/competitions/${deleteCompId}`);
-      toast.success("Competition deleted");
-      setShowDeleteDialog(false);
-      setDeleteCompId(null);
-      fetchCompetitions();
-    } catch (error) {
-      toast.error("Failed to delete competition");
-      console.error("Delete error:", error);
-    }
+  const getCategoryInfo = (categoryId) => {
+    return categories.all?.find(c => c.id === categoryId) || { name: categoryId, icon: "📦", color: "#64748b" };
   };
 
-  const openDeleteDialog = (e, competitionId) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setDeleteCompId(competitionId);
-    setShowDeleteDialog(true);
-  };
-
-  const openEditDialog = (e, competition) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setEditCompetition({
-      ...competition,
-      start_date: competition.start_date ? new Date(competition.start_date) : null,
-      end_date: competition.end_date ? new Date(competition.end_date) : null,
-    });
-    setShowEditDialog(true);
-  };
-
-  const handleEditCompetition = async () => {
-    if (!editCompetition) return;
-    if (!editCompetition.name?.trim()) {
-      toast.error("Competition name is required");
-      return;
-    }
-
-    try {
-      const payload = {
-        name: editCompetition.name.trim(),
-        description: editCompetition.description || "",
-        start_date: editCompetition.start_date ? format(editCompetition.start_date, "yyyy-MM-dd") : null,
-        end_date: editCompetition.end_date ? format(editCompetition.end_date, "yyyy-MM-dd") : null,
-        min_rounds: editCompetition.min_rounds || 13,
-        society_id: editCompetition.society_id || null,
-      };
-      await axios.put(`${API}/competitions/${editCompetition.id}`, payload);
-      toast.success("Competition updated!");
-      setShowEditDialog(false);
-      setEditCompetition(null);
-      fetchCompetitions();
-    } catch (error) {
-      toast.error("Failed to update competition");
-      console.error("Update error:", error);
-    }
-  };
+  if (loading && !summary) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <header className="golf-header text-white py-6 px-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Flag className="w-8 h-8 text-[#D4AF37]" />
-            <div>
-              <h1 className="text-2xl font-bold uppercase tracking-tight">Golf Stableford</h1>
-              <p className="text-white/70 text-sm">Welcome, {user?.username}</p>
-            </div>
-          </div>
-          <div className="hidden 2xl:flex items-center gap-3">
-            <Button
-              data-testid="courses-nav-btn"
-              variant="ghost"
-              onClick={() => navigate("/courses")}
-              className="text-white hover:bg-white/10"
-            >
-              <MapPin className="w-5 h-5 mr-2" />
-              Courses
-            </Button>
-            <Button
-              data-testid="handicaps-nav-btn"
-              variant="ghost"
-              onClick={() => navigate("/handicaps")}
-              className="text-white hover:bg-white/10"
-            >
-              <History className="w-5 h-5 mr-2" />
-              Handicaps
-            </Button>
-            <Button
-              data-testid="players-nav-btn"
-              variant="ghost"
-              onClick={() => navigate("/players")}
-              className="text-white hover:bg-white/10"
-            >
-              <Users className="w-5 h-5 mr-2" />
-              Players
-            </Button>
-            <Button
-              data-testid="logout-btn"
-              variant="ghost"
-              onClick={logout}
-              className="text-white hover:bg-white/10"
-            >
-              <LogOut className="w-5 h-5" />
-            </Button>
-          </div>
-          {/* Mobile/Tablet logout only */}
-          <div className="2xl:hidden">
-            <Button
-              data-testid="logout-btn-mobile"
-              variant="ghost"
-              onClick={logout}
-              className="text-white hover:bg-white/10"
-              size="sm"
-            >
-              <LogOut className="w-5 h-5" />
-            </Button>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Dashboard</h1>
+          <p className="text-gray-400 mt-1">Your financial overview</p>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-6xl mx-auto p-6">
-        {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card className="border-l-4 border-l-primary">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Competitions</p>
-                  <p className="text-4xl font-mono font-bold">{competitions.length}</p>
-                </div>
-                <Trophy className="w-10 h-10 text-primary/30" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-[#D4AF37]">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Active</p>
-                  <p className="text-4xl font-mono font-bold">
-                    {competitions.filter((c) => c.status === "active").length}
-                  </p>
-                </div>
-                <Flag className="w-10 h-10 text-[#D4AF37]/30" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-green-500">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Completed</p>
-                  <p className="text-4xl font-mono font-bold">
-                    {competitions.filter((c) => c.status === "completed").length}
-                  </p>
-                </div>
-                <Calendar className="w-10 h-10 text-green-500/30" />
-              </div>
-            </CardContent>
-          </Card>
+        
+        {/* Month Navigator */}
+        <div className="flex items-center gap-2 bg-gray-900 rounded-lg p-1">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigateMonth(-1)}
+            className="text-gray-400 hover:text-white hover:bg-gray-800"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <span className="px-4 py-2 text-white font-medium min-w-[160px] text-center">
+            {formatMonth(currentMonth)}
+          </span>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigateMonth(1)}
+            className="text-gray-400 hover:text-white hover:bg-gray-800"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </Button>
         </div>
+      </div>
 
-        {/* Competitions Section */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold uppercase tracking-tight">Competitions</h2>
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
-              <Button
-                data-testid="create-competition-btn"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                New Competition
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold uppercase tracking-tight">
-                  Create Competition
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Competition Name</Label>
-                  <Input
-                    data-testid="competition-name-input"
-                    id="name"
-                    value={newCompetition.name}
-                    onChange={(e) => setNewCompetition({ ...newCompetition, name: e.target.value })}
-                    placeholder="Summer Championship"
-                    className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description (Optional)</Label>
-                  <Input
-                    data-testid="competition-description-input"
-                    id="description"
-                    value={newCompetition.description}
-                    onChange={(e) => setNewCompetition({ ...newCompetition, description: e.target.value })}
-                    placeholder="Annual club championship..."
-                    className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="holes">Number of Holes</Label>
-                  <Select
-                    value={newCompetition.num_holes.toString()}
-                    onValueChange={(val) => setNewCompetition({ ...newCompetition, num_holes: parseInt(val) })}
-                  >
-                    <SelectTrigger data-testid="holes-select" className="rounded-none">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="9">9 Holes</SelectItem>
-                      <SelectItem value="18">18 Holes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Competition Period</Label>
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <div className="flex">
-                        <Input
-                          data-testid="start-date-input"
-                          type="text"
-                          placeholder="DD/MM/YYYY"
-                          value={newCompetition.start_date ? format(newCompetition.start_date, "dd/MM/yyyy") : ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            // Try to parse DD/MM/YYYY format
-                            const parts = val.split('/');
-                            if (parts.length === 3) {
-                              const day = parseInt(parts[0]);
-                              const month = parseInt(parts[1]) - 1;
-                              const year = parseInt(parts[2]);
-                              if (day && month >= 0 && year) {
-                                const date = new Date(year, month, day);
-                                if (!isNaN(date.getTime())) {
-                                  setNewCompetition({ ...newCompetition, start_date: date });
-                                }
-                              }
-                            }
-                          }}
-                          className="flex-1 rounded-none rounded-l border-r-0"
-                        />
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="rounded-none rounded-r px-2"
-                            >
-                              <CalendarIcon className="h-4 w-4" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <CalendarComponent
-                              mode="single"
-                              selected={newCompetition.start_date}
-                              onSelect={(date) => setNewCompetition({ ...newCompetition, start_date: date })}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">Start Date</p>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex">
-                        <Input
-                          data-testid="end-date-input"
-                          type="text"
-                          placeholder="DD/MM/YYYY"
-                          value={newCompetition.end_date ? format(newCompetition.end_date, "dd/MM/yyyy") : ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            // Try to parse DD/MM/YYYY format
-                            const parts = val.split('/');
-                            if (parts.length === 3) {
-                              const day = parseInt(parts[0]);
-                              const month = parseInt(parts[1]) - 1;
-                              const year = parseInt(parts[2]);
-                              if (day && month >= 0 && year) {
-                                const date = new Date(year, month, day);
-                                if (!isNaN(date.getTime())) {
-                                  setNewCompetition({ ...newCompetition, end_date: date });
-                                }
-                              }
-                            }
-                          }}
-                          className="flex-1 rounded-none rounded-l border-r-0"
-                        />
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="rounded-none rounded-r px-2"
-                            >
-                              <CalendarIcon className="h-4 w-4" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <CalendarComponent
-                              mode="single"
-                              selected={newCompetition.end_date}
-                              onSelect={(date) => setNewCompetition({ ...newCompetition, end_date: date })}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">End Date</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="min_rounds">Minimum Rounds Required</Label>
-                  <Input
-                    data-testid="min-rounds-input"
-                    id="min_rounds"
-                    type="number"
-                    min="1"
-                    max="52"
-                    value={newCompetition.min_rounds}
-                    onChange={(e) => setNewCompetition({ ...newCompetition, min_rounds: parseInt(e.target.value) || 13 })}
-                    className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
-                  />
-                  <p className="text-xs text-muted-foreground">Players must complete at least this many rounds to qualify</p>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  data-testid="submit-competition-btn"
-                  onClick={handleCreateCompetition}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest"
-                >
-                  Create
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* Competition Cards */}
-        {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Loading...</div>
-        ) : competitions.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <Trophy className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
-              <p className="text-muted-foreground">No competitions yet. Create your first one!</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {competitions.map((competition) => (
-              <Card
-                key={competition.id}
-                data-testid={`competition-card-${competition.id}`}
-                className="hover-lift cursor-pointer border-l-4 border-l-primary group relative"
-                onClick={() => navigate(`/competition/${competition.id}`)}
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl font-bold uppercase tracking-tight pr-16">
-                      {competition.name}
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Badge className={`${getStatusColor(competition.status)} uppercase text-xs font-bold`}>
-                        {competition.status}
-                      </Badge>
-                      <Button
-                        data-testid={`edit-competition-${competition.id}`}
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => openEditDialog(e, competition)}
-                        className="h-8 px-3"
-                      >
-                        <Pencil className="w-4 h-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        data-testid={`delete-competition-${competition.id}`}
-                        variant="destructive"
-                        size="sm"
-                        onClick={(e) => openDeleteDialog(e, competition.id)}
-                        className="h-8 px-3"
-                      >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                  {competition.description && (
-                    <CardDescription className="line-clamp-2">
-                      {competition.description}
-                    </CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center gap-4">
-                      <span className="flex items-center gap-1">
-                        <Flag className="w-4 h-4" />
-                        {competition.num_holes} holes
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {competition.player_ids?.length || 0} players
-                      </span>
-                    </div>
-                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                  {(competition.start_date || competition.end_date) && (
-                    <div className="mt-2 pt-2 border-t border-border/40 text-xs text-muted-foreground flex items-center gap-2">
-                      <CalendarIcon className="w-3 h-3" />
-                      {competition.start_date && new Date(competition.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      {competition.start_date && competition.end_date && " - "}
-                      {competition.end_date && new Date(competition.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      <span className="ml-auto">Min {competition.min_rounds || 13} rounds</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </main>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold uppercase tracking-tight text-destructive">
-              Delete Competition?
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-muted-foreground">
-              This will permanently delete this competition and all its rounds and scores.
-            </p>
-            <p className="text-destructive font-semibold mt-2">
-              This action cannot be undone.
-            </p>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
-              className="rounded-none"
-            >
-              Cancel
-            </Button>
-            <Button
-              data-testid="confirm-delete-competition"
-              variant="destructive"
-              onClick={handleDeleteCompetition}
-              className="rounded-none"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Competition
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Competition Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold uppercase tracking-tight">
-              Edit Competition
-            </DialogTitle>
-            <DialogDescription>
-              Update competition details including name, dates, and settings.
-            </DialogDescription>
-          </DialogHeader>
-          {editCompetition && (
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Competition Name</Label>
-                <Input
-                  data-testid="edit-competition-name-input"
-                  id="edit-name"
-                  value={editCompetition.name || ""}
-                  onChange={(e) => setEditCompetition({ ...editCompetition, name: e.target.value })}
-                  placeholder="e.g., Summer Championship 2026"
-                  className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-description">Description (optional)</Label>
-                <Input
-                  data-testid="edit-competition-description-input"
-                  id="edit-description"
-                  value={editCompetition.description || ""}
-                  onChange={(e) => setEditCompetition({ ...editCompetition, description: e.target.value })}
-                  placeholder="Brief description of the competition"
-                  className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Competition Dates</Label>
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <div className="flex">
-                      <Input
-                        data-testid="edit-start-date-input"
-                        type="text"
-                        placeholder="DD/MM/YYYY"
-                        value={editCompetition.start_date ? format(editCompetition.start_date, "dd/MM/yyyy") : ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          const parts = val.split('/');
-                          if (parts.length === 3) {
-                            const day = parseInt(parts[0]);
-                            const month = parseInt(parts[1]) - 1;
-                            const year = parseInt(parts[2]);
-                            if (day && month >= 0 && year) {
-                              const date = new Date(year, month, day);
-                              if (!isNaN(date.getTime())) {
-                                setEditCompetition({ ...editCompetition, start_date: date });
-                              }
-                            }
-                          }
-                        }}
-                        className="flex-1 rounded-none rounded-l border-r-0"
-                      />
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="rounded-none rounded-r px-2"
-                          >
-                            <CalendarIcon className="h-4 w-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <CalendarComponent
-                            mode="single"
-                            selected={editCompetition.start_date}
-                            onSelect={(date) => setEditCompetition({ ...editCompetition, start_date: date })}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">Start Date</p>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex">
-                      <Input
-                        data-testid="edit-end-date-input"
-                        type="text"
-                        placeholder="DD/MM/YYYY"
-                        value={editCompetition.end_date ? format(editCompetition.end_date, "dd/MM/yyyy") : ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          const parts = val.split('/');
-                          if (parts.length === 3) {
-                            const day = parseInt(parts[0]);
-                            const month = parseInt(parts[1]) - 1;
-                            const year = parseInt(parts[2]);
-                            if (day && month >= 0 && year) {
-                              const date = new Date(year, month, day);
-                              if (!isNaN(date.getTime())) {
-                                setEditCompetition({ ...editCompetition, end_date: date });
-                              }
-                            }
-                          }
-                        }}
-                        className="flex-1 rounded-none rounded-l border-r-0"
-                      />
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="rounded-none rounded-r px-2"
-                          >
-                            <CalendarIcon className="h-4 w-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <CalendarComponent
-                            mode="single"
-                            selected={editCompetition.end_date}
-                            onSelect={(date) => setEditCompetition({ ...editCompetition, end_date: date })}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">End Date</p>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-min-rounds">Minimum Rounds Required</Label>
-                <Input
-                  data-testid="edit-min-rounds-input"
-                  id="edit-min-rounds"
-                  type="number"
-                  min="1"
-                  max="52"
-                  value={editCompetition.min_rounds || 13}
-                  onChange={(e) => setEditCompetition({ ...editCompetition, min_rounds: parseInt(e.target.value) || 13 })}
-                  className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
-                />
-                <p className="text-xs text-muted-foreground">Players must complete at least this many rounds to qualify</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Society</Label>
-                <Select
-                  value={editCompetition.society_id || "none"}
-                  onValueChange={(value) => setEditCompetition({ 
-                    ...editCompetition, 
-                    society_id: value === "none" ? null : value 
-                  })}
-                >
-                  <SelectTrigger data-testid="edit-society-select" className="rounded-none">
-                    <SelectValue placeholder="Select a society" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Society (Unassigned)</SelectItem>
-                    {societies.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {editCompetition.society_id 
-                    ? "Competition is linked to this society" 
-                    : "⚠️ This competition is not linked to any society"}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Balance Card */}
+        <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Net Balance</p>
+                <p className={`text-3xl font-bold mt-2 ${(summary?.balance || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {formatCurrency(summary?.balance || 0)}
                 </p>
               </div>
+              <div className={`p-3 rounded-full ${(summary?.balance || 0) >= 0 ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
+                <Wallet className={`w-6 h-6 ${(summary?.balance || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`} />
+              </div>
             </div>
-          )}
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowEditDialog(false)}
-              className="rounded-none"
+          </CardContent>
+        </Card>
+
+        {/* Income Card */}
+        <Card className="bg-gradient-to-br from-emerald-900/50 to-gray-900 border-emerald-700/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Total Income</p>
+                <p className="text-3xl font-bold mt-2 text-emerald-400">
+                  {formatCurrency(summary?.total_income || 0)}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-emerald-500/20">
+                <TrendingUp className="w-6 h-6 text-emerald-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Expenses Card */}
+        <Card className="bg-gradient-to-br from-red-900/50 to-gray-900 border-red-700/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Total Expenses</p>
+                <p className="text-3xl font-bold mt-2 text-red-400">
+                  {formatCurrency(summary?.total_expenses || 0)}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-red-500/20">
+                <TrendingDown className="w-6 h-6 text-red-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Budget Progress & Recent Transactions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Budget Progress */}
+        <Card className="bg-gray-900 border-gray-800">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-lg font-semibold text-white">Budget Progress</CardTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/budgets')}
+              className="text-emerald-400 hover:text-emerald-300"
             >
-              Cancel
+              View All
             </Button>
-            <Button
-              data-testid="save-competition-btn"
-              onClick={handleEditCompetition}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest"
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {summary?.budget_progress?.length > 0 ? (
+              summary.budget_progress.slice(0, 4).map((budget) => {
+                const catInfo = getCategoryInfo(budget.category_id);
+                const isOverBudget = budget.percentage > 100;
+                
+                return (
+                  <div key={budget.category_id} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{catInfo.icon}</span>
+                        <span className="text-sm text-gray-300">{catInfo.name}</span>
+                      </div>
+                      <span className={`text-sm font-medium ${isOverBudget ? 'text-red-400' : 'text-gray-400'}`}>
+                        {formatCurrency(budget.spent)} / {formatCurrency(budget.budgeted)}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all ${isOverBudget ? 'bg-red-500' : 'bg-emerald-500'}`}
+                        style={{ width: `${Math.min(budget.percentage, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No budgets set for this month</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2 border-gray-700 text-gray-400 hover:text-white"
+                  onClick={() => navigate('/budgets')}
+                >
+                  Set Budgets
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Transactions */}
+        <Card className="bg-gray-900 border-gray-800">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-lg font-semibold text-white">Recent Transactions</CardTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/transactions')}
+              className="text-emerald-400 hover:text-emerald-300"
             >
-              <Pencil className="w-4 h-4 mr-2" />
-              Save Changes
+              View All
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </CardHeader>
+          <CardContent>
+            {recentTransactions.length > 0 ? (
+              <div className="space-y-3">
+                {recentTransactions.map((transaction) => {
+                  const catInfo = getCategoryInfo(transaction.category_id);
+                  const isIncome = transaction.type === 'income';
+                  
+                  return (
+                    <div 
+                      key={transaction.id}
+                      className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
+                          style={{ backgroundColor: `${catInfo.color}20` }}
+                        >
+                          {catInfo.icon}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">
+                            {transaction.description || catInfo.name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(transaction.date).toLocaleDateString('en-GB', { 
+                              day: 'numeric', 
+                              month: 'short' 
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className={`flex items-center gap-1 font-semibold ${isIncome ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {isIncome ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                        {formatCurrency(transaction.amount)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No transactions this month</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2 border-gray-700 text-gray-400 hover:text-white"
+                  onClick={() => navigate('/transactions')}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Transaction
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Add Button (Mobile) */}
+      <Button
+        onClick={() => navigate('/transactions')}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-600 shadow-lg md:hidden"
+      >
+        <Plus className="w-6 h-6" />
+      </Button>
     </div>
   );
 }

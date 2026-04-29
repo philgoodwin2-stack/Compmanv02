@@ -1,153 +1,158 @@
 import { useState, useEffect, createContext, useContext } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import { Toaster } from "@/components/ui/sonner";
-import MobileNav from "@/components/MobileNav";
+import { 
+  LayoutDashboard, 
+  Receipt, 
+  PiggyBank, 
+  TrendingUp,
+  Menu,
+  X
+} from "lucide-react";
 
-// Pages
-import LoginPage from "@/pages/LoginPage";
-import DashboardPage from "@/pages/DashboardPage";
-import PlayersPage from "@/pages/PlayersPage";
-import CompetitionPage from "@/pages/CompetitionPage";
-import ScoreEntryPage from "@/pages/ScoreEntryPage";
-import HandicapTrackingPage from "@/pages/HandicapTrackingPage";
-import CoursesPage from "@/pages/CoursesPage";
-import SocietyPage from "@/pages/SocietyPage";
-import JoinInvitePage from "@/pages/JoinInvitePage";
+import DashboardPage from "./pages/DashboardPage";
+import TransactionsPage from "./pages/TransactionsPage";
+import BudgetsPage from "./pages/BudgetsPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-export const API = `${BACKEND_URL}/api`;
+export const API = process.env.REACT_APP_BACKEND_URL || "";
 
-// User Context
-export const UserContext = createContext(null);
+// Categories context
+const CategoriesContext = createContext(null);
 
-export const useUser = () => {
-  const context = useContext(UserContext);
-  if (!context) {
-    throw new Error("useUser must be used within UserProvider");
-  }
-  return context;
-};
+export const useCategories = () => useContext(CategoriesContext);
+
+function Navigation() {
+  const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  const navItems = [
+    { path: "/", icon: LayoutDashboard, label: "Dashboard" },
+    { path: "/transactions", icon: Receipt, label: "Transactions" },
+    { path: "/budgets", icon: PiggyBank, label: "Budgets" },
+    { path: "/analytics", icon: TrendingUp, label: "Analytics" },
+  ];
+  
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex flex-col w-64 bg-[#0f0f0f] border-r border-gray-800 min-h-screen fixed left-0 top-0">
+        <div className="p-6 border-b border-gray-800">
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            <span className="text-3xl">💰</span>
+            <span>BudgetPro</span>
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">Personal Finance Tracker</p>
+        </div>
+        
+        <nav className="flex-1 p-4">
+          <ul className="space-y-2">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <li key={item.path}>
+                  <Link
+                    to={item.path}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                      isActive 
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
+                        : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    <span className="font-medium">{item.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+        
+        <div className="p-4 border-t border-gray-800">
+          <div className="bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 rounded-lg p-4 border border-emerald-500/30">
+            <p className="text-sm text-gray-300">Track smarter, save better</p>
+            <p className="text-xs text-gray-500 mt-1">Your finances, simplified</p>
+          </div>
+        </div>
+      </aside>
+      
+      {/* Mobile Header */}
+      <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0f0f0f] border-b border-gray-800 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            <span className="text-2xl">💰</span>
+            <span>BudgetPro</span>
+          </h1>
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="text-gray-400 hover:text-white p-2"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+        
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <nav className="absolute top-full left-0 right-0 bg-[#0f0f0f] border-b border-gray-800 p-4">
+            <ul className="space-y-2">
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <li key={item.path}>
+                    <Link
+                      to={item.path}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                        isActive 
+                          ? "bg-emerald-500/20 text-emerald-400" 
+                          : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                      }`}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      <span className="font-medium">{item.label}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        )}
+      </header>
+    </>
+  );
+}
 
 function App() {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("golfUser");
-    return saved ? JSON.parse(saved) : null;
-  });
-
-  // Refresh user data on app load to get latest is_admin status
+  const [categories, setCategories] = useState({ income: [], expense: [], all: [] });
+  
   useEffect(() => {
-    const refreshUser = async () => {
-      if (user?.username) {
-        try {
-          const response = await axios.post(`${API}/login`, { username: user.username });
-          const freshUser = response.data.player;
-          // Always update user with fresh data from server
-          setUser(freshUser);
-        } catch (error) {
-          console.error("Failed to refresh user:", error);
-        }
-      }
-    };
-    refreshUser();
+    // Fetch categories on app load
+    axios.get(`${API}/api/categories`)
+      .then(res => setCategories(res.data))
+      .catch(err => console.error("Failed to load categories:", err));
   }, []);
-
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem("golfUser", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("golfUser");
-    }
-  }, [user]);
-
-  const login = async (username, societyId = null, joinCode = null) => {
-    try {
-      const payload = { username };
-      if (societyId) payload.society_id = societyId;
-      if (joinCode) payload.join_code = joinCode;
-      
-      const response = await axios.post(`${API}/login`, payload);
-      
-      // Only set user if they have a society (or are joining/creating one)
-      // This prevents redirect to dashboard for users without a society
-      if (!response.data.needs_society) {
-        setUser(response.data.player);
-      }
-      
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const logout = () => {
-    setUser(null);
-  };
-
-  const switchSociety = async (societyId) => {
-    try {
-      const response = await axios.post(`${API}/switch-society?username=${encodeURIComponent(user.username)}&society_id=${societyId}`);
-      setUser(response.data.player);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  };
-
+  
   return (
-    <UserContext.Provider value={{ user, login, logout, switchSociety }}>
-      <div className="app-container">
-        <BrowserRouter>
-          <main className="app-content">
+    <CategoriesContext.Provider value={categories}>
+      <BrowserRouter>
+        <div className="min-h-screen bg-[#0a0a0a] text-white">
+          <Navigation />
+          
+          {/* Main Content */}
+          <main className="md:ml-64 min-h-screen pt-16 md:pt-0">
             <Routes>
-              <Route
-                path="/"
-                element={user ? <Navigate to="/dashboard" /> : <LoginPage />}
-              />
-              <Route
-                path="/dashboard"
-                element={user ? <DashboardPage /> : <Navigate to="/" />}
-              />
-              <Route
-                path="/players"
-                element={user ? <PlayersPage /> : <Navigate to="/" />}
-              />
-              <Route
-                path="/competition/:id"
-                element={user ? <CompetitionPage /> : <Navigate to="/" />}
-              />
-              <Route
-                path="/score/:roundId/:playerId"
-                element={user ? <ScoreEntryPage /> : <Navigate to="/" />}
-              />
-              <Route
-                path="/handicap-tracking"
-                element={user ? <HandicapTrackingPage /> : <Navigate to="/" />}
-              />
-              <Route
-                path="/handicaps"
-                element={user ? <HandicapTrackingPage /> : <Navigate to="/" />}
-              />
-              <Route
-                path="/courses"
-                element={user ? <CoursesPage /> : <Navigate to="/" />}
-              />
-              <Route
-                path="/society"
-                element={user ? <SocietyPage /> : <Navigate to="/" />}
-              />
-              <Route
-                path="/join/:code"
-                element={<JoinInvitePage />}
-              />
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/transactions" element={<TransactionsPage />} />
+              <Route path="/budgets" element={<BudgetsPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
             </Routes>
           </main>
-          <MobileNav />
-        </BrowserRouter>
-        <Toaster position="top-center" richColors />
-      </div>
-    </UserContext.Provider>
+          
+          <Toaster position="top-right" theme="dark" />
+        </div>
+      </BrowserRouter>
+    </CategoriesContext.Provider>
   );
 }
 
