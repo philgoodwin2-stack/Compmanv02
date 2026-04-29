@@ -532,116 +532,133 @@ export default function CompetitionPage() {
                     <p>No scores yet. Add rounds and enter scores to see the leaderboard.</p>
                   </div>
                 ) : leaderboardView === "simple" ? (
-                  /* Masters Tournament Style Leaderboard */
-                  <div className="bg-[#006747]">
-                    {/* Header Row */}
-                    <div className="grid grid-cols-[50px_70px_1fr_80px] sm:grid-cols-[60px_90px_1fr_100px] bg-[#005538] border-b-2 border-[#FFF200]">
-                      <div className="px-2 py-3 text-center text-white text-xs font-bold uppercase tracking-wider">
-                        Pos
-                      </div>
-                      <div className="px-2 py-3 text-center text-white text-xs font-bold uppercase tracking-wider">
-                        Avg
-                      </div>
-                      <div className="px-3 py-3 text-white text-xs font-bold uppercase tracking-wider">
-                        Player
-                      </div>
-                      <div className="px-2 py-3 text-center text-white text-xs font-bold uppercase tracking-wider">
-                        Total
-                      </div>
-                    </div>
-                    
-                    {/* Player Rows */}
-                    {leaderboard.map((entry, index) => {
-                      const minRounds = competition.min_rounds || 13;
-                      const isQualified = entry.rounds_played >= minRounds;
-                      const isLeader = index === 0;
-                      const isTop3 = index < 3;
-                      
-                      // Calculate position (handle ties)
-                      let position = index + 1;
-                      if (index > 0 && entry.total_stableford === leaderboard[index - 1].total_stableford && entry.average_stableford === leaderboard[index - 1].average_stableford) {
-                        position = leaderboard.findIndex(e => e.total_stableford === entry.total_stableford && e.average_stableford === entry.average_stableford) + 1;
-                      }
-                      
-                      // Calculate diff from leader for display
-                      const leaderAvg = leaderboard[0]?.average_stableford || 0;
-                      const diffFromLeader = entry.average_stableford - leaderAvg;
+                  /* Masters Tournament Style Leaderboard - By Date */
+                  <div className="bg-[#006747] overflow-x-auto">
+                    {/* Get sorted rounds for column headers */}
+                    {(() => {
+                      const sortedRounds = [...rounds].sort((a, b) => new Date(a.date) - new Date(b.date));
                       
                       return (
-                        <div 
-                          key={entry.player_id}
-                          data-testid={`simple-row-${entry.player_id}`}
-                          className={`grid grid-cols-[50px_70px_1fr_80px] sm:grid-cols-[60px_90px_1fr_100px] border-b border-[#005538] transition-all ${
-                            isLeader ? 'bg-[#FFF200]' : isTop3 ? 'bg-[#90EE90]' : 'bg-white'
-                          } hover:brightness-95`}
-                        >
-                          {/* Position */}
-                          <div className={`px-2 py-4 flex items-center justify-center ${isLeader ? 'text-[#006747]' : 'text-[#006747]'}`}>
-                            <span className="text-xl sm:text-2xl font-bold font-mono">
-                              {position === 1 ? "1" : position}
-                            </span>
+                        <>
+                          {/* Header Row with Round Dates */}
+                          <div className="min-w-[600px]">
+                            <div className={`grid bg-[#005538] border-b-2 border-[#FFF200]`} style={{ gridTemplateColumns: `50px 1fr 60px repeat(${sortedRounds.length}, 50px) 70px` }}>
+                              <div className="px-2 py-3 text-center text-white text-xs font-bold uppercase tracking-wider">
+                                Pos
+                              </div>
+                              <div className="px-3 py-3 text-white text-xs font-bold uppercase tracking-wider">
+                                Player
+                              </div>
+                              <div className="px-2 py-3 text-center text-white text-xs font-bold uppercase tracking-wider">
+                                Avg
+                              </div>
+                              {sortedRounds.map((round, idx) => (
+                                <div key={round.id} className="px-1 py-3 text-center text-white text-[10px] font-bold uppercase tracking-wider">
+                                  <div>{new Date(round.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</div>
+                                </div>
+                              ))}
+                              <div className="px-2 py-3 text-center text-[#FFF200] text-xs font-bold uppercase tracking-wider">
+                                Total
+                              </div>
+                            </div>
+                          
+                            {/* Player Rows */}
+                            {leaderboard.map((entry, index) => {
+                              const isLeader = index === 0;
+                              const isTop3 = index < 3;
+                              
+                              // Calculate position (handle ties)
+                              let position = index + 1;
+                              if (index > 0 && entry.total_stableford === leaderboard[index - 1].total_stableford && entry.average_stableford === leaderboard[index - 1].average_stableford) {
+                                position = leaderboard.findIndex(e => e.total_stableford === entry.total_stableford && e.average_stableford === entry.average_stableford) + 1;
+                              }
+                              
+                              return (
+                                <div 
+                                  key={entry.player_id}
+                                  data-testid={`simple-row-${entry.player_id}`}
+                                  className={`grid border-b border-[#005538] transition-all ${
+                                    isLeader ? 'bg-[#FFF200]' : isTop3 ? 'bg-[#90EE90]' : 'bg-white'
+                                  } hover:brightness-95`}
+                                  style={{ gridTemplateColumns: `50px 1fr 60px repeat(${sortedRounds.length}, 50px) 70px` }}
+                                >
+                                  {/* Position */}
+                                  <div className="px-2 py-3 flex items-center justify-center text-[#006747]">
+                                    <span className="text-lg font-bold font-mono">
+                                      {position}
+                                    </span>
+                                  </div>
+                                  
+                                  {/* Player Name */}
+                                  <div className="px-3 py-3 flex items-center gap-2 min-w-0">
+                                    {entry.player_team_logo && (
+                                      <img 
+                                        src={entry.player_team_logo} 
+                                        alt="" 
+                                        className="w-6 h-6 object-contain flex-shrink-0"
+                                      />
+                                    )}
+                                    <span className={`text-sm font-bold uppercase tracking-wide truncate ${isLeader ? 'text-[#006747]' : 'text-[#1a1a1a]'}`}>
+                                      {entry.player_username}
+                                    </span>
+                                  </div>
+                                  
+                                  {/* Average */}
+                                  <div className="px-1 py-3 flex items-center justify-center">
+                                    <span className="text-sm font-bold font-mono text-[#006747]">
+                                      {entry.average_stableford.toFixed(1)}
+                                    </span>
+                                  </div>
+                                  
+                                  {/* Round Scores by Date */}
+                                  {sortedRounds.map((round, roundIdx) => {
+                                    const roundScore = entry.round_scores?.[roundIdx];
+                                    const hasScore = roundScore !== null && roundScore !== undefined && roundScore >= 0;
+                                    
+                                    return (
+                                      <div 
+                                        key={round.id} 
+                                        className={`px-1 py-3 flex items-center justify-center ${!hasScore ? 'text-gray-300' : ''}`}
+                                      >
+                                        <span className={`text-sm font-mono ${hasScore ? 'font-semibold text-[#1a1a1a]' : ''}`}>
+                                          {hasScore ? roundScore : '-'}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                  
+                                  {/* Total Points */}
+                                  <div className="px-2 py-3 flex items-center justify-center bg-[#006747]/10">
+                                    <span className="text-lg font-bold font-mono text-[#006747]">
+                                      {entry.total_stableford}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                           
-                          {/* Average */}
-                          <div className="px-2 py-4 flex items-center justify-center">
-                            <div className="flex flex-col items-center">
-                              <span className={`text-lg sm:text-xl font-bold font-mono ${isLeader ? 'text-[#006747]' : 'text-[#006747]'}`}>
-                                {entry.average_stableford.toFixed(1)}
-                              </span>
-                              {!isLeader && (
-                                <span className={`text-xs font-mono ${diffFromLeader >= 0 ? 'text-green-700' : 'text-red-600'}`}>
-                                  ({diffFromLeader >= 0 ? '+' : ''}{diffFromLeader.toFixed(1)})
-                                </span>
-                              )}
+                          {/* Footer */}
+                          <div className="bg-[#005538] px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs text-white/80">
+                            <div className="flex items-center gap-4">
+                              <span>{leaderboard.length} Players</span>
+                              <span>{sortedRounds.length} Rounds</span>
+                              <span>Min {competition.min_rounds || 13} to qualify</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-3 bg-[#FFF200] rounded"></div>
+                                <span>Leader</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-3 bg-[#90EE90] rounded"></div>
+                                <span>Top 3</span>
+                              </div>
                             </div>
                           </div>
-                          
-                          {/* Player Name */}
-                          <div className="px-3 py-4 flex items-center gap-3">
-                            {entry.player_team_logo && (
-                              <img 
-                                src={entry.player_team_logo} 
-                                alt="" 
-                                className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0"
-                              />
-                            )}
-                            <div className="flex flex-col min-w-0">
-                              <span className={`text-base sm:text-xl font-bold uppercase tracking-wide truncate ${isLeader ? 'text-[#006747]' : 'text-[#1a1a1a]'}`}>
-                                {entry.player_username}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {entry.rounds_played} round{entry.rounds_played !== 1 ? 's' : ''} played
-                              </span>
-                            </div>
-                          </div>
-                          
-                          {/* Total Points */}
-                          <div className={`px-2 py-4 flex items-center justify-center ${isLeader ? 'text-[#006747]' : 'text-[#006747]'}`}>
-                            <span className="text-xl sm:text-2xl font-bold font-mono">
-                              {entry.total_stableford}
-                            </span>
-                          </div>
-                        </div>
+                        </>
                       );
-                    })}
-                    
-                    {/* Footer */}
-                    <div className="bg-[#005538] px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs text-white/80">
-                      <div className="flex items-center gap-4">
-                        <span>{leaderboard.length} Players</span>
-                        <span>Min {competition.min_rounds || 13} rounds to qualify</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-[#FFF200] rounded"></div>
-                          <span>Leader</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-[#90EE90] rounded"></div>
-                          <span>Top 3</span>
-                        </div>
-                      </div>
-                    </div>
+                    })()}
                   </div>
                 ) : (
                   /* Detailed View - Spreadsheet with all rounds */
