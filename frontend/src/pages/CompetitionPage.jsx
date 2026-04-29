@@ -464,26 +464,35 @@ export default function CompetitionPage() {
 
           {/* Leaderboard Tab */}
           <TabsContent value="leaderboard">
-            <Card className="relative overflow-hidden border-0 shadow-xl">
-              {/* Header */}
-              <div className="bg-[#1a1a1a] text-white px-4 py-3">
-                <div className="flex items-center justify-between">
+            <Card className="relative overflow-hidden border-0 shadow-2xl">
+              {/* Masters-Style Header with Competition Name */}
+              <div className="bg-[#006747] text-white">
+                {/* Competition Name Banner */}
+                <div className="text-center py-6 px-4 border-b border-[#005538]">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold tracking-wide text-[#FFF200] drop-shadow-lg uppercase">
+                    {competition.name}
+                  </h1>
+                  <p className="text-white/80 text-sm mt-2 tracking-widest uppercase">
+                    Stableford Competition
+                  </p>
+                </div>
+                
+                {/* Controls Row */}
+                <div className="px-4 py-3 flex items-center justify-between bg-[#005538]">
                   <div className="flex items-center gap-3">
-                    <Trophy className="w-6 h-6 text-[#D4AF37]" />
-                    <h2 className="text-xl font-bold uppercase tracking-wider">
-                      {competition.name}
-                    </h2>
+                    <Trophy className="w-5 h-5 text-[#FFF200]" />
+                    <span className="text-sm font-semibold uppercase tracking-wider">Leaderboard</span>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     {/* View Toggle */}
-                    <div className="flex items-center bg-[#2a2a2a] rounded overflow-hidden">
+                    <div className="flex items-center bg-[#004530] rounded overflow-hidden">
                       <button
                         data-testid="view-simple-btn"
                         onClick={() => setLeaderboardView("simple")}
                         className={`px-3 py-1.5 flex items-center gap-1.5 text-xs transition-colors ${
                           leaderboardView === "simple" 
-                            ? "bg-[#D4AF37] text-black" 
-                            : "text-gray-400 hover:text-white"
+                            ? "bg-[#FFF200] text-[#006747] font-bold" 
+                            : "text-white/70 hover:text-white"
                         }`}
                       >
                         <List className="w-3.5 h-3.5" />
@@ -494,8 +503,8 @@ export default function CompetitionPage() {
                         onClick={() => setLeaderboardView("detailed")}
                         className={`px-3 py-1.5 flex items-center gap-1.5 text-xs transition-colors ${
                           leaderboardView === "detailed" 
-                            ? "bg-[#D4AF37] text-black" 
-                            : "text-gray-400 hover:text-white"
+                            ? "bg-[#FFF200] text-[#006747] font-bold" 
+                            : "text-white/70 hover:text-white"
                         }`}
                       >
                         <LayoutGrid className="w-3.5 h-3.5" />
@@ -507,49 +516,36 @@ export default function CompetitionPage() {
                     <button
                       data-testid="share-leaderboard-btn"
                       onClick={() => setShowShareDialog(true)}
-                      className="px-3 py-1.5 flex items-center gap-1.5 text-xs bg-[#2a2a2a] rounded text-gray-400 hover:text-white hover:bg-[#3a3a3a] transition-colors"
+                      className="px-3 py-1.5 flex items-center gap-1.5 text-xs bg-[#004530] rounded text-white/70 hover:text-white hover:bg-[#003825] transition-colors"
                     >
                       <Share2 className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">Share</span>
                     </button>
-                    
-                    {leaderboardView === "detailed" && (
-                      <div className="hidden md:flex items-center gap-4 text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="w-4 h-4 bg-gray-500 rounded"></span>
-                          <span>Round dropped</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-red-400 font-bold">Red</span>
-                          <span>= non-counting round</span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
 
               <CardContent className="p-0 overflow-x-auto">
                 {leaderboard.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Trophy className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                  <div className="text-center py-12 text-muted-foreground bg-[#006747]/10">
+                    <Trophy className="w-12 h-12 mx-auto mb-4 opacity-30 text-[#006747]" />
                     <p>No scores yet. Add rounds and enter scores to see the leaderboard.</p>
                   </div>
                 ) : leaderboardView === "simple" ? (
-                  /* The Open Championship Style Leaderboard */
-                  <div className="bg-[#1a1a1a]">
+                  /* Masters Tournament Style Leaderboard */
+                  <div className="bg-[#006747]">
                     {/* Header Row */}
-                    <div className="grid grid-cols-[60px_80px_1fr_100px] sm:grid-cols-[80px_100px_1fr_120px] bg-[#2a2a2a] border-b-2 border-[#D4AF37]">
-                      <div className="px-3 py-3 text-center text-white/70 text-xs font-semibold uppercase tracking-wider">
-                        Rounds
+                    <div className="grid grid-cols-[50px_70px_1fr_80px] sm:grid-cols-[60px_90px_1fr_100px] bg-[#005538] border-b-2 border-[#FFF200]">
+                      <div className="px-2 py-3 text-center text-white text-xs font-bold uppercase tracking-wider">
+                        Pos
                       </div>
-                      <div className="px-3 py-3 text-center text-white/70 text-xs font-semibold uppercase tracking-wider">
+                      <div className="px-2 py-3 text-center text-white text-xs font-bold uppercase tracking-wider">
                         Avg
                       </div>
-                      <div className="px-3 py-3 text-white/70 text-xs font-semibold uppercase tracking-wider">
+                      <div className="px-3 py-3 text-white text-xs font-bold uppercase tracking-wider">
                         Player
                       </div>
-                      <div className="px-3 py-3 text-center text-white/70 text-xs font-semibold uppercase tracking-wider">
+                      <div className="px-2 py-3 text-center text-white text-xs font-bold uppercase tracking-wider">
                         Total
                       </div>
                     </div>
@@ -561,7 +557,13 @@ export default function CompetitionPage() {
                       const isLeader = index === 0;
                       const isTop3 = index < 3;
                       
-                      // Calculate points relative to leader (for display like golf scoring)
+                      // Calculate position (handle ties)
+                      let position = index + 1;
+                      if (index > 0 && entry.total_stableford === leaderboard[index - 1].total_stableford && entry.average_stableford === leaderboard[index - 1].average_stableford) {
+                        position = leaderboard.findIndex(e => e.total_stableford === entry.total_stableford && e.average_stableford === entry.average_stableford) + 1;
+                      }
+                      
+                      // Calculate diff from leader for display
                       const leaderAvg = leaderboard[0]?.average_stableford || 0;
                       const diffFromLeader = entry.average_stableford - leaderAvg;
                       
@@ -569,29 +571,26 @@ export default function CompetitionPage() {
                         <div 
                           key={entry.player_id}
                           data-testid={`simple-row-${entry.player_id}`}
-                          className={`grid grid-cols-[60px_80px_1fr_100px] sm:grid-cols-[80px_100px_1fr_120px] border-b border-[#3a3a3a] transition-colors ${
-                            isTop3 ? 'bg-[#D4A017]' : 'bg-[#E8B923]'
-                          } hover:brightness-105`}
+                          className={`grid grid-cols-[50px_70px_1fr_80px] sm:grid-cols-[60px_90px_1fr_100px] border-b border-[#005538] transition-all ${
+                            isLeader ? 'bg-[#FFF200]' : isTop3 ? 'bg-[#90EE90]' : 'bg-white'
+                          } hover:brightness-95`}
                         >
-                          {/* Rounds Played */}
-                          <div className="px-3 py-4 flex items-center justify-center">
-                            <span className="text-xl sm:text-2xl font-bold font-mono text-[#1a1a1a]">
-                              {entry.rounds_played}
+                          {/* Position */}
+                          <div className={`px-2 py-4 flex items-center justify-center ${isLeader ? 'text-[#006747]' : 'text-[#006747]'}`}>
+                            <span className="text-xl sm:text-2xl font-bold font-mono">
+                              {position === 1 ? "1" : position}
                             </span>
                           </div>
                           
-                          {/* Average / Diff from Leader */}
-                          <div className="px-3 py-4 flex items-center justify-center">
-                            <div className="flex items-center gap-1">
-                              {index === 0 ? (
-                                <span className="text-xl sm:text-2xl font-bold font-mono text-[#1a1a1a]">
-                                  {entry.average_stableford.toFixed(1)}
-                                </span>
-                              ) : (
-                                <span className={`text-xl sm:text-2xl font-bold font-mono ${
-                                  diffFromLeader >= 0 ? 'text-[#1a1a1a]' : 'text-red-700'
-                                }`}>
-                                  {diffFromLeader >= 0 ? '+' : ''}{diffFromLeader.toFixed(1)}
+                          {/* Average */}
+                          <div className="px-2 py-4 flex items-center justify-center">
+                            <div className="flex flex-col items-center">
+                              <span className={`text-lg sm:text-xl font-bold font-mono ${isLeader ? 'text-[#006747]' : 'text-[#006747]'}`}>
+                                {entry.average_stableford.toFixed(1)}
+                              </span>
+                              {!isLeader && (
+                                <span className={`text-xs font-mono ${diffFromLeader >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                                  ({diffFromLeader >= 0 ? '+' : ''}{diffFromLeader.toFixed(1)})
                                 </span>
                               )}
                             </div>
@@ -606,19 +605,19 @@ export default function CompetitionPage() {
                                 className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0"
                               />
                             )}
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-lg sm:text-2xl font-bold uppercase tracking-wide text-[#1a1a1a] truncate">
+                            <div className="flex flex-col min-w-0">
+                              <span className={`text-base sm:text-xl font-bold uppercase tracking-wide truncate ${isLeader ? 'text-[#006747]' : 'text-[#1a1a1a]'}`}>
                                 {entry.player_username}
                               </span>
-                              {isLeader && (
-                                <span className="text-red-600 text-xl">★</span>
-                              )}
+                              <span className="text-xs text-gray-500">
+                                {entry.rounds_played} round{entry.rounds_played !== 1 ? 's' : ''} played
+                              </span>
                             </div>
                           </div>
                           
                           {/* Total Points */}
-                          <div className="px-3 py-4 flex items-center justify-center">
-                            <span className="text-xl sm:text-2xl font-bold font-mono text-[#1a1a1a]">
+                          <div className={`px-2 py-4 flex items-center justify-center ${isLeader ? 'text-[#006747]' : 'text-[#006747]'}`}>
+                            <span className="text-xl sm:text-2xl font-bold font-mono">
                               {entry.total_stableford}
                             </span>
                           </div>
@@ -626,17 +625,21 @@ export default function CompetitionPage() {
                       );
                     })}
                     
-                    {/* Footer with Qualification Info */}
-                    <div className="bg-[#2a2a2a] px-4 py-3 flex items-center justify-between text-xs text-white/60">
+                    {/* Footer */}
+                    <div className="bg-[#005538] px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs text-white/80">
                       <div className="flex items-center gap-4">
-                        <span>★ = Leader</span>
+                        <span>{leaderboard.length} Players</span>
                         <span>Min {competition.min_rounds || 13} rounds to qualify</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-[#D4A017] rounded"></div>
-                        <span>Top 3</span>
-                        <div className="w-4 h-4 bg-[#E8B923] rounded ml-2"></div>
-                        <span>Others</span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-[#FFF200] rounded"></div>
+                          <span>Leader</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-[#90EE90] rounded"></div>
+                          <span>Top 3</span>
+                        </div>
                       </div>
                     </div>
                   </div>
