@@ -363,7 +363,7 @@ export default function CompetitionPage() {
                     {competition.status}
                   </Badge>
                   {getSocietyName(competition.society_id) && (
-                    <Badge variant="outline" className="text-white/80 border-white/30 text-xs flex-shrink-0">
+                    <Badge variant="outline" className="bg-[#2b7bfc]/80 text-yellow border-white-900/30 text-2xl flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-pink-500 p-0.5">
                       {getSocietyName(competition.society_id)}
                     </Badge>
                   )}

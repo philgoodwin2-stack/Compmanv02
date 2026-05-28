@@ -210,7 +210,7 @@ export default function PlayersPage() {
   const [editingRating, setEditingRating] = useState("");
   const [editingGross, setEditingGross] = useState("");
   const [editingPlayingHcp, setEditingPlayingHcp] = useState("");
-  const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "" });
+  const [newPlayer, setNewPlayer] = useState({ username: "", handicap: 18, team_logo: "", differentials: "" });
   const [systemHasAdmins, setSystemHasAdmins] = useState(true); // Default to true to hide controls until checked
   const [showAllPlayers, setShowAllPlayers] = useState(false); // Global admin can toggle to see all
   const [societies, setSocieties] = useState([]); // For displaying society names
@@ -283,13 +283,31 @@ export default function PlayersPage() {
 
     try {
       const payload = {
-        ...newPlayer,
+        username: newPlayer.username,
+        handicap: newPlayer.handicap,
+        team_logo: newPlayer.team_logo,
         society_id: user?.society_id || null,
       };
-      await axios.post(`${API}/players`, payload);
-      toast.success("Player added!");
+      const response = await axios.post(`${API}/players`, payload);
+      const newPlayerId = response.data.id;
+      
+      // If differentials were provided, import them
+      if (newPlayer.differentials.trim()) {
+        try {
+          const importResponse = await axios.post(`${API}/players/${newPlayerId}/import-differentials?user_id=${user?.id}`, {
+            differentials: newPlayer.differentials
+          });
+          toast.success(`Player added with ${importResponse.data.records_imported} differentials imported. Handicap: ${importResponse.data.new_handicap}`);
+        } catch (importError) {
+          toast.success("Player added, but failed to import differentials");
+          console.error("Import error:", importError);
+        }
+      } else {
+        toast.success("Player added!");
+      }
+      
       setShowAddDialog(false);
-      setNewPlayer({ username: "", handicap: 18, team_logo: "" });
+      setNewPlayer({ username: "", handicap: 18, team_logo: "", differentials: "" });
       fetchPlayers();
     } catch (error) {
       if (error.response?.data?.detail) {
@@ -671,6 +689,23 @@ export default function PlayersPage() {
                       </button>
                     ))}
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="differentials">
+                    Handicap Differentials (Optional)
+                  </Label>
+                  <textarea
+                    data-testid="new-player-differentials-input"
+                    id="differentials"
+                    value={newPlayer.differentials}
+                    onChange={(e) => setNewPlayer({ ...newPlayer, differentials: e.target.value })}
+                    placeholder="Enter up to 20 differentials as comma-separated values, e.g.: 15.2, 16.1, 14.8, 15.5, ..."
+                    rows={3}
+                    className="w-full p-2 border rounded bg-transparent text-sm focus:ring-1 focus:ring-primary"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Import historical differentials to calculate WHS handicap. Most recent 20 values used.
+                  </p>
                 </div>
               </div>
               <DialogFooter>
