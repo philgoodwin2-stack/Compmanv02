@@ -291,11 +291,19 @@ export default function PlayersPage() {
       const response = await axios.post(`${API}/players`, payload);
       const newPlayerId = response.data.id;
       
-      // If differentials were provided, import them
-      if (newPlayer.differentials.trim()) {
+      // Determine differentials to import
+      let differentialsToImport = newPlayer.differentials.trim();
+      
+      // If no differentials provided but handicap is set, create 20 entries with the handicap value
+      if (!differentialsToImport && newPlayer.handicap > 0) {
+        differentialsToImport = Array(20).fill(newPlayer.handicap.toFixed(1)).join(", ");
+      }
+      
+      // If differentials are available (either entered or generated), import them
+      if (differentialsToImport) {
         try {
           const importResponse = await axios.post(`${API}/players/${newPlayerId}/import-differentials?user_id=${user?.id}`, {
-            differentials: newPlayer.differentials
+            differentials: differentialsToImport
           });
           toast.success(`Player added with ${importResponse.data.records_imported} differentials imported. Handicap: ${importResponse.data.new_handicap}`);
         } catch (importError) {
@@ -704,7 +712,7 @@ export default function PlayersPage() {
                     className="w-full p-2 border rounded bg-transparent text-sm focus:ring-1 focus:ring-primary"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Import historical differentials to calculate WHS handicap. Most recent 20 values used.
+                    Import historical differentials to calculate WHS handicap. If left empty, the handicap value above will be used 20 times.
                   </p>
                 </div>
               </div>
