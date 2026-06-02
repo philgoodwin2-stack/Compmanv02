@@ -4,7 +4,7 @@
 
 | Email | Password | Role | Linked Player | Notes |
 |-------|----------|------|---------------|-------|
-| admin@scoretracker.com | Admin123! | admin | (link to TestAdmin) | Seeded admin account |
+| admin@scoretracker.com | NewPassword123! | admin | (link to TestAdmin) | Password was reset during testing |
 
 ## Player Profiles (Existing Golf Data)
 
@@ -20,75 +20,63 @@
 | phil g | vt vert | 9ACURL | true | Society admin only |
 | phil g | WhatsApp | FJSUWB | true | Society admin only |
 
-### Regular Users
-| Username | Society | is_admin |
-|----------|---------|----------|
-| Gem G | WhatsApp | false |
-| Tim G | WhatsApp | false |
-
 ## How Authentication Works
 
-### New Auth Flow (Email/Password + Player Linking)
-1. **Register** - Create account with email, password, and name at `/api/auth/register`
-2. **Login** - Sign in with email/password at `/api/auth/login`
-3. **Link Player** - Link authenticated account to existing player profile at `/api/auth/link-player`
-4. **Access App** - Once player is linked, user can access Dashboard and all features
+### Auth Flow
+1. **Register** - Create account at `/api/auth/register`
+2. **Login** - Sign in at `/api/auth/login` 
+3. **Link Player** - Link to existing player at `/api/auth/link-player`
+4. **Forgot Password** - Request reset link at `/api/auth/forgot-password`
+5. **Reset Password** - Set new password at `/api/auth/reset-password`
 
 ### Token Storage
-- **Access Token**: Stored in localStorage as `authToken`
-- Sent via `Authorization: Bearer <token>` header on all requests
-- Token expires in 15 minutes (auto-refresh not yet implemented)
+- Access token stored in localStorage as `authToken`
+- Sent via `Authorization: Bearer <token>` header
 
 ### API Endpoints
-- `POST /api/auth/register` - Register new user (returns access_token in response)
-- `POST /api/auth/login` - Login with email/password (returns access_token in response)
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login with email/password
 - `POST /api/auth/logout` - Clear session
 - `GET /api/auth/me` - Get current authenticated user
-- `GET /api/auth/available-players` - Get players available for linking
-- `POST /api/auth/link-player` - Link player to authenticated user
-- `POST /api/auth/refresh` - Refresh access token (cookie-based)
-- `POST /api/auth/forgot-password` - Request password reset
+- `GET /api/auth/available-players` - Get players for linking
+- `POST /api/auth/link-player` - Link player to account
+- `POST /api/auth/forgot-password` - Request password reset email
 - `POST /api/auth/reset-password` - Reset password with token
 
-## Admin System Explained
+## Password Reset Setup
 
-### Society Admin
-- Can manage ONLY their own society
-- Gold badge on UI
-- Toggle via "Admin" button on Players page
+To enable email delivery for password reset:
 
-### Global Admin (Super-Admin)
-- Can manage ALL societies
-- Purple badge on UI
-- Toggle via "Global" button on Players page (only visible to other global admins)
+1. **Get Resend API Key:**
+   - Sign up at https://resend.com
+   - Go to Dashboard → API Keys → Create API Key
+   - Key starts with `re_...`
+
+2. **Add to backend/.env:**
+   ```
+   RESEND_API_KEY=re_your_api_key_here
+   SENDER_EMAIL=onboarding@resend.dev
+   ```
+
+3. **Restart backend:**
+   ```bash
+   sudo supervisorctl restart backend
+   ```
+
+**Note:** Without RESEND_API_KEY configured, reset links are logged to the console instead of emailed.
 
 ## Testing Auth Features
 
-### Test Registration:
+### Test Forgot Password:
 ```bash
-curl -X POST "https://score-tracker-177.preview.emergentagent.com/api/auth/register" \
+curl -X POST "https://score-tracker-177.preview.emergentagent.com/api/auth/forgot-password" \
   -H "Content-Type: application/json" \
-  -d '{"email":"newuser@example.com","password":"Test123!","name":"New User"}'
+  -d '{"email":"your@email.com"}'
 ```
 
-### Test Login:
+### Test Reset Password:
 ```bash
-curl -X POST "https://score-tracker-177.preview.emergentagent.com/api/auth/login" \
+curl -X POST "https://score-tracker-177.preview.emergentagent.com/api/auth/reset-password" \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@scoretracker.com","password":"Admin123!"}'
-```
-
-### Test Auth Check (with token):
-```bash
-TOKEN="eyJhbG..." # from login response
-curl -X GET "https://score-tracker-177.preview.emergentagent.com/api/auth/me" \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-### Test Link Player (with token):
-```bash
-curl -X POST "https://score-tracker-177.preview.emergentagent.com/api/auth/link-player" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"player_id":"<player-uuid>"}'
+  -d '{"token":"<token_from_email>","new_password":"NewPassword123!"}'
 ```

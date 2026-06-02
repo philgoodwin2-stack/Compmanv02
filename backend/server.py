@@ -9,6 +9,8 @@ import random
 import secrets
 import bcrypt
 import jwt
+import asyncio
+import resend
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
@@ -20,6 +22,12 @@ from decimal import Decimal, ROUND_HALF_UP
 # Load environment variables FIRST
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Resend Email Configuration
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
 
 # JWT Configuration
 JWT_ALGORITHM = "HS256"
@@ -2608,6 +2616,7 @@ async def forgot_password(data: ForgotPasswordRequest):
     email = data.email.lower()
     user = await db.users.find_one({"email": email})
     
+    # Always return success to prevent email enumeration
     if not user:
         return {"message": "If that email exists, a reset link has been sent"}
     
@@ -2621,7 +2630,55 @@ async def forgot_password(data: ForgotPasswordRequest):
     
     frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
     reset_link = f"{frontend_url}/reset-password?token={reset_token}"
-    logger.info(f"Password reset link for {email}: {reset_link}")
+    
+    # Send email via Resend
+    if RESEND_API_KEY:
+        try:
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="background-color: #0d4e2c; padding: 20px; text-align: center;">
+                    <h1 style="color: #D4AF37; margin: 0;">Golf Stableford</h1>
+                </div>
+                <div style="padding: 30px; background-color: #f9f9f9;">
+                    <h2 style="color: #333;">Password Reset Request</h2>
+                    <p style="color: #666; line-height: 1.6;">
+                        Hi {user.get('name', 'there')},
+                    </p>
+                    <p style="color: #666; line-height: 1.6;">
+                        You requested to reset your password. Click the button below to set a new password:
+                    </p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{reset_link}" 
+                           style="background-color: #0d4e2c; color: white; padding: 14px 28px; 
+                                  text-decoration: none; font-weight: bold; border-radius: 4px;">
+                            Reset Password
+                        </a>
+                    </div>
+                    <p style="color: #999; font-size: 14px; line-height: 1.6;">
+                        This link will expire in 1 hour. If you didn't request this, you can safely ignore this email.
+                    </p>
+                    <p style="color: #999; font-size: 12px; margin-top: 20px;">
+                        If the button doesn't work, copy and paste this link:<br>
+                        <a href="{reset_link}" style="color: #0d4e2c;">{reset_link}</a>
+                    </p>
+                </div>
+            </div>
+            """
+            
+            params = {
+                "from": SENDER_EMAIL,
+                "to": [email],
+                "subject": "Reset Your Golf Stableford Password",
+                "html": html_content
+            }
+            
+            await asyncio.to_thread(resend.Emails.send, params)
+            logger.info(f"Password reset email sent to {email}")
+        except Exception as e:
+            logger.error(f"Failed to send password reset email: {str(e)}")
+            # Still return success - don't reveal email issues to user
+    else:
+        logger.warning(f"RESEND_API_KEY not configured. Reset link for {email}: {reset_link}")
     
     return {"message": "If that email exists, a reset link has been sent"}
 

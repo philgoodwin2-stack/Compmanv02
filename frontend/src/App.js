@@ -8,6 +8,7 @@ import MobileNav from "@/components/MobileNav";
 // Pages
 import LoginPage from "@/pages/LoginPage";
 import LinkPlayerPage from "@/pages/LinkPlayerPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import DashboardPage from "@/pages/DashboardPage";
 import PlayersPage from "@/pages/PlayersPage";
 import CompetitionPage from "@/pages/CompetitionPage";
@@ -200,6 +201,9 @@ function App() {
                     : <Navigate to="/" />
                 }
               />
+              
+              {/* Public route - Reset Password */}
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               
               {/* Protected routes - require auth AND linked player */}
               <Route
