@@ -1,25 +1,65 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from bson import ObjectId
 import os
 import logging
 import random
+import secrets
+import bcrypt
+import jwt
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 from enum import Enum
 from decimal import Decimal, ROUND_HALF_UP
 
+# Load environment variables FIRST
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+
+# JWT Configuration
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 15
+REFRESH_TOKEN_EXPIRE_DAYS = 7
+
+def get_jwt_secret() -> str:
+    return os.environ.get("JWT_SECRET", "fallback-secret-change-me")
+
 def round_half_up(value: float, decimals: int = 1) -> float:
     """Round using standard rounding (round half up) instead of Python's banker's rounding"""
     d = Decimal(str(value))
     return float(d.quantize(Decimal(10) ** -decimals, rounding=ROUND_HALF_UP))
 
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+# Password hashing functions
+def hash_password(password: str) -> str:
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+
+# JWT Token functions
+def create_access_token(user_id: str, email: str) -> str:
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+        "type": "access"
+    }
+    return jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
+
+def create_refresh_token(user_id: str) -> str:
+    payload = {
+        "sub": user_id,
+        "exp": datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+        "type": "refresh"
+    }
+    return jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
@@ -2220,7 +2260,7 @@ class LoginResponse(BaseModel):
     needs_society: bool = False
 
 @api_router.post("/login", response_model=LoginResponse)
-async def login(login_data: LoginRequest):
+async def username_login(login_data: LoginRequest):
     # If join_code provided, find society
     society_id = login_data.society_id
     if login_data.join_code:
@@ -2379,23 +2419,320 @@ async def switch_society(username: str, society_id: str):
 async def root():
     return {"message": "Golf Stableford Competition API"}
 
+# ============= AUTH HELPER FUNCTIONS =============
+
+async def get_current_user(request: Request) -> dict:
+    """Get current authenticated user from JWT token"""
+    token = request.cookies.get("access_token")
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "access":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        user["id"] = str(user["_id"])
+        del user["_id"]
+        user.pop("password_hash", None)
+        return user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+async def check_brute_force(identifier: str) -> bool:
+    """Check if login should be blocked due to too many failed attempts"""
+    attempt = await db.login_attempts.find_one({"identifier": identifier})
+    if attempt and attempt.get("count", 0) >= 5:
+        lockout_until = attempt.get("lockout_until")
+        if lockout_until and datetime.now(timezone.utc) < lockout_until:
+            return True
+        await db.login_attempts.delete_one({"identifier": identifier})
+    return False
+
+async def record_failed_login(identifier: str):
+    """Record a failed login attempt"""
+    attempt = await db.login_attempts.find_one({"identifier": identifier})
+    if attempt:
+        new_count = attempt.get("count", 0) + 1
+        update = {"$set": {"count": new_count}}
+        if new_count >= 5:
+            update["$set"]["lockout_until"] = datetime.now(timezone.utc) + timedelta(minutes=15)
+        await db.login_attempts.update_one({"identifier": identifier}, update)
+    else:
+        await db.login_attempts.insert_one({
+            "identifier": identifier,
+            "count": 1,
+            "created_at": datetime.now(timezone.utc)
+        })
+
+async def clear_login_attempts(identifier: str):
+    """Clear failed login attempts after successful login"""
+    await db.login_attempts.delete_one({"identifier": identifier})
+
+# ============= AUTH MODELS =============
+
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+class LinkPlayerRequest(BaseModel):
+    player_id: str
+
+# ============= AUTH ENDPOINTS =============
+
+@api_router.post("/auth/register")
+async def register(user_data: UserRegister, response: Response, request: Request):
+    """Register a new user"""
+    email = user_data.email.lower()
+    
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    hashed = hash_password(user_data.password)
+    user_doc = {
+        "email": email,
+        "password_hash": hashed,
+        "name": user_data.name,
+        "role": "user",
+        "player_id": None,
+        "created_at": datetime.now(timezone.utc)
+    }
+    result = await db.users.insert_one(user_doc)
+    user_id = str(result.inserted_id)
+    
+    access_token = create_access_token(user_id, email)
+    refresh_token = create_refresh_token(user_id)
+    
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=900, path="/")
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
+    
+    return {"id": user_id, "email": email, "name": user_data.name, "role": "user", "player_id": None}
+
+@api_router.post("/auth/login")
+async def auth_login(user_data: UserLogin, response: Response, request: Request):
+    """Login user with email/password"""
+    email = user_data.email.lower()
+    client_ip = request.client.host if request.client else "unknown"
+    identifier = f"{client_ip}:{email}"
+    
+    if await check_brute_force(identifier):
+        raise HTTPException(status_code=429, detail="Too many failed attempts. Try again in 15 minutes.")
+    
+    user = await db.users.find_one({"email": email})
+    if not user:
+        await record_failed_login(identifier)
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    if not verify_password(user_data.password, user["password_hash"]):
+        await record_failed_login(identifier)
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    await clear_login_attempts(identifier)
+    user_id = str(user["_id"])
+    
+    access_token = create_access_token(user_id, email)
+    refresh_token = create_refresh_token(user_id)
+    
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=900, path="/")
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
+    
+    player = None
+    if user.get("player_id"):
+        player = await db.players.find_one({"id": user["player_id"]}, {"_id": 0})
+    
+    return {"id": user_id, "email": email, "name": user.get("name"), "role": user.get("role", "user"), "player_id": user.get("player_id"), "player": player}
+
+@api_router.post("/auth/logout")
+async def auth_logout(response: Response):
+    """Logout user by clearing cookies"""
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("refresh_token", path="/")
+    return {"message": "Logged out successfully"}
+
+@api_router.get("/auth/me")
+async def get_me(request: Request):
+    """Get current authenticated user"""
+    user = await get_current_user(request)
+    player = None
+    if user.get("player_id"):
+        player = await db.players.find_one({"id": user["player_id"]}, {"_id": 0})
+    return {**user, "player": player}
+
+@api_router.post("/auth/refresh")
+async def refresh_token_endpoint(request: Request, response: Response):
+    """Refresh access token"""
+    token = request.cookies.get("refresh_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="No refresh token")
+    
+    try:
+        payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        
+        user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        access_token = create_access_token(str(user["_id"]), user["email"])
+        response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=900, path="/")
+        return {"message": "Token refreshed"}
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Refresh token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest):
+    """Request password reset"""
+    email = data.email.lower()
+    user = await db.users.find_one({"email": email})
+    
+    if not user:
+        return {"message": "If that email exists, a reset link has been sent"}
+    
+    reset_token = secrets.token_urlsafe(32)
+    await db.password_reset_tokens.insert_one({
+        "token": reset_token,
+        "user_id": str(user["_id"]),
+        "expires_at": datetime.now(timezone.utc) + timedelta(hours=1),
+        "used": False
+    })
+    
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+    reset_link = f"{frontend_url}/reset-password?token={reset_token}"
+    logger.info(f"Password reset link for {email}: {reset_link}")
+    
+    return {"message": "If that email exists, a reset link has been sent"}
+
+@api_router.post("/auth/reset-password")
+async def reset_password(data: ResetPasswordRequest):
+    """Reset password with token"""
+    token_doc = await db.password_reset_tokens.find_one({
+        "token": data.token,
+        "used": False,
+        "expires_at": {"$gt": datetime.now(timezone.utc)}
+    })
+    
+    if not token_doc:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    
+    hashed = hash_password(data.new_password)
+    await db.users.update_one(
+        {"_id": ObjectId(token_doc["user_id"])},
+        {"$set": {"password_hash": hashed}}
+    )
+    
+    await db.password_reset_tokens.update_one(
+        {"token": data.token},
+        {"$set": {"used": True}}
+    )
+    
+    return {"message": "Password reset successfully"}
+
+@api_router.post("/auth/link-player")
+async def link_player(data: LinkPlayerRequest, request: Request):
+    """Link authenticated user to an existing player profile"""
+    user = await get_current_user(request)
+    
+    player = await db.players.find_one({"id": data.player_id}, {"_id": 0})
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    existing_link = await db.users.find_one({"player_id": data.player_id, "_id": {"$ne": ObjectId(user["id"])}})
+    if existing_link:
+        raise HTTPException(status_code=400, detail="This player is already linked to another account")
+    
+    await db.users.update_one(
+        {"_id": ObjectId(user["id"])},
+        {"$set": {"player_id": data.player_id}}
+    )
+    
+    return {"message": "Player linked successfully", "player": player}
+
+@api_router.get("/auth/available-players")
+async def get_available_players(request: Request):
+    """Get players available for linking (not yet linked to a user)"""
+    user = await get_current_user(request)
+    
+    linked_users = await db.users.find({"player_id": {"$ne": None}}, {"player_id": 1}).to_list(1000)
+    linked_player_ids = [u["player_id"] for u in linked_users]
+    
+    query = {"id": {"$nin": linked_player_ids}}
+    
+    if user.get("player_id"):
+        linked_player = await db.players.find_one({"id": user["player_id"]})
+        if linked_player and linked_player.get("society_id"):
+            query["society_id"] = linked_player["society_id"]
+    
+    players = await db.players.find(query, {"_id": 0}).to_list(100)
+    return players
+
 # Include the router in the main app
 app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# ============= STARTUP EVENTS =============
+
+@app.on_event("startup")
+async def startup_event():
+    """Seed admin user and create indexes"""
+    await db.users.create_index("email", unique=True)
+    await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
+    await db.login_attempts.create_index("identifier")
+    
+    admin_email = os.environ.get("ADMIN_EMAIL", "admin@example.com")
+    admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+    
+    existing = await db.users.find_one({"email": admin_email})
+    if existing is None:
+        hashed = hash_password(admin_password)
+        await db.users.insert_one({
+            "email": admin_email,
+            "password_hash": hashed,
+            "name": "Admin",
+            "role": "admin",
+            "player_id": None,
+            "created_at": datetime.now(timezone.utc)
+        })
+        logger.info(f"Admin user created: {admin_email}")
+    elif not verify_password(admin_password, existing["password_hash"]):
+        await db.users.update_one(
+            {"email": admin_email},
+            {"$set": {"password_hash": hash_password(admin_password)}}
+        )
+        logger.info(f"Admin password updated: {admin_email}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
