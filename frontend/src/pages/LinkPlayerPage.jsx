@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useUser, API } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { Flag, User, Search, CheckCircle, Plus, Link as LinkIcon } from "lucide-
 import axios from "axios";
 
 export default function LinkPlayerPage() {
+  const navigate = useNavigate();
   const { authUser, linkPlayer, createAndLinkPlayer } = useUser();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,9 +26,7 @@ export default function LinkPlayerPage() {
 
   const fetchAvailablePlayers = async () => {
     try {
-      const response = await axios.get(`${API}/auth/available-players`, {
-        withCredentials: true
-      });
+      const response = await axios.get(`${API}/auth/available-players`);
       setPlayers(response.data);
     } catch (error) {
       console.error("Failed to fetch players:", error);
@@ -41,6 +41,8 @@ export default function LinkPlayerPage() {
     try {
       await linkPlayer(playerId);
       toast.success("Player profile linked successfully!");
+      // Navigate to dashboard after successful linking
+      navigate("/dashboard");
     } catch (error) {
       const message = error.response?.data?.detail || "Failed to link player";
       toast.error(message);
@@ -64,6 +66,8 @@ export default function LinkPlayerPage() {
     try {
       await createAndLinkPlayer(newPlayerName.trim(), parseFloat(newPlayerHandicap) || 18.0, joinCode.trim().toUpperCase());
       toast.success("Player created and linked successfully!");
+      // Navigate to dashboard after successful creation and linking
+      navigate("/dashboard");
     } catch (error) {
       const message = error.response?.data?.detail || "Failed to create player";
       toast.error(message);

@@ -4,7 +4,7 @@
 
 | Email | Password | Role | Linked Player | Notes |
 |-------|----------|------|---------------|-------|
-| admin@scoretracker.com | Admin123! | admin | None (link to TestAdmin) | Seeded admin account |
+| admin@scoretracker.com | Admin123! | admin | (link to TestAdmin) | Seeded admin account |
 
 ## Player Profiles (Existing Golf Data)
 
@@ -34,18 +34,19 @@
 3. **Link Player** - Link authenticated account to existing player profile at `/api/auth/link-player`
 4. **Access App** - Once player is linked, user can access Dashboard and all features
 
-### JWT Token Storage
-- **Access Token**: httpOnly cookie, expires in 15 minutes
-- **Refresh Token**: httpOnly cookie, expires in 7 days
+### Token Storage
+- **Access Token**: Stored in localStorage as `authToken`
+- Sent via `Authorization: Bearer <token>` header on all requests
+- Token expires in 15 minutes (auto-refresh not yet implemented)
 
 ### API Endpoints
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login with email/password
-- `POST /api/auth/logout` - Clear session cookies
+- `POST /api/auth/register` - Register new user (returns access_token in response)
+- `POST /api/auth/login` - Login with email/password (returns access_token in response)
+- `POST /api/auth/logout` - Clear session
 - `GET /api/auth/me` - Get current authenticated user
 - `GET /api/auth/available-players` - Get players available for linking
 - `POST /api/auth/link-player` - Link player to authenticated user
-- `POST /api/auth/refresh` - Refresh access token
+- `POST /api/auth/refresh` - Refresh access token (cookie-based)
 - `POST /api/auth/forgot-password` - Request password reset
 - `POST /api/auth/reset-password` - Reset password with token
 
@@ -60,16 +61,6 @@
 - Can manage ALL societies
 - Purple badge on UI
 - Toggle via "Global" button on Players page (only visible to other global admins)
-
-## How to Create First Global Admin
-Via API call (no auth required for first one):
-```bash
-# Get player ID first
-curl https://yourapp.com/api/players | jq '.[] | select(.username=="YourUsername")'
-
-# Make them global admin
-curl -X PUT "https://yourapp.com/api/players/{player_id}/toggle-global-admin"
-```
 
 ## Testing Auth Features
 
@@ -87,8 +78,17 @@ curl -X POST "https://score-tracker-177.preview.emergentagent.com/api/auth/login
   -d '{"email":"admin@scoretracker.com","password":"Admin123!"}'
 ```
 
-### Test Auth Check (requires cookies):
+### Test Auth Check (with token):
 ```bash
+TOKEN="eyJhbG..." # from login response
 curl -X GET "https://score-tracker-177.preview.emergentagent.com/api/auth/me" \
-  --cookie "access_token=<token>"
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Test Link Player (with token):
+```bash
+curl -X POST "https://score-tracker-177.preview.emergentagent.com/api/auth/link-player" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"player_id":"<player-uuid>"}'
 ```

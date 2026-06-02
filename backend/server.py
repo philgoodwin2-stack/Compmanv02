@@ -2523,10 +2523,10 @@ async def register(user_data: UserRegister, response: Response, request: Request
     access_token = create_access_token(user_id, email)
     refresh_token = create_refresh_token(user_id)
     
-    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=900, path="/")
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="lax", max_age=900, path="/")
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="lax", max_age=604800, path="/")
     
-    return {"id": user_id, "email": email, "name": user_data.name, "role": "user", "player_id": None}
+    return {"id": user_id, "email": email, "name": user_data.name, "role": "user", "player_id": None, "access_token": access_token}
 
 @api_router.post("/auth/login")
 async def auth_login(user_data: UserLogin, response: Response, request: Request):
@@ -2553,14 +2553,14 @@ async def auth_login(user_data: UserLogin, response: Response, request: Request)
     access_token = create_access_token(user_id, email)
     refresh_token = create_refresh_token(user_id)
     
-    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=900, path="/")
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="lax", max_age=900, path="/")
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="lax", max_age=604800, path="/")
     
     player = None
     if user.get("player_id"):
         player = await db.players.find_one({"id": user["player_id"]}, {"_id": 0})
     
-    return {"id": user_id, "email": email, "name": user.get("name"), "role": user.get("role", "user"), "player_id": user.get("player_id"), "player": player}
+    return {"id": user_id, "email": email, "name": user.get("name"), "role": user.get("role", "user"), "player_id": user.get("player_id"), "player": player, "access_token": access_token}
 
 @api_router.post("/auth/logout")
 async def auth_logout(response: Response):
@@ -2595,7 +2595,7 @@ async def refresh_token_endpoint(request: Request, response: Response):
             raise HTTPException(status_code=401, detail="User not found")
         
         access_token = create_access_token(str(user["_id"]), user["email"])
-        response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=900, path="/")
+        response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="lax", max_age=900, path="/")
         return {"message": "Token refreshed"}
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Refresh token expired")
@@ -2691,10 +2691,19 @@ async def get_available_players(request: Request):
 # Include the router in the main app
 app.include_router(api_router)
 
+# Get frontend URL for CORS - must be explicit when allow_credentials=True
+frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+cors_origins = [
+    frontend_url,
+    "http://localhost:3000",
+    "https://score-tracker-177.preview.emergentagent.com",
+    "https://score-tracker-177.emergent.host"
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

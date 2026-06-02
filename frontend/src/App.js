@@ -20,8 +20,24 @@ import JoinInvitePage from "@/pages/JoinInvitePage";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
 
-// Configure axios defaults for credentials
-axios.defaults.withCredentials = true;
+// Auth token management
+const getAuthToken = () => localStorage.getItem("authToken");
+const setAuthToken = (token) => {
+  if (token) {
+    localStorage.setItem("authToken", token);
+  } else {
+    localStorage.removeItem("authToken");
+  }
+};
+
+// Configure axios interceptor to add auth header
+axios.interceptors.request.use((config) => {
+  const token = getAuthToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 // User Context
 export const UserContext = createContext(null);
@@ -47,14 +63,21 @@ function App() {
   }, []);
 
   const checkAuth = async () => {
+    const token = getAuthToken();
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    
     try {
-      const response = await axios.get(`${API}/auth/me`, { withCredentials: true });
+      const response = await axios.get(`${API}/auth/me`);
       setAuthUser(response.data);
       if (response.data.player) {
         setUser(response.data.player);
       }
     } catch (error) {
-      // Not authenticated - this is fine
+      // Token invalid or expired - clear it
+      setAuthToken(null);
       setAuthUser(null);
       setUser(null);
     } finally {
@@ -63,7 +86,11 @@ function App() {
   };
 
   const login = async (email, password) => {
-    const response = await axios.post(`${API}/auth/login`, { email, password }, { withCredentials: true });
+    const response = await axios.post(`${API}/auth/login`, { email, password });
+    // Store the access token from response
+    if (response.data.access_token) {
+      setAuthToken(response.data.access_token);
+    }
     setAuthUser(response.data);
     if (response.data.player) {
       setUser(response.data.player);
@@ -72,23 +99,28 @@ function App() {
   };
 
   const register = async (email, password, name) => {
-    const response = await axios.post(`${API}/auth/register`, { email, password, name }, { withCredentials: true });
-    // Auto-login after registration
-    return login(email, password);
+    const response = await axios.post(`${API}/auth/register`, { email, password, name });
+    // Store the access token from response
+    if (response.data.access_token) {
+      setAuthToken(response.data.access_token);
+    }
+    setAuthUser(response.data);
+    return response.data;
   };
 
   const logout = async () => {
     try {
-      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
+      await axios.post(`${API}/auth/logout`);
     } catch (error) {
       console.error("Logout error:", error);
     }
+    setAuthToken(null);
     setAuthUser(null);
     setUser(null);
   };
 
   const linkPlayer = async (playerId) => {
-    const response = await axios.post(`${API}/auth/link-player`, { player_id: playerId }, { withCredentials: true });
+    const response = await axios.post(`${API}/auth/link-player`, { player_id: playerId });
     // Refresh auth state to get updated player
     await checkAuth();
     return response.data;
