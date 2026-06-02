@@ -1,22 +1,53 @@
 # Test Credentials
 
-## Global Admin Users
+## Authenticated User Accounts (Email/Password Auth)
+
+| Email | Password | Role | Linked Player | Notes |
+|-------|----------|------|---------------|-------|
+| admin@scoretracker.com | Admin123! | admin | None (link to TestAdmin) | Seeded admin account |
+
+## Player Profiles (Existing Golf Data)
+
+### Global Admin Users
 | Username | Society | is_global_admin | Notes |
 |----------|---------|-----------------|-------|
 | TestAdmin | Test Golf Society | **true** | Has rights across ALL societies |
 
-## Society Admin Users (Preview Environment)
+### Society Admin Users (Preview Environment)
 | Username | Society | Join Code | is_admin | Notes |
 |----------|---------|-----------|----------|-------|
 | TestAdmin | Test Golf Society | TW83XM | true | Also Global Admin |
 | phil g | vt vert | 9ACURL | true | Society admin only |
 | phil g | WhatsApp | FJSUWB | true | Society admin only |
 
-## Regular Users
+### Regular Users
 | Username | Society | is_admin |
 |----------|---------|----------|
 | Gem G | WhatsApp | false |
 | Tim G | WhatsApp | false |
+
+## How Authentication Works
+
+### New Auth Flow (Email/Password + Player Linking)
+1. **Register** - Create account with email, password, and name at `/api/auth/register`
+2. **Login** - Sign in with email/password at `/api/auth/login`
+3. **Link Player** - Link authenticated account to existing player profile at `/api/auth/link-player`
+4. **Access App** - Once player is linked, user can access Dashboard and all features
+
+### JWT Token Storage
+- **Access Token**: httpOnly cookie, expires in 15 minutes
+- **Refresh Token**: httpOnly cookie, expires in 7 days
+
+### API Endpoints
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login with email/password
+- `POST /api/auth/logout` - Clear session cookies
+- `GET /api/auth/me` - Get current authenticated user
+- `GET /api/auth/available-players` - Get players available for linking
+- `POST /api/auth/link-player` - Link player to authenticated user
+- `POST /api/auth/refresh` - Refresh access token
+- `POST /api/auth/forgot-password` - Request password reset
+- `POST /api/auth/reset-password` - Reset password with token
 
 ## Admin System Explained
 
@@ -40,18 +71,24 @@ curl https://yourapp.com/api/players | jq '.[] | select(.username=="YourUsername
 curl -X PUT "https://yourapp.com/api/players/{player_id}/toggle-global-admin"
 ```
 
-## Testing Admin Features
+## Testing Auth Features
 
-### As TestAdmin (Global Admin):
-1. Login as "TestAdmin"
-2. Can see purple "Global Admin" badge
-3. On Players page, see both "Admin" and "Global" toggle buttons
-4. Can manage invite links for ANY society
-5. Can remove members from ANY society
-6. Can delete ANY society
+### Test Registration:
+```bash
+curl -X POST "https://score-tracker-177.preview.emergentagent.com/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"newuser@example.com","password":"Test123!","name":"New User"}'
+```
 
-### As Regular Society Admin:
-1. Login as "phil g" (in WhatsApp society)
-2. Can see gold "Admin" badge
-3. On Players page, see only "Admin" toggle button
-4. Can only manage their own society
+### Test Login:
+```bash
+curl -X POST "https://score-tracker-177.preview.emergentagent.com/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@scoretracker.com","password":"Admin123!"}'
+```
+
+### Test Auth Check (requires cookies):
+```bash
+curl -X GET "https://score-tracker-177.preview.emergentagent.com/api/auth/me" \
+  --cookie "access_token=<token>"
+```
