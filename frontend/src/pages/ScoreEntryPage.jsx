@@ -120,7 +120,7 @@ export default function ScoreEntryPage() {
   };
 
   const getPointsColor = (points) => {
-    if (points >= 36) return "text-[#D4AF37]"; // Gold - great round
+    if (points >= 36) return "text-[#C0C0C0]"; // Gold - great round
     if (points >= 30) return "text-green-500"; // Good
     if (points >= 24) return "text-blue-500"; // Average
     return "text-gray-500"; // Below average
@@ -159,7 +159,7 @@ export default function ScoreEntryPage() {
             data-testid="save-score-btn"
             onClick={handleSave}
             disabled={saving}
-            className="bg-[#D4AF37] text-black hover:bg-[#D4AF37]/90 rounded-none uppercase font-bold tracking-widest"
+            className="bg-[#C0C0C0] text-black hover:bg-[#C0C0C0]/90 rounded-none uppercase font-bold tracking-widest"
           >
             <Save className="w-5 h-5 mr-2" />
             {saving ? "Saving..." : "Save"}
@@ -169,10 +169,10 @@ export default function ScoreEntryPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-6">
-        <Card className="w-full max-w-md border-l-4 border-l-[#D4AF37] shadow-xl">
+        <Card className="w-full max-w-md border-l-4 border-l-[#C0C0C0] shadow-xl">
           <CardHeader className="text-center pb-4">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <Trophy className="w-10 h-10 text-[#D4AF37]" />
+              <Trophy className="w-10 h-10 text-[#C0C0C0]" />
             </div>
             <CardTitle className="text-3xl font-bold uppercase tracking-tight">
               Enter Stableford Points
@@ -273,7 +273,7 @@ export default function ScoreEntryPage() {
                     data-testid={`quick-pts-${pts}`}
                     variant="outline"
                     onClick={() => setStablefordPoints(pts)}
-                    className={`h-12 font-mono font-bold ${stablefordPoints === pts ? 'bg-[#D4AF37] text-black border-[#D4AF37]' : ''}`}
+                    className={`h-12 font-mono font-bold ${stablefordPoints === pts ? 'bg-[#C0C0C0] text-black border-[#C0C0C0]' : ''}`}
                   >
                     {pts}
                   </Button>
@@ -286,7 +286,7 @@ export default function ScoreEntryPage() {
                     data-testid={`quick-pts-${pts}`}
                     variant="outline"
                     onClick={() => setStablefordPoints(pts)}
-                    className={`h-12 font-mono font-bold ${stablefordPoints === pts ? 'bg-[#D4AF37] text-black border-[#D4AF37]' : ''}`}
+                    className={`h-12 font-mono font-bold ${stablefordPoints === pts ? 'bg-[#C0C0C0] text-black border-[#C0C0C0]' : ''}`}
                   >
                     {pts}
                   </Button>
@@ -302,7 +302,7 @@ export default function ScoreEntryPage() {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Excellent:</span>
-                  <span className="font-mono font-bold text-[#D4AF37]">40+ pts</span>
+                  <span className="font-mono font-bold text-[#C0C0C0]">40+ pts</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Very Good:</span>

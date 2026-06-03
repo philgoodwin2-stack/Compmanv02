@@ -107,7 +107,7 @@ export default function DashboardPage() {
       case "completed":
         return "bg-gray-500 text-white";
       default:
-        return "bg-[#D4AF37] text-black";
+        return "bg-[#C0C0C0] text-black";
     }
   };
 
@@ -180,7 +180,7 @@ export default function DashboardPage() {
       <header className="golf-header text-white py-6 px-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <Flag className="w-8 h-8 text-[#D4AF37]" />
+            <Flag className="w-8 h-8 text-[#C0C0C0]" />
             <div>
               <h1 className="text-2xl font-bold uppercase tracking-tight">Golf Stableford</h1>
               <p className="text-white/70 text-sm">Welcome, {user?.username}</p>
@@ -253,7 +253,7 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-[#D4AF37]">
+          <Card className="border-l-4 border-l-[#C0C0C0]">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -262,7 +262,7 @@ export default function DashboardPage() {
                     {competitions.filter((c) => c.status === "active").length}
                   </p>
                 </div>
-                <Flag className="w-10 h-10 text-[#D4AF37]/30" />
+                <Flag className="w-10 h-10 text-[#C0C0C0]/30" />
               </div>
             </CardContent>
           </Card>

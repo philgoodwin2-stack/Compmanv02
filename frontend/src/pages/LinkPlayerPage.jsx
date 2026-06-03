@@ -87,7 +87,7 @@ export default function LinkPlayerPage() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="flex justify-center mb-4">
             <div className="bg-white/10 p-3 rounded-full">
-              <Flag className="w-10 h-10 text-[#D4AF37]" />
+              <Flag className="w-10 h-10 text-[#C0C0C0]" />
             </div>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight uppercase mb-2">

@@ -199,7 +199,7 @@ export default function CoursesPage() {
               <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
             </Button>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <MapPin className="w-6 h-6 sm:w-8 sm:h-8 text-[#D4AF37] flex-shrink-0" />
+              <MapPin className="w-6 h-6 sm:w-8 sm:h-8 text-[#C0C0C0] flex-shrink-0" />
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-2xl font-bold uppercase tracking-tight truncate">Courses</h1>
                 <p className="text-white/70 text-xs sm:text-sm hidden sm:block">Manage courses with stroke indices</p>
@@ -211,7 +211,7 @@ export default function CoursesPage() {
               <DialogTrigger asChild>
                 <Button
                   data-testid="add-course-btn"
-                  className="bg-[#D4AF37] text-black hover:bg-[#c4a030] rounded-none uppercase font-bold tracking-widest text-xs sm:text-sm px-2 sm:px-4 flex-shrink-0"
+                  className="bg-[#C0C0C0] text-black hover:bg-[#9E9E9E] rounded-none uppercase font-bold tracking-widest text-xs sm:text-sm px-2 sm:px-4 flex-shrink-0"
                 >
                   <Plus className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2" />
                   <span className="hidden sm:inline">Add Course</span>
@@ -473,7 +473,7 @@ export default function CoursesPage() {
               <Card key={course.id} className="overflow-hidden" data-testid={`course-card-${course.id}`}>
                 <div className="bg-[#1a1a1a] text-white px-4 py-3 flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <MapPin className="w-5 h-5 text-[#D4AF37]" />
+                    <MapPin className="w-5 h-5 text-[#C0C0C0]" />
                     <div>
                       <h3 className="font-bold uppercase tracking-wide">{course.name}</h3>
                       <p className="text-sm text-gray-400">
@@ -526,10 +526,10 @@ export default function CoursesPage() {
                             <td key={i} className="px-2 py-1 text-center font-mono">4</td>
                           ))}
                         </tr>
-                        <tr className="bg-[#D4AF37]/10">
-                          <td className="px-2 py-1 text-xs font-semibold text-[#D4AF37]">S.I.</td>
+                        <tr className="bg-[#C0C0C0]/10">
+                          <td className="px-2 py-1 text-xs font-semibold text-[#C0C0C0]">S.I.</td>
                           {course.holes?.map((hole, idx) => (
-                            <td key={idx} className="px-2 py-1 text-center font-mono font-bold text-[#D4AF37]">{hole.stroke_index}</td>
+                            <td key={idx} className="px-2 py-1 text-center font-mono font-bold text-[#C0C0C0]">{hole.stroke_index}</td>
                           )) || Array.from({ length: 18 }, (_, i) => (
                             <td key={i} className="px-2 py-1 text-center font-mono">-</td>
                           ))}

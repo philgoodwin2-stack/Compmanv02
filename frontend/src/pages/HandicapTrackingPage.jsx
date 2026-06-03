@@ -173,7 +173,7 @@ export default function HandicapTrackingPage() {
               <ArrowLeft className="w-6 h-6" />
             </Button>
             <div className="flex items-center gap-3">
-              <History className="w-8 h-8 text-[#D4AF37]" />
+              <History className="w-8 h-8 text-[#C0C0C0]" />
               <div>
                 <h1 className="text-2xl font-bold uppercase tracking-tight">
                   {viewMode === "list" ? "My Handicap" : "Handicap Tracking"}
@@ -192,7 +192,7 @@ export default function HandicapTrackingPage() {
         {/* Current Handicap Card - Only show in list view */}
         {viewMode === "list" && (
           <>
-            <Card className="mb-6 border-l-4 border-l-[#D4AF37]">
+            <Card className="mb-6 border-l-4 border-l-[#C0C0C0]">
               <CardContent className="pt-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="text-center md:text-left">
@@ -440,7 +440,7 @@ export default function HandicapTrackingPage() {
                           key={player.id}
                           className={`border-b ${playerIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 ${player.id === user?.id ? 'ring-2 ring-primary ring-inset' : ''}`}
                         >
-                          <td className={`px-3 py-2 font-medium sticky left-0 z-10 ${player.id === user?.id ? 'bg-[#D4AF37] text-black' : 'bg-[#22c55e] text-white'}`}>
+                          <td className={`px-3 py-2 font-medium sticky left-0 z-10 ${player.id === user?.id ? 'bg-[#C0C0C0] text-black' : 'bg-[#22c55e] text-white'}`}>
                             {player.username}
                             {player.id === user?.id && <span className="ml-1 text-xs">(You)</span>}
                           </td>

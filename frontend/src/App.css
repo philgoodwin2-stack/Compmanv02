@@ -1,15 +1,15 @@
 /* Golf App Specific Styles */
 
 .golf-header {
-    background: linear-gradient(to bottom right, #1B4D3E, #063627);
+    background: linear-gradient(to bottom right, #4CAF50, #2E7D32);
 }
 
 .trophy-gold {
-    color: #D4AF37;
+    color: #A8A8A8;
 }
 
 .trophy-gold-bg {
-    background: linear-gradient(45deg, #D4AF37, #F3E5AB, #D4AF37);
+    background: linear-gradient(45deg, #C0C0C0, #E8E8E8, #C0C0C0);
 }
 
 /* Scorecard styles */

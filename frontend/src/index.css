@@ -22,26 +22,26 @@ code, .font-mono {
 @layer base {
     :root {
         --background: 0 0% 100%;
-        --foreground: 150 40% 15%;
-        --card: 60 20% 97%;
-        --card-foreground: 150 40% 15%;
+        --foreground: 150 20% 15%;
+        --card: 0 0% 98%;
+        --card-foreground: 150 20% 15%;
         --popover: 0 0% 100%;
-        --popover-foreground: 150 40% 15%;
-        --primary: 160 47% 21%;
+        --popover-foreground: 150 20% 15%;
+        --primary: 145 60% 42%;
         --primary-foreground: 0 0% 100%;
-        --secondary: 60 20% 96%;
-        --secondary-foreground: 160 47% 21%;
-        --muted: 60 10% 92%;
-        --muted-foreground: 150 10% 40%;
-        --accent: 43 72% 52%;
-        --accent-foreground: 0 0% 0%;
+        --secondary: 0 0% 96%;
+        --secondary-foreground: 145 60% 35%;
+        --muted: 0 0% 92%;
+        --muted-foreground: 0 0% 45%;
+        --accent: 0 0% 75%;
+        --accent-foreground: 0 0% 15%;
         --destructive: 0 84% 60%;
         --destructive-foreground: 0 0% 98%;
-        --border: 60 10% 85%;
-        --input: 60 10% 85%;
-        --ring: 160 47% 21%;
-        --chart-1: 160 47% 21%;
-        --chart-2: 43 72% 52%;
+        --border: 0 0% 88%;
+        --input: 0 0% 88%;
+        --ring: 145 60% 42%;
+        --chart-1: 145 60% 42%;
+        --chart-2: 0 0% 70%;
         --chart-3: 0 84% 60%;
         --chart-4: 210 70% 50%;
         --chart-5: 270 60% 50%;
@@ -49,30 +49,30 @@ code, .font-mono {
         
         /* Golf specific colors */
         --birdie: 0 84% 60%;
-        --par: 210 10% 85%;
+        --par: 0 0% 85%;
         --bogey: 210 70% 50%;
         --double-bogey: 0 0% 10%;
     }
     .dark {
         --background: 0 0% 4%;
-        --foreground: 60 20% 96%;
+        --foreground: 0 0% 96%;
         --card: 0 0% 7%;
-        --card-foreground: 60 20% 96%;
+        --card-foreground: 0 0% 96%;
         --popover: 0 0% 4%;
-        --popover-foreground: 60 20% 96%;
-        --primary: 160 47% 35%;
+        --popover-foreground: 0 0% 96%;
+        --primary: 145 55% 50%;
         --primary-foreground: 0 0% 100%;
         --secondary: 0 0% 14%;
-        --secondary-foreground: 60 20% 96%;
+        --secondary-foreground: 0 0% 96%;
         --muted: 0 0% 14%;
-        --muted-foreground: 60 10% 60%;
-        --accent: 43 72% 52%;
-        --accent-foreground: 0 0% 0%;
+        --muted-foreground: 0 0% 60%;
+        --accent: 0 0% 60%;
+        --accent-foreground: 0 0% 100%;
         --destructive: 0 62% 30%;
         --destructive-foreground: 0 0% 98%;
         --border: 0 0% 14%;
         --input: 0 0% 14%;
-        --ring: 160 47% 35%;
+        --ring: 145 55% 50%;
     }
 }
 
