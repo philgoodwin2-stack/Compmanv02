@@ -22,7 +22,7 @@ export default function MobileNav() {
   }
 
   return (
-    <nav className="mobile-nav 2xl:hidden bg-[#1B4D3E] border-t border-[#2D5A4A]">
+    <nav className="mobile-nav 2xl:hidden bg-[#2E7D32] border-t border-[#4CAF50]">
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path || 
@@ -36,7 +36,7 @@ export default function MobileNav() {
               className={cn(
                 "flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-95",
                 isActive 
-                  ? "text-[#D4AF37]" 
+                  ? "text-white" 
                   : "text-white/60 active:text-white"
               )}
             >

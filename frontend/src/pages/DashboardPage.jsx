@@ -239,59 +239,60 @@ export default function DashboardPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto p-6">
+      <main className="max-w-6xl mx-auto p-4 sm:p-6">
         {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
           <Card className="border-l-4 border-l-primary">
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Competitions</p>
-                  <p className="text-4xl font-mono font-bold">{competitions.length}</p>
+                  <p className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground">Total Competitions</p>
+                  <p className="text-2xl sm:text-4xl font-mono font-bold">{competitions.length}</p>
                 </div>
-                <Trophy className="w-10 h-10 text-primary/30" />
+                <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-primary/30" />
               </div>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-[#C0C0C0]">
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Active</p>
-                  <p className="text-4xl font-mono font-bold">
+                  <p className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground">Active</p>
+                  <p className="text-2xl sm:text-4xl font-mono font-bold">
                     {competitions.filter((c) => c.status === "active").length}
                   </p>
                 </div>
-                <Flag className="w-10 h-10 text-[#C0C0C0]/30" />
+                <Flag className="w-8 h-8 sm:w-10 sm:h-10 text-[#C0C0C0]/30" />
               </div>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-green-500">
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Completed</p>
-                  <p className="text-4xl font-mono font-bold">
+                  <p className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground">Completed</p>
+                  <p className="text-2xl sm:text-4xl font-mono font-bold">
                     {competitions.filter((c) => c.status === "completed").length}
                   </p>
                 </div>
-                <Calendar className="w-10 h-10 text-green-500/30" />
+                <Calendar className="w-8 h-8 sm:w-10 sm:h-10 text-green-500/30" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Competitions Section */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold uppercase tracking-tight">Competitions</h2>
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-3xl font-bold uppercase tracking-tight">Competitions</h2>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button
                 data-testid="create-competition-btn"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest text-xs sm:text-sm px-3 sm:px-4"
               >
-                <Plus className="w-5 h-5 mr-2" />
-                New Competition
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">New Competition</span>
+                <span className="sm:hidden">New</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">

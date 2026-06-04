@@ -261,12 +261,12 @@ export default function CompetitionPage() {
       case "completed":
         return "bg-gray-500 text-white";
       default:
-        return "bg-[#D4AF37] text-black";
+        return "bg-[#C0C0C0] text-black";
     }
   };
 
   const getMedalIcon = (position) => {
-    if (position === 0) return <Medal className="w-5 h-5 text-[#D4AF37]" />;
+    if (position === 0) return <Medal className="w-5 h-5 text-[#C0C0C0]" />;
     if (position === 1) return <Medal className="w-5 h-5 text-gray-400" />;
     if (position === 2) return <Medal className="w-5 h-5 text-amber-700" />;
     return null;
@@ -796,7 +796,7 @@ export default function CompetitionPage() {
               {/* Footer */}
               <div className="bg-[#1a1a1a] text-white px-4 py-2 flex justify-between items-center text-xs">
                 <span>Min {competition.min_rounds || 13} rounds to qualify</span>
-                <span className="text-[#D4AF37]">{competition.num_holes} Holes • Stableford Points</span>
+                <span className="text-[#C0C0C0]">{competition.num_holes} Holes • Stableford Points</span>
               </div>
             </Card>
           </TabsContent>
@@ -1156,19 +1156,19 @@ export default function CompetitionPage() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold uppercase tracking-tight flex items-center gap-2">
-                <Share2 className="w-6 h-6 text-[#D4AF37]" />
+                <Share2 className="w-6 h-6 text-[#C0C0C0]" />
                 Share Leaderboard
               </DialogTitle>
             </DialogHeader>
             <div className="py-4 space-y-4">
               {/* Preview */}
               <div className="bg-[#1a1a1a] text-white p-4 rounded-lg text-sm font-mono">
-                <div className="text-[#D4AF37] font-bold mb-2">🏆 {competition.name.toUpperCase()}</div>
+                <div className="text-[#C0C0C0] font-bold mb-2">🏆 {competition.name.toUpperCase()}</div>
                 <div className="border-t border-gray-700 pt-2 space-y-1">
                   {leaderboard.slice(0, 5).map((e, i) => (
                     <div key={e.player_id} className="flex justify-between">
                       <span>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`} {e.player_username}</span>
-                      <span className="text-[#D4AF37]">{e.average_stableford.toFixed(1)} pts</span>
+                      <span className="text-[#C0C0C0]">{e.average_stableford.toFixed(1)} pts</span>
                     </div>
                   ))}
                   {leaderboard.length > 5 && (
@@ -1210,7 +1210,7 @@ export default function CompetitionPage() {
                   <Button
                     data-testid="native-share-btn"
                     onClick={handleNativeShare}
-                    className="w-full justify-start gap-3 rounded-none h-12 bg-[#D4AF37] text-black hover:bg-[#c4a030]"
+                    className="w-full justify-start gap-3 rounded-none h-12 bg-[#C0C0C0] text-black hover:bg-[#9E9E9E]"
                   >
                     <Share2 className="w-5 h-5" />
                     Share via...

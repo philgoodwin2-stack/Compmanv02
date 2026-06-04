@@ -578,7 +578,7 @@ export default function PlayersPage() {
               <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
             </Button>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-[#D4AF37] flex-shrink-0" />
+              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-[#C0C0C0] flex-shrink-0" />
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-2xl font-bold uppercase tracking-tight">Players</h1>
                 <p className="text-white/70 text-xs sm:text-sm hidden sm:block">Manage handicaps and status</p>
@@ -765,7 +765,7 @@ export default function PlayersPage() {
                           <Shield className="w-4 h-4 text-purple-600 flex-shrink-0" title="Global Admin" />
                         )}
                         {player.is_admin && !player.is_global_admin && (
-                          <Shield className="w-4 h-4 text-[#D4AF37] flex-shrink-0" title="Admin" />
+                          <Shield className="w-4 h-4 text-[#C0C0C0] flex-shrink-0" title="Admin" />
                         )}
                       </div>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
@@ -814,7 +814,7 @@ export default function PlayersPage() {
                           type="button"
                           data-testid={`admin-toggle-${player.id}`}
                           onClick={() => handleToggleAdmin(player)}
-                          className={`inline-flex items-center justify-center h-10 px-4 min-w-[80px] text-sm font-medium rounded-md border transition-colors active:scale-95 ${player.is_admin ? "border-[#D4AF37] text-[#D4AF37] bg-[#D4AF37]/10" : "border-gray-300 bg-white"}`}
+                          className={`inline-flex items-center justify-center h-10 px-4 min-w-[80px] text-sm font-medium rounded-md border transition-colors active:scale-95 ${player.is_admin ? "border-[#C0C0C0] text-[#C0C0C0] bg-[#C0C0C0]/10" : "border-gray-300 bg-white"}`}
                         >
                           {player.is_admin ? <Shield className="w-4 h-4 mr-1" /> : <ShieldOff className="w-4 h-4 mr-1" />}
                           {player.is_admin ? "Admin" : "User"}

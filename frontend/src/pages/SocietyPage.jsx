@@ -646,7 +646,7 @@ export default function SocietyPage() {
                   </Badge>
                 )}
                 {isAdmin && !isGlobalAdmin && (
-                  <Badge className="bg-[#D4AF37] text-white">
+                  <Badge className="bg-[#C0C0C0] text-white">
                     <Crown className="w-3 h-3 mr-1" />
                     Admin
                   </Badge>
@@ -789,7 +789,7 @@ export default function SocietyPage() {
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{member.username}</span>
                             {member.is_admin && (
-                              <Crown className="w-4 h-4 text-[#D4AF37]" />
+                              <Crown className="w-4 h-4 text-[#C0C0C0]" />
                             )}
                           </div>
                           <span className="text-xs text-muted-foreground">
