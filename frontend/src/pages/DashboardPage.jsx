@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trophy, Users, LogOut, Flag, Calendar, ChevronRight, CalendarIcon, Trash2, History, MapPin, Pencil } from "lucide-react";
+import { Plus, Trophy, Users, LogOut, Flag, Calendar, ChevronRight, CalendarIcon, Trash2, History, MapPin, Pencil, Clock, CreditCard } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const { user, logout } = useUser();
   const [competitions, setCompetitions] = useState([]);
   const [societies, setSocieties] = useState([]);
+  const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -51,7 +52,17 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchCompetitions();
     fetchSocieties();
+    fetchSubscription();
   }, [user]);
+
+  const fetchSubscription = async () => {
+    try {
+      const response = await axios.get(`${API}/subscription/my-subscription`);
+      setSubscription(response.data);
+    } catch (error) {
+      console.error("Failed to fetch subscription:", error);
+    }
+  };
 
   const fetchCompetitions = async () => {
     try {
@@ -176,6 +187,35 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Subscription Banner */}
+      {subscription && !subscription.is_active && (
+        <div className="bg-amber-500 text-amber-950 px-4 py-2 text-center">
+          <span className="text-sm font-medium">Your subscription has expired.</span>
+          <Button
+            variant="link"
+            size="sm"
+            onClick={() => navigate("/subscription")}
+            className="text-amber-950 underline ml-2 p-0 h-auto"
+          >
+            Renew Now
+          </Button>
+        </div>
+      )}
+      {subscription?.is_active && subscription.days_remaining <= 7 && (
+        <div className="bg-primary/20 text-primary px-4 py-2 text-center">
+          <Clock className="w-4 h-4 inline mr-1" />
+          <span className="text-sm font-medium">Subscription expires in {subscription.days_remaining} days.</span>
+          <Button
+            variant="link"
+            size="sm"
+            onClick={() => navigate("/subscription")}
+            className="text-primary underline ml-2 p-0 h-auto"
+          >
+            Extend
+          </Button>
+        </div>
+      )}
+      
       {/* Header */}
       <header className="golf-header text-white py-6 px-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
@@ -187,6 +227,15 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="hidden 2xl:flex items-center gap-3">
+            <Button
+              data-testid="subscription-nav-btn"
+              variant="ghost"
+              onClick={() => navigate("/subscription")}
+              className="text-white hover:bg-white/10"
+            >
+              <CreditCard className="w-5 h-5 mr-2" />
+              {subscription?.is_active ? `${subscription.days_remaining}d` : "Subscribe"}
+            </Button>
             <Button
               data-testid="courses-nav-btn"
               variant="ghost"

@@ -9,6 +9,8 @@ import MobileNav from "@/components/MobileNav";
 import LoginPage from "@/pages/LoginPage";
 import LinkPlayerPage from "@/pages/LinkPlayerPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import SubscriptionPage from "@/pages/SubscriptionPage";
+import SubscriptionSuccessPage from "@/pages/SubscriptionSuccessPage";
 import DashboardPage from "@/pages/DashboardPage";
 import PlayersPage from "@/pages/PlayersPage";
 import CompetitionPage from "@/pages/CompetitionPage";
@@ -204,6 +206,16 @@ function App() {
               
               {/* Public route - Reset Password */}
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              
+              {/* Subscription routes - requires auth */}
+              <Route
+                path="/subscription"
+                element={isAuthenticated ? <SubscriptionPage /> : <Navigate to="/" />}
+              />
+              <Route
+                path="/subscription/success"
+                element={isAuthenticated ? <SubscriptionSuccessPage /> : <Navigate to="/" />}
+              />
               
               {/* Protected routes - require auth AND linked player */}
               <Route

@@ -13,11 +13,12 @@ import asyncio
 import resend
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
-from typing import List, Optional
+from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone, timedelta
 from enum import Enum
 from decimal import Decimal, ROUND_HALF_UP
+from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 
 # Load environment variables FIRST
 ROOT_DIR = Path(__file__).parent
@@ -28,6 +29,16 @@ RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
 if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY
+
+# Stripe Configuration
+STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY")
+
+# Subscription Packages (amounts in USD)
+SUBSCRIPTION_PACKAGES = {
+    "monthly": {"amount": 1.00, "duration_days": 30, "label": "1 Month"},
+    "biannual": {"amount": 5.00, "duration_days": 180, "label": "6 Months"},
+    "annual": {"amount": 10.00, "duration_days": 365, "label": "1 Year"}
+}
 
 # JWT Configuration
 JWT_ALGORITHM = "HS256"
@@ -2745,31 +2756,184 @@ async def get_available_players(request: Request):
     players = await db.players.find(query, {"_id": 0}).to_list(100)
     return players
 
+# ============= SUBSCRIPTION/PAYMENT ENDPOINTS =============
+
+class CreateCheckoutRequest(BaseModel):
+    package_id: str = Field(..., description="Package ID: 'monthly', 'biannual', or 'annual'")
+    origin_url: str = Field(..., description="Frontend origin URL for redirect")
+
+class CheckoutResponse(BaseModel):
+    url: str
+    session_id: str
+
+@api_router.post("/subscription/checkout", response_model=CheckoutResponse)
+async def create_subscription_checkout(data: CreateCheckoutRequest, request: Request, current_user: dict = Depends(get_current_user)):
+    """Create a Stripe checkout session for subscription"""
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    
+    if data.package_id not in SUBSCRIPTION_PACKAGES:
+        raise HTTPException(status_code=400, detail="Invalid package ID")
+    
+    package = SUBSCRIPTION_PACKAGES[data.package_id]
+    
+    # Build dynamic URLs
+    success_url = f"{data.origin_url}/subscription/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{data.origin_url}/subscription"
+    
+    # Initialize Stripe
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    
+    # Create checkout session
+    checkout_request = CheckoutSessionRequest(
+        amount=package["amount"],
+        currency="usd",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={
+            "user_id": current_user["id"],
+            "user_email": current_user["email"],
+            "package_id": data.package_id,
+            "duration_days": str(package["duration_days"])
+        }
+    )
+    
+    session = await stripe_checkout.create_checkout_session(checkout_request)
+    
+    # Store payment transaction
+    await db.payment_transactions.insert_one({
+        "session_id": session.session_id,
+        "user_id": current_user["id"],
+        "user_email": current_user["email"],
+        "package_id": data.package_id,
+        "amount": package["amount"],
+        "currency": "usd",
+        "duration_days": package["duration_days"],
+        "payment_status": "pending",
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    return CheckoutResponse(url=session.url, session_id=session.session_id)
+
+@api_router.get("/subscription/status/{session_id}")
+async def get_subscription_status(session_id: str, request: Request, current_user: dict = Depends(get_current_user)):
+    """Check payment status and update subscription if paid"""
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    
+    # Get transaction from DB
+    transaction = await db.payment_transactions.find_one({"session_id": session_id})
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    # Initialize Stripe and get status
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    
+    status = await stripe_checkout.get_checkout_status(session_id)
+    
+    # Update transaction status
+    await db.payment_transactions.update_one(
+        {"session_id": session_id},
+        {"$set": {"payment_status": status.payment_status, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    # If paid and not already processed, update user subscription
+    if status.payment_status == "paid" and transaction.get("payment_status") != "paid":
+        duration_days = transaction.get("duration_days", 30)
+        user_id = transaction.get("user_id")
+        
+        # Get current subscription end date or use now
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        current_end = user.get("subscription_ends_at") if user else None
+        
+        if current_end and current_end > datetime.now(timezone.utc):
+            # Extend from current end date
+            new_end = current_end + timedelta(days=duration_days)
+        else:
+            # Start fresh
+            new_end = datetime.now(timezone.utc) + timedelta(days=duration_days)
+        
+        # Update user subscription
+        await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {
+                "subscription_ends_at": new_end,
+                "subscription_package": transaction.get("package_id"),
+                "subscription_updated_at": datetime.now(timezone.utc)
+            }}
+        )
+        logger.info(f"Subscription activated for user {user_id} until {new_end}")
+    
+    return {"status": status.status, "payment_status": status.payment_status, "amount_total": status.amount_total, "currency": status.currency}
+
+@api_router.get("/subscription/packages")
+async def get_subscription_packages():
+    """Get available subscription packages"""
+    return [{"id": k, "amount": v["amount"], "duration_days": v["duration_days"], "label": v["label"]} for k, v in SUBSCRIPTION_PACKAGES.items()]
+
+@api_router.get("/subscription/my-subscription")
+async def get_my_subscription(current_user: dict = Depends(get_current_user)):
+    """Get current user's subscription status"""
+    user = await db.users.find_one({"_id": ObjectId(current_user["id"])})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    subscription_ends_at = user.get("subscription_ends_at")
+    is_active = subscription_ends_at and subscription_ends_at > datetime.now(timezone.utc)
+    
+    return {
+        "is_active": is_active,
+        "subscription_ends_at": subscription_ends_at.isoformat() if subscription_ends_at else None,
+        "subscription_package": user.get("subscription_package"),
+        "days_remaining": (subscription_ends_at - datetime.now(timezone.utc)).days if is_active else 0
+    }
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhook events"""
+    if not STRIPE_API_KEY:
+        return {"status": "error", "message": "Stripe not configured"}
+    body = await request.body()
+    signature = request.headers.get("Stripe-Signature", "")
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    try:
+        event = await stripe_checkout.handle_webhook(body, signature)
+        if event.payment_status == "paid":
+            transaction = await db.payment_transactions.find_one({"session_id": event.session_id})
+            if transaction and transaction.get("payment_status") != "paid":
+                duration_days = transaction.get("duration_days", 30)
+                user_id = transaction.get("user_id")
+                user = await db.users.find_one({"_id": ObjectId(user_id)})
+                current_end = user.get("subscription_ends_at") if user else None
+                if current_end and current_end > datetime.now(timezone.utc):
+                    new_end = current_end + timedelta(days=duration_days)
+                else:
+                    new_end = datetime.now(timezone.utc) + timedelta(days=duration_days)
+                await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"subscription_ends_at": new_end, "subscription_package": transaction.get("package_id"), "subscription_updated_at": datetime.now(timezone.utc)}})
+                await db.payment_transactions.update_one({"session_id": event.session_id}, {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc)}})
+                logger.info(f"Webhook: Subscription activated for user {user_id}")
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
 # Include the router in the main app
 app.include_router(api_router)
 
-# Get frontend URL for CORS - must be explicit when allow_credentials=True
+# Get frontend URL for CORS
 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-cors_origins = [
-    frontend_url,
-    "http://localhost:3000",
-    "https://score-tracker-177.preview.emergentagent.com",
-    "https://score-tracker-177.emergent.host"
-]
+cors_origins = [frontend_url, "http://localhost:3000", "https://score-tracker-177.preview.emergentagent.com", "https://score-tracker-177.emergent.host", "https://leisuretech.org"]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=cors_origins,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=cors_origins, allow_methods=["*"], allow_headers=["*"])
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-# ============= STARTUP EVENTS =============
 
 @app.on_event("startup")
 async def startup_event():
@@ -2777,27 +2941,15 @@ async def startup_event():
     await db.users.create_index("email", unique=True)
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
     await db.login_attempts.create_index("identifier")
-    
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@example.com")
     admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
-    
     existing = await db.users.find_one({"email": admin_email})
     if existing is None:
         hashed = hash_password(admin_password)
-        await db.users.insert_one({
-            "email": admin_email,
-            "password_hash": hashed,
-            "name": "Admin",
-            "role": "admin",
-            "player_id": None,
-            "created_at": datetime.now(timezone.utc)
-        })
+        await db.users.insert_one({"email": admin_email, "password_hash": hashed, "name": "Admin", "role": "admin", "player_id": None, "created_at": datetime.now(timezone.utc)})
         logger.info(f"Admin user created: {admin_email}")
     elif not verify_password(admin_password, existing["password_hash"]):
-        await db.users.update_one(
-            {"email": admin_email},
-            {"$set": {"password_hash": hash_password(admin_password)}}
-        )
+        await db.users.update_one({"email": admin_email}, {"$set": {"password_hash": hash_password(admin_password)}})
         logger.info(f"Admin password updated: {admin_email}")
 
 @app.on_event("shutdown")
