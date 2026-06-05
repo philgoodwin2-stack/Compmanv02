@@ -2926,9 +2926,17 @@ async def stripe_webhook(request: Request):
 # Include the router in the main app
 app.include_router(api_router)
 
-# Get frontend URL for CORS
+# Get CORS origins from environment
+cors_origins_env = os.environ.get("CORS_ORIGINS", "*")
 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-cors_origins = [frontend_url, "http://localhost:3000", "https://score-tracker-177.preview.emergentagent.com", "https://score-tracker-177.emergent.host", "https://leisuretech.org"]
+
+if cors_origins_env == "*":
+    cors_origins = ["*"]
+else:
+    # Parse comma-separated origins and include frontend_url
+    cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+    if frontend_url not in cors_origins:
+        cors_origins.append(frontend_url)
 
 app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=cors_origins, allow_methods=["*"], allow_headers=["*"])
 
