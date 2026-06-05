@@ -882,14 +882,12 @@ async def get_player(player_id: str):
 
 @api_router.post("/players", response_model=Player)
 async def create_player(player_data: PlayerCreate):
-    # Check if username exists in the same society
-    query = {"username": player_data.username}
-    if player_data.society_id:
-        query["society_id"] = player_data.society_id
-    
-    existing = await db.players.find_one(query)
+    # Check if username exists globally (case-insensitive)
+    existing = await db.players.find_one({
+        "username": {"$regex": f"^{player_data.username}$", "$options": "i"}
+    })
     if existing:
-        raise HTTPException(status_code=400, detail="A player with this username already exists in this society")
+        raise HTTPException(status_code=400, detail="A player with this username already exists")
     
     player = Player(**player_data.model_dump())
     doc = player.model_dump()
@@ -2953,8 +2951,8 @@ async def startup_event():
     await db.users.create_index("email", unique=True)
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
     await db.login_attempts.create_index("identifier")
-    # Unique index on username + society_id to prevent duplicate players per society
-    await db.players.create_index([("username", 1), ("society_id", 1)], unique=True)
+    # Unique index on username (case-insensitive) to prevent duplicate players globally
+    await db.players.create_index("username", unique=True)
     
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@example.com")
     admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
