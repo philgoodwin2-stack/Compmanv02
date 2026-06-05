@@ -2193,7 +2193,7 @@ async def get_leaderboard(competition_id: str):
     # Create a map of round_id to index for ordering (using all rounds for display)
     round_index_map = {r["id"]: idx for idx, r in enumerate(all_rounds)}
     
-    # Aggregate by player (only include scores where is_included_in_comp is True)
+    # Aggregate by player (only include scores where is_included_in_comp == True)
     player_scores = {}
     for score in scores:
         # Skip scores that are excluded from competition

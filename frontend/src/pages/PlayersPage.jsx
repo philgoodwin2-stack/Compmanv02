@@ -236,7 +236,7 @@ export default function PlayersPage() {
       const response = await axios.get(`${API}/societies`);
       setSocieties(response.data);
     } catch (error) {
-      console.error("Failed to fetch societies");
+      
     }
   };
 
@@ -251,7 +251,7 @@ export default function PlayersPage() {
       const response = await axios.get(`${API}/admin-status`);
       setSystemHasAdmins(response.data.has_admins);
     } catch (error) {
-      console.error("Failed to check admin status");
+      
       // On error, assume no admins exist to allow first-time setup
       setSystemHasAdmins(false);
     }
@@ -308,7 +308,7 @@ export default function PlayersPage() {
           toast.success(`Player added with ${importResponse.data.records_imported} differentials imported. Handicap: ${importResponse.data.new_handicap}`);
         } catch (importError) {
           toast.success("Player added, but failed to import differentials");
-          console.error("Import error:", importError);
+          
         }
       } else {
         toast.success("Player added!");
@@ -1009,14 +1009,14 @@ export default function PlayersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {historyData.history.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).map((record, idx) => {
+                    {historyData.history.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).map((record) => {
                       const handicapChange = record.handicap_after - record.handicap_before;
                       const isEditing = editingDiffDate === record.date;
                       const isCounting = isUsedInCalculation(record.date);
                       // Calculate gross score for display
                       const grossScore = record.gross_score || null;
                       return (
-                        <TableRow key={idx} className={isCounting ? "bg-amber-50" : ""}>
+                        <TableRow key={`${record.date}-${record.differential}`} className={isCounting ? "bg-amber-50" : ""}>
                           <TableCell className="text-center">
                             {isCounting && (
                               <Star className="w-4 h-4 fill-amber-400 text-amber-p=400" title="Used in handicap calculation" />

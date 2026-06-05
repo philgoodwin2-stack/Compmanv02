@@ -352,10 +352,10 @@ export default function HandicapTrackingPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedHistory.map((record, idx) => {
+                    {sortedHistory.map((record) => {
                       const change = record.handicap_after - record.handicap_before;
                       return (
-                        <TableRow key={idx} data-testid={`history-row-${idx}`}>
+                        <TableRow key={`${record.date}-${record.differential}`} data-testid={`history-row-${record.date}`}>
                           <TableCell className="font-mono">
                             {new Date(record.date).toLocaleDateString('en-GB', { 
                               day: '2-digit', 

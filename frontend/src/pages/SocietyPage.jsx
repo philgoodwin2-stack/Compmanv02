@@ -95,7 +95,7 @@ export default function SocietyPage() {
       setSociety(response.data);
       setEditName(response.data.name);
     } catch (error) {
-      console.error("Failed to load society");
+      
     }
   };
 
@@ -104,7 +104,7 @@ export default function SocietyPage() {
       const response = await axios.get(`${API}/players?society_id=${user.society_id}`);
       setMembers(response.data);
     } catch (error) {
-      console.error("Failed to load members");
+      
     } finally {
       setLoading(false);
     }
@@ -115,7 +115,7 @@ export default function SocietyPage() {
       const response = await axios.get(`${API}/user-societies/${encodeURIComponent(user.username)}`);
       setUserSocieties(response.data);
     } catch (error) {
-      console.error("Failed to load user societies");
+      
     }
   };
 
@@ -124,7 +124,7 @@ export default function SocietyPage() {
       const response = await axios.get(`${API}/societies`);
       setAllSocieties(response.data);
     } catch (error) {
-      console.error("Failed to load all societies");
+      
     }
   };
 
@@ -167,7 +167,7 @@ export default function SocietyPage() {
       const response = await axios.get(`${API}/societies/${user.society_id}/invites?admin_id=${user.id}`);
       setInvites(response.data);
     } catch (error) {
-      console.error("Failed to load invites");
+      
     }
   };
 

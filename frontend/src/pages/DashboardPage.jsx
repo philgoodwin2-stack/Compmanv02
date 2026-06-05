@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API, useUser } from "@/App";
@@ -49,22 +49,16 @@ export default function DashboardPage() {
     min_rounds: 13,
   });
 
-  useEffect(() => {
-    fetchCompetitions();
-    fetchSocieties();
-    fetchSubscription();
-  }, [user]);
-
-  const fetchSubscription = async () => {
+  const fetchSubscription = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/subscription/my-subscription`);
       setSubscription(response.data);
     } catch (error) {
-      console.error("Failed to fetch subscription:", error);
+      // Silently handle subscription fetch errors
     }
-  };
+  }, []);
 
-  const fetchCompetitions = async () => {
+  const fetchCompetitions = useCallback(async () => {
     try {
       const societyId = user?.society_id;
       const url = societyId 
@@ -77,16 +71,22 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.society_id]);
 
-  const fetchSocieties = async () => {
+  const fetchSocieties = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/societies`);
       setSocieties(response.data);
     } catch (error) {
-      console.error("Failed to load societies");
+      // Silently handle societies fetch errors
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchCompetitions();
+    fetchSocieties();
+    fetchSubscription();
+  }, [fetchCompetitions, fetchSocieties, fetchSubscription]);
 
   const handleCreateCompetition = async () => {
     if (!newCompetition.name.trim()) {
@@ -136,7 +136,7 @@ export default function DashboardPage() {
       fetchCompetitions();
     } catch (error) {
       toast.error("Failed to delete competition");
-      console.error("Delete error:", error);
+      
     }
   };
 
@@ -181,7 +181,7 @@ export default function DashboardPage() {
       fetchCompetitions();
     } catch (error) {
       toast.error("Failed to update competition");
-      console.error("Update error:", error);
+      
     }
   };
 

@@ -8,6 +8,7 @@ import os
 import uuid
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+TEST_PASSWORD = os.environ.get('TEST_PASSWORD', 'TestPass123!')
 
 class TestAuthEndpoints:
     """Test authentication endpoints"""
@@ -19,7 +20,7 @@ class TestAuthEndpoints:
         self.session.headers.update({"Content-Type": "application/json"})
         # Generate unique test email for this test run
         self.test_email = f"test_{uuid.uuid4().hex[:8]}@example.com"
-        self.test_password = "TestPass123!"
+        self.test_password = TEST_PASSWORD
         self.test_name = "Test User"
         yield
         # Cleanup - logout

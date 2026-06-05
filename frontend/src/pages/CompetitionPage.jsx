@@ -1247,7 +1247,7 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
       const response = await axios.get(`${API}/scores?round_id=${round.id}`);
       setScores(response.data);
     } catch (error) {
-      console.error("Failed to load scores");
+      
     } finally {
       setLoadingScores(false);
     }

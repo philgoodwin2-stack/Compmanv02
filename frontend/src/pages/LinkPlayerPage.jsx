@@ -29,7 +29,7 @@ export default function LinkPlayerPage() {
       const response = await axios.get(`${API}/auth/available-players`);
       setPlayers(response.data);
     } catch (error) {
-      console.error("Failed to fetch players:", error);
+      
       toast.error("Failed to load available players");
     } finally {
       setLoading(false);
