@@ -2481,25 +2481,30 @@ async def check_brute_force(identifier: str) -> bool:
     attempt = await db.login_attempts.find_one({"identifier": identifier})
     if attempt and attempt.get("count", 0) >= 5:
         lockout_until = attempt.get("lockout_until")
-        if lockout_until and datetime.now(timezone.utc) < lockout_until:
-            return True
+        if lockout_until:
+            # Handle timezone-naive datetimes from MongoDB
+            if lockout_until.tzinfo is None:
+                lockout_until = lockout_until.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) < lockout_until:
+                return True
         await db.login_attempts.delete_one({"identifier": identifier})
     return False
 
 async def record_failed_login(identifier: str):
     """Record a failed login attempt"""
     attempt = await db.login_attempts.find_one({"identifier": identifier})
+    now = datetime.utcnow()  # Use naive datetime for MongoDB consistency
     if attempt:
         new_count = attempt.get("count", 0) + 1
         update = {"$set": {"count": new_count}}
         if new_count >= 5:
-            update["$set"]["lockout_until"] = datetime.now(timezone.utc) + timedelta(minutes=15)
+            update["$set"]["lockout_until"] = now + timedelta(minutes=15)
         await db.login_attempts.update_one({"identifier": identifier}, update)
     else:
         await db.login_attempts.insert_one({
             "identifier": identifier,
             "count": 1,
-            "created_at": datetime.now(timezone.utc)
+            "created_at": now
         })
 
 async def clear_login_attempts(identifier: str):
