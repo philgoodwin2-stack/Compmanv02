@@ -4,7 +4,7 @@
 
 | Email | Password | Role | Linked Player | Notes |
 |-------|----------|------|---------------|-------|
-| admin@scoretracker.com | NewPassword123! | admin | (link to TestAdmin) | Password was reset during testing |
+| admin@scoretracker.com | TestPass123! | admin | (link to TestAdmin) | Password reset in fork session |
 
 ## Player Profiles (Existing Golf Data)
 

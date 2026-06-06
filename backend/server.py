@@ -2860,13 +2860,18 @@ async def get_subscription_status(session_id: str, request: Request, current_use
         # Get current subscription end date or use now
         user = await db.users.find_one({"_id": ObjectId(user_id)})
         current_end = user.get("subscription_ends_at") if user else None
+        now = datetime.now(timezone.utc)
         
-        if current_end and current_end > datetime.now(timezone.utc):
+        # Handle timezone-naive datetimes from MongoDB
+        if current_end and current_end.tzinfo is None:
+            current_end = current_end.replace(tzinfo=timezone.utc)
+        
+        if current_end and current_end > now:
             # Extend from current end date
             new_end = current_end + timedelta(days=duration_days)
         else:
             # Start fresh
-            new_end = datetime.now(timezone.utc) + timedelta(days=duration_days)
+            new_end = now + timedelta(days=duration_days)
         
         # Update user subscription
         await db.users.update_one(
@@ -2894,13 +2899,22 @@ async def get_my_subscription(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="User not found")
     
     subscription_ends_at = user.get("subscription_ends_at")
-    is_active = subscription_ends_at and subscription_ends_at > datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)
+    
+    # Handle timezone-naive datetimes from MongoDB
+    if subscription_ends_at and subscription_ends_at.tzinfo is None:
+        subscription_ends_at = subscription_ends_at.replace(tzinfo=timezone.utc)
+    
+    is_active = subscription_ends_at and subscription_ends_at > now
+    days_remaining = 0
+    if is_active:
+        days_remaining = (subscription_ends_at - now).days
     
     return {
         "is_active": is_active,
         "subscription_ends_at": subscription_ends_at.isoformat() if subscription_ends_at else None,
         "subscription_package": user.get("subscription_package"),
-        "days_remaining": (subscription_ends_at - datetime.now(timezone.utc)).days if is_active else 0
+        "days_remaining": days_remaining
     }
 
 @api_router.post("/webhook/stripe")
@@ -2922,10 +2936,16 @@ async def stripe_webhook(request: Request):
                 user_id = transaction.get("user_id")
                 user = await db.users.find_one({"_id": ObjectId(user_id)})
                 current_end = user.get("subscription_ends_at") if user else None
-                if current_end and current_end > datetime.now(timezone.utc):
+                now = datetime.now(timezone.utc)
+                
+                # Handle timezone-naive datetimes from MongoDB
+                if current_end and current_end.tzinfo is None:
+                    current_end = current_end.replace(tzinfo=timezone.utc)
+                
+                if current_end and current_end > now:
                     new_end = current_end + timedelta(days=duration_days)
                 else:
-                    new_end = datetime.now(timezone.utc) + timedelta(days=duration_days)
+                    new_end = now + timedelta(days=duration_days)
                 await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"subscription_ends_at": new_end, "subscription_package": transaction.get("package_id"), "subscription_updated_at": datetime.now(timezone.utc)}})
                 await db.payment_transactions.update_one({"session_id": event.session_id}, {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc)}})
                 logger.info(f"Webhook: Subscription activated for user {user_id}")
