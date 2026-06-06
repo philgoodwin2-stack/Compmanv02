@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { useUser } from "@/App";
 
 const navItems = [
-  { path: "/dashboard", icon: Home, label: "Home" },
+  { path: "/menu", icon: Home, label: "Home" },
   { path: "/players", icon: Users, label: "Players" },
   { path: "/courses", icon: Flag, label: "Courses" },
   { path: "/handicap-tracking", icon: TrendingUp, label: "HCP" },
@@ -26,7 +26,7 @@ export default function MobileNav() {
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path || 
-            (item.path === "/dashboard" && location.pathname.startsWith("/competition"));
+            (item.path === "/menu" && location.pathname.startsWith("/competition"));
           
           return (
             <button
