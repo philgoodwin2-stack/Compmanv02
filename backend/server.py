@@ -2646,8 +2646,9 @@ async def forgot_password(data: ForgotPasswordRequest):
     await db.password_reset_tokens.insert_one({
         "token": reset_token,
         "user_id": str(user["_id"]),
-        "expires_at": datetime.now(timezone.utc) + timedelta(hours=1),
-        "used": False
+        "expires_at": datetime.utcnow() + timedelta(hours=1),
+        "used": False,
+        "created_at": datetime.utcnow()
     })
     
     frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
@@ -2707,10 +2708,13 @@ async def forgot_password(data: ForgotPasswordRequest):
 @api_router.post("/auth/reset-password")
 async def reset_password(data: ResetPasswordRequest):
     """Reset password with token"""
+    # Use timezone-naive datetime for MongoDB comparison (MongoDB stores naive datetimes)
+    now = datetime.utcnow()
+    
     token_doc = await db.password_reset_tokens.find_one({
         "token": data.token,
         "used": False,
-        "expires_at": {"$gt": datetime.now(timezone.utc)}
+        "expires_at": {"$gt": now}
     })
     
     if not token_doc:
