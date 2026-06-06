@@ -19,6 +19,7 @@ import HandicapTrackingPage from "@/pages/HandicapTrackingPage";
 import CoursesPage from "@/pages/CoursesPage";
 import SocietyPage from "@/pages/SocietyPage";
 import JoinInvitePage from "@/pages/JoinInvitePage";
+import MenuPage from "@/pages/MenuPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
@@ -189,7 +190,7 @@ function App() {
                 path="/"
                 element={
                   isAuthenticated 
-                    ? (hasLinkedPlayer ? <Navigate to="/dashboard" /> : <Navigate to="/link-player" />)
+                    ? (hasLinkedPlayer ? <Navigate to="/menu" /> : <Navigate to="/link-player" />)
                     : <LoginPage />
                 }
               />
@@ -199,8 +200,18 @@ function App() {
                 path="/link-player"
                 element={
                   isAuthenticated 
-                    ? (hasLinkedPlayer ? <Navigate to="/dashboard" /> : <LinkPlayerPage />)
+                    ? (hasLinkedPlayer ? <Navigate to="/menu" /> : <LinkPlayerPage />)
                     : <Navigate to="/" />
+                }
+              />
+              
+              {/* Menu page - main navigation hub after login */}
+              <Route
+                path="/menu"
+                element={
+                  isAuthenticated && hasLinkedPlayer 
+                    ? <MenuPage /> 
+                    : (isAuthenticated ? <Navigate to="/link-player" /> : <Navigate to="/" />)
                 }
               />
               
