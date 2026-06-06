@@ -2561,22 +2561,30 @@ async def register(user_data: UserRegister, response: Response, request: Request
 @api_router.post("/auth/login")
 async def auth_login(user_data: UserLogin, response: Response, request: Request):
     """Login user with email/password"""
-    email = user_data.email.lower()
+    email = user_data.email.lower().strip()
     client_ip = request.client.host if request.client else "unknown"
     identifier = f"{client_ip}:{email}"
     
+    logger.info(f"Login attempt for email: {email}")
+    
     if await check_brute_force(identifier):
+        logger.warning(f"Brute force protection triggered for: {identifier}")
         raise HTTPException(status_code=429, detail="Too many failed attempts. Try again in 15 minutes.")
     
     user = await db.users.find_one({"email": email})
     if not user:
+        logger.warning(f"Login failed - user not found: {email}")
         await record_failed_login(identifier)
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    logger.info(f"User found: {email}, has password_hash: {bool(user.get('password_hash'))}")
     
     if not verify_password(user_data.password, user["password_hash"]):
+        logger.warning(f"Login failed - password mismatch for: {email}")
         await record_failed_login(identifier)
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
+    logger.info(f"Login successful for: {email}")
     await clear_login_attempts(identifier)
     user_id = str(user["_id"])
     
@@ -2711,6 +2719,8 @@ async def reset_password(data: ResetPasswordRequest):
     # Use timezone-naive datetime for MongoDB comparison (MongoDB stores naive datetimes)
     now = datetime.utcnow()
     
+    logger.info(f"Password reset attempt with token: {data.token[:10]}...")
+    
     token_doc = await db.password_reset_tokens.find_one({
         "token": data.token,
         "used": False,
@@ -2718,18 +2728,28 @@ async def reset_password(data: ResetPasswordRequest):
     })
     
     if not token_doc:
+        logger.warning(f"Reset failed - invalid or expired token")
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     
+    logger.info(f"Valid token found for user_id: {token_doc['user_id']}")
+    
     hashed = hash_password(data.new_password)
-    await db.users.update_one(
+    result = await db.users.update_one(
         {"_id": ObjectId(token_doc["user_id"])},
         {"$set": {"password_hash": hashed}}
     )
+    
+    logger.info(f"Password hash updated - matched: {result.matched_count}, modified: {result.modified_count}")
     
     await db.password_reset_tokens.update_one(
         {"token": data.token},
         {"$set": {"used": True}}
     )
+    
+    # Verify the update worked
+    updated_user = await db.users.find_one({"_id": ObjectId(token_doc["user_id"])})
+    if updated_user:
+        logger.info(f"Verified password updated for email: {updated_user.get('email')}")
     
     return {"message": "Password reset successfully"}
 
