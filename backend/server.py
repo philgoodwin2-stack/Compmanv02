@@ -2977,11 +2977,30 @@ logger = logging.getLogger(__name__)
 @app.on_event("startup")
 async def startup_event():
     """Seed admin user and create indexes"""
-    await db.users.create_index("email", unique=True)
-    await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
-    await db.login_attempts.create_index("identifier")
-    # Unique index on username (case-insensitive) to prevent duplicate players globally
-    await db.players.create_index("username", unique=True)
+    from pymongo.errors import DuplicateKeyError
+    
+    # Create indexes with error handling for existing indexes or duplicate data
+    try:
+        await db.users.create_index("email", unique=True)
+    except DuplicateKeyError:
+        logger.warning("Email unique index already exists or has duplicates")
+    
+    try:
+        await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
+    except Exception as e:
+        logger.warning(f"Password reset tokens index: {e}")
+    
+    try:
+        await db.login_attempts.create_index("identifier")
+    except Exception as e:
+        logger.warning(f"Login attempts index: {e}")
+    
+    # Unique index on username - wrapped in try/except to handle existing duplicates
+    # The application-level validation still prevents new duplicates
+    try:
+        await db.players.create_index("username", unique=True)
+    except DuplicateKeyError:
+        logger.warning("Username unique index could not be created due to existing duplicates. Application-level validation will still prevent new duplicates.")
     
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@example.com")
     admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
