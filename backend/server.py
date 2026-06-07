@@ -2550,10 +2550,15 @@ async def register(user_data: UserRegister, response: Response, request: Request
         "name": user_data.name,
         "role": "user",
         "player_id": None,
-        "created_at": datetime.now(timezone.utc)
+        "created_at": datetime.now(timezone.utc),
+        # 7-day free trial on registration
+        "subscription_ends_at": datetime.utcnow() + timedelta(days=7),
+        "subscription_package": "trial"
     }
     result = await db.users.insert_one(user_doc)
     user_id = str(result.inserted_id)
+    
+    logger.info(f"New user registered with 7-day trial: {email}")
     
     access_token = create_access_token(user_id, email)
     refresh_token = create_refresh_token(user_id)
@@ -2603,7 +2608,27 @@ async def auth_login(user_data: UserLogin, response: Response, request: Request)
     if user.get("player_id"):
         player = await db.players.find_one({"id": user["player_id"]}, {"_id": 0})
     
-    return {"id": user_id, "email": email, "name": user.get("name"), "role": user.get("role", "user"), "player_id": user.get("player_id"), "player": player, "access_token": access_token}
+    # Check subscription status
+    subscription_ends_at = user.get("subscription_ends_at")
+    now = datetime.utcnow()
+    if subscription_ends_at and subscription_ends_at.tzinfo is not None:
+        subscription_ends_at = subscription_ends_at.replace(tzinfo=None)
+    has_active_subscription = subscription_ends_at and subscription_ends_at > now
+    days_remaining = (subscription_ends_at - now).days if has_active_subscription else 0
+    
+    return {
+        "id": user_id, 
+        "email": email, 
+        "name": user.get("name"), 
+        "role": user.get("role", "user"), 
+        "player_id": user.get("player_id"), 
+        "player": player, 
+        "access_token": access_token,
+        "has_active_subscription": has_active_subscription,
+        "subscription_ends_at": subscription_ends_at.isoformat() if subscription_ends_at else None,
+        "subscription_package": user.get("subscription_package"),
+        "days_remaining": days_remaining
+    }
 
 @api_router.post("/auth/logout")
 async def auth_logout(response: Response):
@@ -2619,7 +2644,28 @@ async def get_me(request: Request):
     player = None
     if user.get("player_id"):
         player = await db.players.find_one({"id": user["player_id"]}, {"_id": 0})
-    return {**user, "player": player}
+    
+    # Check subscription status
+    subscription_ends_at = user.get("subscription_ends_at")
+    now = datetime.utcnow()
+    
+    # Handle timezone-naive comparison
+    if subscription_ends_at and subscription_ends_at.tzinfo is not None:
+        subscription_ends_at = subscription_ends_at.replace(tzinfo=None)
+    
+    has_active_subscription = subscription_ends_at and subscription_ends_at > now
+    days_remaining = 0
+    if has_active_subscription:
+        days_remaining = (subscription_ends_at - now).days
+    
+    return {
+        **user, 
+        "player": player,
+        "has_active_subscription": has_active_subscription,
+        "subscription_ends_at": subscription_ends_at.isoformat() if subscription_ends_at else None,
+        "subscription_package": user.get("subscription_package"),
+        "days_remaining": days_remaining
+    }
 
 @api_router.post("/auth/refresh")
 async def refresh_token_endpoint(request: Request, response: Response):

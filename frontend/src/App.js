@@ -168,6 +168,7 @@ function App() {
   // Determine navigation based on auth state
   const isAuthenticated = !!authUser;
   const hasLinkedPlayer = !!user;
+  const hasActiveSubscription = authUser?.has_active_subscription;
 
   return (
     <UserContext.Provider value={{ 
@@ -179,7 +180,8 @@ function App() {
       linkPlayer, 
       createAndLinkPlayer,
       switchSociety,
-      checkAuth
+      checkAuth,
+      hasActiveSubscription
     }}>
       <div className="app-container">
         <BrowserRouter>
@@ -190,35 +192,41 @@ function App() {
                 path="/"
                 element={
                   isAuthenticated 
-                    ? (hasLinkedPlayer ? <Navigate to="/menu" /> : <Navigate to="/link-player" />)
+                    ? (hasActiveSubscription 
+                        ? (hasLinkedPlayer ? <Navigate to="/menu" /> : <Navigate to="/link-player" />)
+                        : <Navigate to="/subscription" />)
                     : <LoginPage />
                 }
               />
               
-              {/* Link player route - requires auth but no linked player */}
+              {/* Link player route - requires auth AND subscription */}
               <Route
                 path="/link-player"
                 element={
                   isAuthenticated 
-                    ? (hasLinkedPlayer ? <Navigate to="/menu" /> : <LinkPlayerPage />)
+                    ? (hasActiveSubscription
+                        ? (hasLinkedPlayer ? <Navigate to="/menu" /> : <LinkPlayerPage />)
+                        : <Navigate to="/subscription" />)
                     : <Navigate to="/" />
                 }
               />
               
-              {/* Menu page - main navigation hub after login */}
+              {/* Menu page - requires auth, subscription AND linked player */}
               <Route
                 path="/menu"
                 element={
-                  isAuthenticated && hasLinkedPlayer 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
                     ? <MenuPage /> 
-                    : (isAuthenticated ? <Navigate to="/link-player" /> : <Navigate to="/" />)
+                    : (isAuthenticated && !hasActiveSubscription 
+                        ? <Navigate to="/subscription" />
+                        : (isAuthenticated ? <Navigate to="/link-player" /> : <Navigate to="/" />))
                 }
               />
               
               {/* Public route - Reset Password */}
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               
-              {/* Subscription routes - requires auth */}
+              {/* Subscription routes - requires auth (but NOT subscription - so they can subscribe!) */}
               <Route
                 path="/subscription"
                 element={isAuthenticated ? <SubscriptionPage /> : <Navigate to="/" />}
@@ -228,69 +236,69 @@ function App() {
                 element={isAuthenticated ? <SubscriptionSuccessPage /> : <Navigate to="/" />}
               />
               
-              {/* Protected routes - require auth AND linked player */}
+              {/* Protected routes - require auth, subscription AND linked player */}
               <Route
                 path="/dashboard"
                 element={
-                  isAuthenticated && hasLinkedPlayer 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
                     ? <DashboardPage /> 
-                    : (isAuthenticated ? <Navigate to="/link-player" /> : <Navigate to="/" />)
+                    : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/players"
                 element={
-                  isAuthenticated && hasLinkedPlayer 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
                     ? <PlayersPage /> 
-                    : <Navigate to="/" />
+                    : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/competition/:id"
                 element={
-                  isAuthenticated && hasLinkedPlayer 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
                     ? <CompetitionPage /> 
-                    : <Navigate to="/" />
+                    : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/score/:roundId/:playerId"
                 element={
-                  isAuthenticated && hasLinkedPlayer 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
                     ? <ScoreEntryPage /> 
-                    : <Navigate to="/" />
+                    : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/handicap-tracking"
                 element={
-                  isAuthenticated && hasLinkedPlayer 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
                     ? <HandicapTrackingPage /> 
-                    : <Navigate to="/" />
+                    : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/handicaps"
                 element={
-                  isAuthenticated && hasLinkedPlayer 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
                     ? <HandicapTrackingPage /> 
-                    : <Navigate to="/" />
+                    : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/courses"
                 element={
-                  isAuthenticated && hasLinkedPlayer 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
                     ? <CoursesPage /> 
-                    : <Navigate to="/" />
+                    : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/society"
                 element={
-                  isAuthenticated && hasLinkedPlayer 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
                     ? <SocietyPage /> 
-                    : <Navigate to="/" />
+                    : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
@@ -299,8 +307,8 @@ function App() {
               />
             </Routes>
           </main>
-          {/* Only show navigation when user has linked player */}
-          {isAuthenticated && hasLinkedPlayer && <MobileNav />}
+          {/* Only show navigation when user has linked player AND active subscription */}
+          {isAuthenticated && hasActiveSubscription && hasLinkedPlayer && <MobileNav />}
         </BrowserRouter>
         <Toaster position="top-center" richColors />
       </div>

@@ -2,9 +2,10 @@
 
 ## Authenticated User Accounts (Email/Password Auth)
 
-| Email | Password | Role | Linked Player | Notes |
-|-------|----------|------|---------------|-------|
-| admin@scoretracker.com | TestPass123! | admin | (link to TestAdmin) | Password reset in fork session |
+| Email | Password | Role | Linked Player | Subscription Status | Notes |
+|-------|----------|------|---------------|---------------------|-------|
+| admin@scoretracker.com | TestPass123! | admin | TestAdmin | Active (28 days) | Main test account |
+| nosub@test.com | TestPass123! | user | None | Expired Trial | For testing subscription block |
 
 ## Player Profiles (Existing Golf Data)
 
