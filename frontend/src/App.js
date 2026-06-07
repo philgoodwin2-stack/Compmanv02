@@ -1,8 +1,9 @@
-import { useState, useEffect, createContext, useContext, useCallback } from "react";
+import { useState, useEffect, createContext, useContext, useCallback, useRef } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import MobileNav from "@/components/MobileNav";
 
 // Pages
@@ -60,6 +61,60 @@ function App() {
   const [authUser, setAuthUser] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const inactivityTimerRef = useRef(null);
+  const INACTIVITY_TIMEOUT = 90 * 1000; // 90 seconds
+
+  // Inactivity logout handler
+  const handleInactivityLogout = useCallback(() => {
+    if (authUser) {
+      setAuthToken(null);
+      setAuthUser(null);
+      setUser(null);
+      toast.info("You have been logged out due to inactivity");
+    }
+  }, [authUser]);
+
+  // Reset inactivity timer on user activity
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    if (authUser) {
+      inactivityTimerRef.current = setTimeout(handleInactivityLogout, INACTIVITY_TIMEOUT);
+    }
+  }, [authUser, handleInactivityLogout]);
+
+  // Set up activity listeners for inactivity logout
+  useEffect(() => {
+    if (!authUser) {
+      // Clear timer if not logged in
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      return;
+    }
+
+    // Activity events to track
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    
+    // Start the timer
+    resetInactivityTimer();
+
+    // Add event listeners
+    activityEvents.forEach(event => {
+      document.addEventListener(event, resetInactivityTimer, { passive: true });
+    });
+
+    // Cleanup
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      activityEvents.forEach(event => {
+        document.removeEventListener(event, resetInactivityTimer);
+      });
+    };
+  }, [authUser, resetInactivityTimer]);
 
   const checkAuth = useCallback(async () => {
     const token = getAuthToken();
