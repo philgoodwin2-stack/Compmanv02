@@ -2478,17 +2478,31 @@ async def get_current_user(request: Request) -> dict:
 
 async def check_brute_force(identifier: str) -> bool:
     """Check if login should be blocked due to too many failed attempts"""
-    attempt = await db.login_attempts.find_one({"identifier": identifier})
-    if attempt and attempt.get("count", 0) >= 5:
-        lockout_until = attempt.get("lockout_until")
-        if lockout_until:
-            # Handle timezone-naive datetimes from MongoDB
-            if lockout_until.tzinfo is None:
-                lockout_until = lockout_until.replace(tzinfo=timezone.utc)
-            if datetime.now(timezone.utc) < lockout_until:
-                return True
-        await db.login_attempts.delete_one({"identifier": identifier})
-    return False
+    try:
+        attempt = await db.login_attempts.find_one({"identifier": identifier})
+        if attempt and attempt.get("count", 0) >= 5:
+            lockout_until = attempt.get("lockout_until")
+            if lockout_until:
+                # Handle timezone-naive datetimes from MongoDB
+                try:
+                    if hasattr(lockout_until, 'tzinfo') and lockout_until.tzinfo is None:
+                        lockout_until = lockout_until.replace(tzinfo=timezone.utc)
+                    elif not hasattr(lockout_until, 'tzinfo'):
+                        # Not a datetime object, skip comparison
+                        await db.login_attempts.delete_one({"identifier": identifier})
+                        return False
+                    if datetime.now(timezone.utc) < lockout_until:
+                        return True
+                except Exception as e:
+                    logger.warning(f"Error comparing lockout datetime: {e}")
+                    # Clear corrupted entry
+                    await db.login_attempts.delete_one({"identifier": identifier})
+                    return False
+            await db.login_attempts.delete_one({"identifier": identifier})
+        return False
+    except Exception as e:
+        logger.error(f"Error in check_brute_force: {e}")
+        return False
 
 async def record_failed_login(identifier: str):
     """Record a failed login attempt"""
@@ -2608,19 +2622,25 @@ async def auth_login(user_data: UserLogin, response: Response, request: Request)
     if user.get("player_id"):
         player = await db.players.find_one({"id": user["player_id"]}, {"_id": 0})
     
-    # Check subscription status
-    subscription_ends_at = user.get("subscription_ends_at")
-    now = datetime.utcnow()
+    # Check subscription status - wrapped in try/except to prevent login failures
     has_active_subscription = False
     days_remaining = 0
+    subscription_ends_at_iso = None
+    subscription_package = user.get("subscription_package")
     
-    if subscription_ends_at:
-        # Handle timezone-aware datetimes from MongoDB
-        if subscription_ends_at.tzinfo is not None:
-            subscription_ends_at = subscription_ends_at.replace(tzinfo=None)
-        has_active_subscription = subscription_ends_at > now
-        if has_active_subscription:
-            days_remaining = (subscription_ends_at - now).days
+    try:
+        subscription_ends_at = user.get("subscription_ends_at")
+        if subscription_ends_at:
+            now = datetime.utcnow()
+            # Handle timezone-aware datetimes from MongoDB
+            if hasattr(subscription_ends_at, 'tzinfo') and subscription_ends_at.tzinfo is not None:
+                subscription_ends_at = subscription_ends_at.replace(tzinfo=None)
+            has_active_subscription = subscription_ends_at > now
+            if has_active_subscription:
+                days_remaining = (subscription_ends_at - now).days
+            subscription_ends_at_iso = subscription_ends_at.isoformat()
+    except Exception as e:
+        logger.warning(f"Error checking subscription status during login: {e}")
     
     return {
         "id": user_id, 
@@ -2631,8 +2651,8 @@ async def auth_login(user_data: UserLogin, response: Response, request: Request)
         "player": player, 
         "access_token": access_token,
         "has_active_subscription": has_active_subscription,
-        "subscription_ends_at": subscription_ends_at.isoformat() if subscription_ends_at else None,
-        "subscription_package": user.get("subscription_package"),
+        "subscription_ends_at": subscription_ends_at_iso,
+        "subscription_package": subscription_package,
         "days_remaining": days_remaining
     }
 
