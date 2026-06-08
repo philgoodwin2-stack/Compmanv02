@@ -2611,10 +2611,16 @@ async def auth_login(user_data: UserLogin, response: Response, request: Request)
     # Check subscription status
     subscription_ends_at = user.get("subscription_ends_at")
     now = datetime.utcnow()
-    if subscription_ends_at and subscription_ends_at.tzinfo is not None:
-        subscription_ends_at = subscription_ends_at.replace(tzinfo=None)
-    has_active_subscription = subscription_ends_at and subscription_ends_at > now
-    days_remaining = (subscription_ends_at - now).days if has_active_subscription else 0
+    has_active_subscription = False
+    days_remaining = 0
+    
+    if subscription_ends_at:
+        # Handle timezone-aware datetimes from MongoDB
+        if subscription_ends_at.tzinfo is not None:
+            subscription_ends_at = subscription_ends_at.replace(tzinfo=None)
+        has_active_subscription = subscription_ends_at > now
+        if has_active_subscription:
+            days_remaining = (subscription_ends_at - now).days
     
     return {
         "id": user_id, 
