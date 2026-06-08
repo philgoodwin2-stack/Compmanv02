@@ -2995,28 +2995,41 @@ async def get_subscription_packages():
 @api_router.get("/subscription/my-subscription")
 async def get_my_subscription(current_user: dict = Depends(get_current_user)):
     """Get current user's subscription status"""
-    user = await db.users.find_one({"_id": ObjectId(current_user["id"])})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    subscription_ends_at = user.get("subscription_ends_at")
-    now = datetime.now(timezone.utc)
-    
-    # Handle timezone-naive datetimes from MongoDB
-    if subscription_ends_at and subscription_ends_at.tzinfo is None:
-        subscription_ends_at = subscription_ends_at.replace(tzinfo=timezone.utc)
-    
-    is_active = subscription_ends_at and subscription_ends_at > now
-    days_remaining = 0
-    if is_active:
-        days_remaining = (subscription_ends_at - now).days
-    
-    return {
-        "is_active": is_active,
-        "subscription_ends_at": subscription_ends_at.isoformat() if subscription_ends_at else None,
-        "subscription_package": user.get("subscription_package"),
-        "days_remaining": days_remaining
-    }
+    try:
+        user = await db.users.find_one({"_id": ObjectId(current_user["id"])})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        subscription_ends_at = user.get("subscription_ends_at")
+        is_active = False
+        days_remaining = 0
+        subscription_ends_at_iso = None
+        
+        if subscription_ends_at:
+            try:
+                now = datetime.utcnow()
+                # Handle timezone-aware datetimes from MongoDB
+                if hasattr(subscription_ends_at, 'tzinfo') and subscription_ends_at.tzinfo is not None:
+                    subscription_ends_at = subscription_ends_at.replace(tzinfo=None)
+                
+                is_active = subscription_ends_at > now
+                if is_active:
+                    days_remaining = (subscription_ends_at - now).days
+                subscription_ends_at_iso = subscription_ends_at.isoformat()
+            except Exception as e:
+                logger.warning(f"Error processing subscription_ends_at: {e}")
+        
+        return {
+            "is_active": is_active,
+            "subscription_ends_at": subscription_ends_at_iso,
+            "subscription_package": user.get("subscription_package"),
+            "days_remaining": days_remaining
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in get_my_subscription: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching subscription: {str(e)}")
 
 @api_router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
