@@ -3070,7 +3070,7 @@ async def stripe_webhook(request: Request):
         logger.error(f"Webhook error: {str(e)}")
         return {"status": "error", "message": str(e)}
 
-@api_router.post("/admin/grant-subscription")
+@api_router.get("/admin/grant-subscription")
 async def admin_grant_subscription(
     email: str,
     days: int = 30,
