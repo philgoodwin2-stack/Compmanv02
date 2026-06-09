@@ -3070,6 +3070,46 @@ async def stripe_webhook(request: Request):
         logger.error(f"Webhook error: {str(e)}")
         return {"status": "error", "message": str(e)}
 
+@api_router.post("/admin/grant-subscription")
+async def admin_grant_subscription(
+    email: str,
+    days: int = 30,
+    package: str = "monthly",
+    admin_key: str = None
+):
+    """Admin endpoint to manually grant subscription (for fixing failed payments)"""
+    # Simple admin key check - use the JWT_SECRET as admin key
+    expected_key = os.environ.get("JWT_SECRET", "")[:16]  # First 16 chars of JWT secret
+    
+    if admin_key != expected_key:
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+    
+    user = await db.users.find_one({"email": email.lower().strip()})
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User not found: {email}")
+    
+    # Set subscription
+    new_end = datetime.utcnow() + timedelta(days=days)
+    
+    result = await db.users.update_one(
+        {"email": email.lower().strip()},
+        {"$set": {
+            "subscription_ends_at": new_end,
+            "subscription_package": package,
+            "subscription_updated_at": datetime.utcnow()
+        }}
+    )
+    
+    logger.info(f"Admin granted {days} days subscription to {email}")
+    
+    return {
+        "success": True,
+        "email": email,
+        "subscription_ends_at": new_end.isoformat(),
+        "days_granted": days,
+        "package": package
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 
