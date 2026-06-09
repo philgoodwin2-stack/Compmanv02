@@ -5,6 +5,7 @@ import axios from "axios";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import MobileNav from "@/components/MobileNav";
+import IOSInstallPrompt from "@/components/IOSInstallPrompt";
 
 // Pages
 import LoginPage from "@/pages/LoginPage";
@@ -364,6 +365,8 @@ function App() {
           </main>
           {/* Only show navigation when user has linked player AND active subscription */}
           {isAuthenticated && hasActiveSubscription && hasLinkedPlayer && <MobileNav />}
+          {/* iOS Install Prompt */}
+          <IOSInstallPrompt />
         </BrowserRouter>
         <Toaster position="top-center" richColors />
       </div>
