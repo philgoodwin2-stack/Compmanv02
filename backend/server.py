@@ -2961,11 +2961,11 @@ async def get_subscription_status(session_id: str, request: Request, current_use
         # Get current subscription end date or use now
         user = await db.users.find_one({"_id": ObjectId(user_id)})
         current_end = user.get("subscription_ends_at") if user else None
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()  # Use naive datetime for consistency
         
-        # Handle timezone-naive datetimes from MongoDB
-        if current_end and current_end.tzinfo is None:
-            current_end = current_end.replace(tzinfo=timezone.utc)
+        # Handle timezone-aware datetimes from MongoDB - convert to naive
+        if current_end and hasattr(current_end, 'tzinfo') and current_end.tzinfo is not None:
+            current_end = current_end.replace(tzinfo=None)
         
         if current_end and current_end > now:
             # Extend from current end date
@@ -2974,13 +2974,13 @@ async def get_subscription_status(session_id: str, request: Request, current_use
             # Start fresh
             new_end = now + timedelta(days=duration_days)
         
-        # Update user subscription
+        # Update user subscription - store as naive datetime
         await db.users.update_one(
             {"_id": ObjectId(user_id)},
             {"$set": {
                 "subscription_ends_at": new_end,
                 "subscription_package": transaction.get("package_id"),
-                "subscription_updated_at": datetime.now(timezone.utc)
+                "subscription_updated_at": datetime.utcnow()
             }}
         )
         logger.info(f"Subscription activated for user {user_id} until {new_end}")
@@ -3050,18 +3050,20 @@ async def stripe_webhook(request: Request):
                 user_id = transaction.get("user_id")
                 user = await db.users.find_one({"_id": ObjectId(user_id)})
                 current_end = user.get("subscription_ends_at") if user else None
-                now = datetime.now(timezone.utc)
+                now = datetime.utcnow()  # Use naive datetime for consistency
                 
-                # Handle timezone-naive datetimes from MongoDB
-                if current_end and current_end.tzinfo is None:
-                    current_end = current_end.replace(tzinfo=timezone.utc)
+                # Handle timezone-aware datetimes from MongoDB - convert to naive
+                if current_end and hasattr(current_end, 'tzinfo') and current_end.tzinfo is not None:
+                    current_end = current_end.replace(tzinfo=None)
                 
                 if current_end and current_end > now:
                     new_end = current_end + timedelta(days=duration_days)
                 else:
                     new_end = now + timedelta(days=duration_days)
-                await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"subscription_ends_at": new_end, "subscription_package": transaction.get("package_id"), "subscription_updated_at": datetime.now(timezone.utc)}})
-                await db.payment_transactions.update_one({"session_id": event.session_id}, {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc)}})
+                
+                # Store as naive datetime for consistency
+                await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"subscription_ends_at": new_end, "subscription_package": transaction.get("package_id"), "subscription_updated_at": datetime.utcnow()}})
+                await db.payment_transactions.update_one({"session_id": event.session_id}, {"$set": {"payment_status": "paid", "updated_at": datetime.utcnow()}})
                 logger.info(f"Webhook: Subscription activated for user {user_id}")
         return {"status": "ok"}
     except Exception as e:
