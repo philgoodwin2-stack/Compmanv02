@@ -84,14 +84,14 @@ export default function CompetitionPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [leaderboardView, setLeaderboardView] = useState("detailed"); // "detailed" or "simple"
   const [courses, setCourses] = useState([]);
-  const [newRound, setNewRound] = useState({ 
-    name: "", 
+  const [newRound, setNewRound] = useState({
+    name: "",
     course_name: "",
     course_id: "",
     tee: "White",
     slope_rating: 113,
     course_rating: 72.0,
-    course_par: 72 
+    course_par: 72
   });
 
   useEffect(() => {
@@ -103,7 +103,7 @@ export default function CompetitionPage() {
       const societyId = user?.society_id;
       const playersUrl = societyId ? `${API}/players?society_id=${societyId}` : `${API}/players`;
       const coursesUrl = societyId ? `${API}/courses?society_id=${societyId}` : `${API}/courses`;
-      
+
       const [compRes, roundsRes, leaderboardRes, playersRes, coursesRes, societiesRes] = await Promise.all([
         axios.get(`${API}/competitions/${id}`),
         axios.get(`${API}/rounds?competition_id=${id}`),
@@ -290,10 +290,10 @@ export default function CompetitionPage() {
   const handleNativeShare = async () => {
     if (navigator.share) {
       try {
-        const topPlayers = leaderboard.slice(0, 3).map((e, i) => 
+        const topPlayers = leaderboard.slice(0, 3).map((e, i) =>
           `${i + 1}. ${e.player_username} - ${e.average_stableford.toFixed(1)} pts`
         ).join('\n');
-        
+
         await navigator.share({
           title: `${competition.name} Leaderboard`,
           text: `Check out the ${competition.name} leaderboard!\n\nTop 3:\n${topPlayers}`,
@@ -315,7 +315,7 @@ export default function CompetitionPage() {
       return `${medal} ${e.player_username} - ${e.average_stableford.toFixed(1)} pts (${e.rounds_played} rounds)`;
     }).join('\n');
     const footer = `\n${divider}Min ${competition.min_rounds || 13} rounds to qualify\n${getShareUrl()}`;
-    
+
     return header + divider + standings + footer;
   };
 
@@ -476,7 +476,7 @@ export default function CompetitionPage() {
                     Stableford Competition
                   </p>
                 </div>
-                
+
                 {/* Controls Row */}
                 <div className="px-4 py-3 flex items-center justify-between bg-[#005538]">
                   <div className="flex items-center gap-3">
@@ -489,11 +489,10 @@ export default function CompetitionPage() {
                       <button
                         data-testid="view-simple-btn"
                         onClick={() => setLeaderboardView("simple")}
-                        className={`px-3 py-1.5 flex items-center gap-1.5 text-xs transition-colors ${
-                          leaderboardView === "simple" 
-                            ? "bg-[#FFF200] text-[#006747] font-bold" 
-                            : "text-white/70 hover:text-white"
-                        }`}
+                        className={`px-3 py-1.5 flex items-center gap-1.5 text-xs transition-colors ${leaderboardView === "simple"
+                          ? "bg-[#FFF200] text-[#006747] font-bold"
+                          : "text-white/70 hover:text-white"
+                          }`}
                       >
                         <List className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">Simple</span>
@@ -501,17 +500,16 @@ export default function CompetitionPage() {
                       <button
                         data-testid="view-detailed-btn"
                         onClick={() => setLeaderboardView("detailed")}
-                        className={`px-3 py-1.5 flex items-center gap-1.5 text-xs transition-colors ${
-                          leaderboardView === "detailed" 
-                            ? "bg-[#FFF200] text-[#006747] font-bold" 
-                            : "text-white/70 hover:text-white"
-                        }`}
+                        className={`px-3 py-1.5 flex items-center gap-1.5 text-xs transition-colors ${leaderboardView === "detailed"
+                          ? "bg-[#FFF200] text-[#006747] font-bold"
+                          : "text-white/70 hover:text-white"
+                          }`}
                       >
                         <LayoutGrid className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">Detailed</span>
                       </button>
                     </div>
-                    
+
                     {/* Share Button */}
                     <button
                       data-testid="share-leaderboard-btn"
@@ -537,7 +535,7 @@ export default function CompetitionPage() {
                     {/* Get sorted rounds for column headers */}
                     {(() => {
                       const sortedRounds = [...rounds].sort((a, b) => new Date(a.date) - new Date(b.date));
-                      
+
                       return (
                         <>
                           {/* Header Row with Round Dates */}
@@ -561,25 +559,24 @@ export default function CompetitionPage() {
                                 Total
                               </div>
                             </div>
-                          
+
                             {/* Player Rows */}
                             {leaderboard.map((entry, index) => {
                               const isLeader = index === 0;
                               const isTop3 = index < 3;
-                              
+
                               // Calculate position (handle ties)
                               let position = index + 1;
                               if (index > 0 && entry.total_stableford === leaderboard[index - 1].total_stableford && entry.average_stableford === leaderboard[index - 1].average_stableford) {
                                 position = leaderboard.findIndex(e => e.total_stableford === entry.total_stableford && e.average_stableford === entry.average_stableford) + 1;
                               }
-                              
+
                               return (
-                                <div 
+                                <div
                                   key={entry.player_id}
                                   data-testid={`simple-row-${entry.player_id}`}
-                                  className={`grid border-b border-[#005538] transition-all ${
-                                    isLeader ? 'bg-[#FFF200]' : isTop3 ? 'bg-[#90EE90]' : 'bg-white'
-                                  } hover:brightness-95`}
+                                  className={`grid border-b border-[#005538] transition-all ${isLeader ? 'bg-[#FFF200]' : isTop3 ? 'bg-[#90EE90]' : 'bg-white'
+                                    } hover:brightness-95`}
                                   style={{ gridTemplateColumns: `50px 1fr 60px repeat(${sortedRounds.length}, 50px) 70px` }}
                                 >
                                   {/* Position */}
@@ -588,13 +585,13 @@ export default function CompetitionPage() {
                                       {position}
                                     </span>
                                   </div>
-                                  
+
                                   {/* Player Name */}
                                   <div className="px-3 py-3 flex items-center gap-2 min-w-0">
                                     {entry.player_team_logo && (
-                                      <img 
-                                        src={entry.player_team_logo} 
-                                        alt="" 
+                                      <img
+                                        src={entry.player_team_logo}
+                                        alt=""
                                         className="w-6 h-6 object-contain flex-shrink-0"
                                       />
                                     )}
@@ -602,22 +599,22 @@ export default function CompetitionPage() {
                                       {entry.player_username}
                                     </span>
                                   </div>
-                                  
+
                                   {/* Average */}
                                   <div className="px-1 py-3 flex items-center justify-center">
                                     <span className="text-sm font-bold font-mono text-[#006747]">
                                       {entry.average_stableford.toFixed(1)}
                                     </span>
                                   </div>
-                                  
+
                                   {/* Round Scores by Date */}
                                   {sortedRounds.map((round, roundIdx) => {
                                     const roundScore = entry.round_scores?.[roundIdx];
                                     const hasScore = roundScore !== null && roundScore !== undefined && roundScore >= 0;
-                                    
+
                                     return (
-                                      <div 
-                                        key={round.id} 
+                                      <div
+                                        key={round.id}
                                         className={`px-1 py-3 flex items-center justify-center ${!hasScore ? 'text-gray-300' : ''}`}
                                       >
                                         <span className={`text-sm font-mono ${hasScore ? 'font-semibold text-[#1a1a1a]' : ''}`}>
@@ -626,7 +623,7 @@ export default function CompetitionPage() {
                                       </div>
                                     );
                                   })}
-                                  
+
                                   {/* Total Points */}
                                   <div className="px-2 py-3 flex items-center justify-center bg-[#006747]/10">
                                     <span className="text-lg font-bold font-mono text-[#006747]">
@@ -637,7 +634,7 @@ export default function CompetitionPage() {
                               );
                             })}
                           </div>
-                          
+
                           {/* Footer */}
                           <div className="bg-[#005538] px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs text-white/80">
                             <div className="flex items-center gap-4">
@@ -710,9 +707,9 @@ export default function CompetitionPage() {
                         const isQualified = entry.rounds_played >= minRounds;
                         // Use dropped_rounds from API if available, otherwise calculate
                         const droppedIndices = entry.dropped_rounds || [];
-                        
+
                         return (
-                          <tr 
+                          <tr
                             key={entry.player_id}
                             data-testid={`leaderboard-row-${entry.player_id}`}
                             className={`border-b ${index % 2 === 0 ? 'bg-blue-50/50' : 'bg-white'} hover:bg-blue-100/50`}
@@ -731,7 +728,7 @@ export default function CompetitionPage() {
                             </td>
                             {/* Player Name */}
                             <td className="px-2 py-2 font-medium">
-                              {entry.player_username.split(' ').map((part, i, arr) => 
+                              {entry.player_username.split(' ').map((part, i, arr) =>
                                 i === arr.length - 1 ? part.toUpperCase() : part
                               ).join(' ')}
                             </td>
@@ -748,7 +745,7 @@ export default function CompetitionPage() {
                               const score = entry.round_scores[idx];
                               const hasScore = score !== undefined && score >= 0;
                               const isDropped = droppedIndices.includes(idx);
-                              
+
                               // Color coding based on score
                               let bgColor = '';
                               let textColor = 'text-gray-900';
@@ -772,7 +769,7 @@ export default function CompetitionPage() {
                                   textColor = 'text-red-600';
                                 }
                               }
-                              
+
                               return (
                                 <td key={round.id} className="px-0 py-1 text-center">
                                   {hasScore ? (
@@ -792,7 +789,7 @@ export default function CompetitionPage() {
                   </table>
                 )}
               </CardContent>
-              
+
               {/* Footer */}
               <div className="bg-[#1a1a1a] text-white px-4 py-2 flex justify-between items-center text-xs">
                 <span>Min {competition.min_rounds || 13} rounds to qualify</span>
@@ -832,7 +829,7 @@ export default function CompetitionPage() {
                         className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
                       />
                     </div>
-                    
+
                     {/* Course Selection */}
                     <div className="space-y-2">
                       <Label>Select Course</Label>
@@ -928,18 +925,18 @@ export default function CompetitionPage() {
                           onValueChange={(val) => setNewRound({ ...newRound, course_par: parseInt(val) })}
                           disabled={!!newRound.course_id}
                         >
-                        <SelectTrigger data-testid="course-par-select" className={`rounded-none ${newRound.course_id ? 'bg-muted' : ''}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="70">70</SelectItem>
-                          <SelectItem value="71">71</SelectItem>
-                          <SelectItem value="72">72</SelectItem>
-                          <SelectItem value="73">73</SelectItem>
-                        </SelectContent>
-                      </Select>
+                          <SelectTrigger data-testid="course-par-select" className={`rounded-none ${newRound.course_id ? 'bg-muted' : ''}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="70">70</SelectItem>
+                            <SelectItem value="71">71</SelectItem>
+                            <SelectItem value="72">72</SelectItem>
+                            <SelectItem value="73">73</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                  </div>
                     <div className="space-y-2">
                       <Label>Date</Label>
                       <div className="flex gap-2">
@@ -967,7 +964,8 @@ export default function CompetitionPage() {
                               <CalendarIcon className="h-4 w-4" />
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
+
+                          <PopoverContent className="p-0 w-fit" align="center">
                             <Calendar
                               mode="single"
                               selected={selectedDate}
@@ -975,6 +973,8 @@ export default function CompetitionPage() {
                               initialFocus
                             />
                           </PopoverContent>
+
+
                         </Popover>
                       </div>
                     </div>
@@ -1247,7 +1247,7 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
       const response = await axios.get(`${API}/scores?round_id=${round.id}`);
       setScores(response.data);
     } catch (error) {
-      
+
     } finally {
       setLoadingScores(false);
     }
@@ -1430,8 +1430,8 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
                         {/* Score-level toggles */}
                         <div className="flex items-center gap-1 mr-2">
                           <div className="flex items-center gap-1">
-                            <Label 
-                              htmlFor={`score-comp-${playerScore.id}`} 
+                            <Label
+                              htmlFor={`score-comp-${playerScore.id}`}
                               className={`text-[10px] ${isScoreIncludedInComp ? 'text-primary' : 'text-muted-foreground'}`}
                             >
                               Comp
@@ -1445,8 +1445,8 @@ function RoundCard({ round, competition, players, onDelete, onRefresh }) {
                             />
                           </div>
                           <div className="flex items-center gap-1">
-                            <Label 
-                              htmlFor={`score-hcp-${playerScore.id}`} 
+                            <Label
+                              htmlFor={`score-hcp-${playerScore.id}`}
                               className={`text-[10px] ${isScoreIncludedInHandicap ? 'text-primary' : 'text-muted-foreground'}`}
                             >
                               HCP

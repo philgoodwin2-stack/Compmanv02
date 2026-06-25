@@ -23,7 +23,7 @@ import SocietyPage from "@/pages/SocietyPage";
 import JoinInvitePage from "@/pages/JoinInvitePage";
 import MenuPage from "@/pages/MenuPage";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_API_URL;
 export const API = `${BACKEND_URL}/api`;
 
 // Auth token management
@@ -97,7 +97,7 @@ function App() {
 
     // Activity events to track
     const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
-    
+
     // Start the timer
     resetInactivityTimer();
 
@@ -123,7 +123,7 @@ function App() {
       setLoading(false);
       return;
     }
-    
+
     try {
       const response = await axios.get(`${API}/auth/me`);
       setAuthUser(response.data);
@@ -190,14 +190,14 @@ function App() {
     // First, get society by join code
     const societyResponse = await axios.get(`${API}/societies/code/${joinCode}`);
     const societyId = societyResponse.data.id;
-    
+
     // Create player in that society
     const playerResponse = await axios.post(`${API}/players`, {
       username,
       handicap,
       society_id: societyId
     });
-    
+
     // Link the newly created player
     await linkPlayer(playerResponse.data.id);
   };
@@ -227,13 +227,13 @@ function App() {
   const hasActiveSubscription = authUser?.has_active_subscription;
 
   return (
-    <UserContext.Provider value={{ 
-      authUser, 
-      user, 
-      login, 
-      register, 
-      logout, 
-      linkPlayer, 
+    <UserContext.Provider value={{
+      authUser,
+      user,
+      login,
+      register,
+      logout,
+      linkPlayer,
       createAndLinkPlayer,
       switchSociety,
       checkAuth,
@@ -247,41 +247,41 @@ function App() {
               <Route
                 path="/"
                 element={
-                  isAuthenticated 
-                    ? (hasActiveSubscription 
-                        ? (hasLinkedPlayer ? <Navigate to="/menu" /> : <Navigate to="/link-player" />)
-                        : <Navigate to="/subscription" />)
+                  isAuthenticated
+                    ? (hasActiveSubscription
+                      ? (hasLinkedPlayer ? <Navigate to="/menu" /> : <Navigate to="/link-player" />)
+                      : <Navigate to="/subscription" />)
                     : <LoginPage />
                 }
               />
-              
+
               {/* Link player route - requires auth AND subscription */}
               <Route
                 path="/link-player"
                 element={
-                  isAuthenticated 
+                  isAuthenticated
                     ? (hasActiveSubscription
-                        ? (hasLinkedPlayer ? <Navigate to="/menu" /> : <LinkPlayerPage />)
-                        : <Navigate to="/subscription" />)
+                      ? (hasLinkedPlayer ? <Navigate to="/menu" /> : <LinkPlayerPage />)
+                      : <Navigate to="/subscription" />)
                     : <Navigate to="/" />
                 }
               />
-              
+
               {/* Menu page - requires auth, subscription AND linked player */}
               <Route
                 path="/menu"
                 element={
-                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
-                    ? <MenuPage /> 
-                    : (isAuthenticated && !hasActiveSubscription 
-                        ? <Navigate to="/subscription" />
-                        : (isAuthenticated ? <Navigate to="/link-player" /> : <Navigate to="/" />))
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer
+                    ? <MenuPage />
+                    : (isAuthenticated && !hasActiveSubscription
+                      ? <Navigate to="/subscription" />
+                      : (isAuthenticated ? <Navigate to="/link-player" /> : <Navigate to="/" />))
                 }
               />
-              
+
               {/* Public route - Reset Password */}
               <Route path="/reset-password" element={<ResetPasswordPage />} />
-              
+
               {/* Subscription routes - requires auth (but NOT subscription - so they can subscribe!) */}
               <Route
                 path="/subscription"
@@ -291,69 +291,69 @@ function App() {
                 path="/subscription/success"
                 element={isAuthenticated ? <SubscriptionSuccessPage /> : <Navigate to="/" />}
               />
-              
+
               {/* Protected routes - require auth, subscription AND linked player */}
               <Route
                 path="/dashboard"
                 element={
-                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
-                    ? <DashboardPage /> 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer
+                    ? <DashboardPage />
                     : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/players"
                 element={
-                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
-                    ? <PlayersPage /> 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer
+                    ? <PlayersPage />
                     : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/competition/:id"
                 element={
-                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
-                    ? <CompetitionPage /> 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer
+                    ? <CompetitionPage />
                     : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/score/:roundId/:playerId"
                 element={
-                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
-                    ? <ScoreEntryPage /> 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer
+                    ? <ScoreEntryPage />
                     : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/handicap-tracking"
                 element={
-                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
-                    ? <HandicapTrackingPage /> 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer
+                    ? <HandicapTrackingPage />
                     : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/handicaps"
                 element={
-                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
-                    ? <HandicapTrackingPage /> 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer
+                    ? <HandicapTrackingPage />
                     : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/courses"
                 element={
-                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
-                    ? <CoursesPage /> 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer
+                    ? <CoursesPage />
                     : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
               <Route
                 path="/society"
                 element={
-                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer 
-                    ? <SocietyPage /> 
+                  isAuthenticated && hasActiveSubscription && hasLinkedPlayer
+                    ? <SocietyPage />
                     : (isAuthenticated && !hasActiveSubscription ? <Navigate to="/subscription" /> : <Navigate to="/" />)
                 }
               />
