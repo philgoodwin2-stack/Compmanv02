@@ -1,0 +1,55 @@
+/* Golf App Specific Styles */
+
+.golf-header {
+    background: linear-gradient(to bottom right, #4CAF50, #2E7D32);
+}
+
+.trophy-gold {
+    color: #A8A8A8;
+}
+
+.trophy-gold-bg {
+    background: linear-gradient(45deg, #C0C0C0, #E8E8E8, #C0C0C0);
+}
+
+/* Scorecard styles */
+.scorecard-cell {
+    @apply w-12 h-16 flex flex-col items-center justify-center border-r border-border/20 last:border-r-0;
+}
+
+.hole-active {
+    @apply ring-2 ring-primary ring-inset bg-primary/5;
+}
+
+/* Animation classes */
+.animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hover-lift {
+    @apply hover:-translate-y-1 transition-transform duration-300 ease-out;
+}
+
+.button-press {
+    @apply active:scale-95 transition-transform duration-100;
+}
+
+/* Mobile safe areas */
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pt-safe {
+    padding-top: env(safe-area-inset-top);
+}
