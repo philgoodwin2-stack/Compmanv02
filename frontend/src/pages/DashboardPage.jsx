@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import "@/App.css";
 import {
   Dialog,
   DialogContent,
@@ -61,7 +62,7 @@ export default function DashboardPage() {
   const fetchCompetitions = useCallback(async () => {
     try {
       const societyId = user?.society_id;
-      const url = societyId 
+      const url = societyId
         ? `${API}/competitions?society_id=${societyId}`
         : `${API}/competitions`;
       const response = await axios.get(url);
@@ -136,7 +137,7 @@ export default function DashboardPage() {
       fetchCompetitions();
     } catch (error) {
       toast.error("Failed to delete competition");
-      
+
     }
   };
 
@@ -181,12 +182,12 @@ export default function DashboardPage() {
       fetchCompetitions();
     } catch (error) {
       toast.error("Failed to update competition");
-      
+
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className=" competitions min-h-screen bg-background">
       {/* Subscription Banner */}
       {subscription && !subscription.is_active && (
         <div className="bg-amber-500 text-amber-950 px-4 py-2 text-center">
@@ -215,7 +216,7 @@ export default function DashboardPage() {
           </Button>
         </div>
       )}
-      
+
       {/* Header */}
       <header className="golf-header text-white py-6 px-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
@@ -784,9 +785,9 @@ export default function DashboardPage() {
                 <Label>Society</Label>
                 <Select
                   value={editCompetition.society_id || "none"}
-                  onValueChange={(value) => setEditCompetition({ 
-                    ...editCompetition, 
-                    society_id: value === "none" ? null : value 
+                  onValueChange={(value) => setEditCompetition({
+                    ...editCompetition,
+                    society_id: value === "none" ? null : value
                   })}
                 >
                   <SelectTrigger data-testid="edit-society-select" className="rounded-none">
@@ -802,8 +803,8 @@ export default function DashboardPage() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {editCompetition.society_id 
-                    ? "Competition is linked to this society" 
+                  {editCompetition.society_id
+                    ? "Competition is linked to this society"
                     : "⚠️ This competition is not linked to any society"}
                 </p>
               </div>

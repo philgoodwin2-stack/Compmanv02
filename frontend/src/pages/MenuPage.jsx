@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useUser, API } from "@/App";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Flag, 
-  Trophy, 
-  Users, 
-  MapPin, 
-  TrendingUp, 
-  CreditCard, 
+
+import {
+  Flag,
+  Trophy,
+  Users,
+  MapPin,
+  TrendingUp,
+  CreditCard,
   LogOut,
   Clock,
   ChevronRight
@@ -111,7 +112,7 @@ export default function MenuPage() {
                   <Clock className="w-5 h-5" />
                   <div>
                     <p className="font-medium text-sm">
-                      {subscription.is_active 
+                      {subscription.is_active
                         ? `Subscription: ${subscription.days_remaining} days remaining`
                         : "No active subscription"}
                     </p>
@@ -139,25 +140,12 @@ export default function MenuPage() {
       </div>
 
       {/* Menu Grid with Golf Pattern Background */}
-      <div className="flex-1 p-4 sm:p-6 relative overflow-hidden" style={{
-        backgroundColor: '#f8faf8',
-        backgroundImage: `
-          radial-gradient(circle at 20px 20px, rgba(34, 139, 34, 0.08) 8px, transparent 8px),
-          radial-gradient(circle at 60px 60px, rgba(34, 139, 34, 0.05) 12px, transparent 12px),
-          radial-gradient(circle at 100px 30px, rgba(34, 139, 34, 0.06) 6px, transparent 6px),
-          linear-gradient(135deg, rgba(34, 139, 34, 0.03) 25%, transparent 25%),
-          linear-gradient(225deg, rgba(34, 139, 34, 0.03) 25%, transparent 25%),
-          linear-gradient(45deg, rgba(34, 139, 34, 0.03) 25%, transparent 25%),
-          linear-gradient(315deg, rgba(34, 139, 34, 0.03) 25%, transparent 25%)
-        `,
-        backgroundSize: '120px 120px, 120px 120px, 120px 120px, 40px 40px, 40px 40px, 40px 40px, 40px 40px',
-        backgroundPosition: '0 0, 0 0, 0 0, 0 0, 20px 0, 0 20px, 20px 20px'
-      }}>
+      <div className=" menu flex-1 p-4 sm:p-6 relative overflow-hidden" >
         <div className="max-w-4xl mx-auto relative z-10">
           <h2 className="text-lg font-bold uppercase tracking-tight mb-4 text-muted-foreground">
             Menu
           </h2>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {menuItems.map((item) => (
               <Card
@@ -208,6 +196,6 @@ export default function MenuPage() {
 
       {/* Bottom spacing for mobile nav */}
       <div className="h-20" />
-    </div>
+    </div >
   );
 }

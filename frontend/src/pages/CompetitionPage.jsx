@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import "@/App.css";
 import {
   Dialog,
   DialogContent,
@@ -331,7 +332,7 @@ export default function CompetitionPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className=" competitions min-h-screen bg-backvvvvground flex items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
       </div>
     );
@@ -340,7 +341,7 @@ export default function CompetitionPage() {
   if (!competition) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className=" competitions min-h-screen bg-background">
       {/* Header */}
       <header className="golf-header text-white py-4 px-4">
         <div className="max-w-6xl mx-auto">
