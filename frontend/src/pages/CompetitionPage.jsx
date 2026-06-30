@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import "@/App.css";
 import {
   Dialog,
   DialogContent,
@@ -332,7 +331,7 @@ export default function CompetitionPage() {
 
   if (loading) {
     return (
-      <div className=" competitions min-h-screen bg-backvvvvground flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
       </div>
     );
@@ -341,7 +340,7 @@ export default function CompetitionPage() {
   if (!competition) return null;
 
   return (
-    <div className=" competitions min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="golf-header text-white py-4 px-4">
         <div className="max-w-6xl mx-auto">
@@ -491,8 +490,8 @@ export default function CompetitionPage() {
                         data-testid="view-simple-btn"
                         onClick={() => setLeaderboardView("simple")}
                         className={`px-3 py-1.5 flex items-center gap-1.5 text-xs transition-colors ${leaderboardView === "simple"
-                          ? "bg-[#FFF200] text-[#006747] font-bold"
-                          : "text-white/70 hover:text-white"
+                            ? "bg-[#FFF200] text-[#006747] font-bold"
+                            : "text-white/70 hover:text-white"
                           }`}
                       >
                         <List className="w-3.5 h-3.5" />
@@ -502,8 +501,8 @@ export default function CompetitionPage() {
                         data-testid="view-detailed-btn"
                         onClick={() => setLeaderboardView("detailed")}
                         className={`px-3 py-1.5 flex items-center gap-1.5 text-xs transition-colors ${leaderboardView === "detailed"
-                          ? "bg-[#FFF200] text-[#006747] font-bold"
-                          : "text-white/70 hover:text-white"
+                            ? "bg-[#FFF200] text-[#006747] font-bold"
+                            : "text-white/70 hover:text-white"
                           }`}
                       >
                         <LayoutGrid className="w-3.5 h-3.5" />
@@ -965,8 +964,7 @@ export default function CompetitionPage() {
                               <CalendarIcon className="h-4 w-4" />
                             </Button>
                           </PopoverTrigger>
-
-                          <PopoverContent className="p-0 w-fit" align="center">
+                          <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                               mode="single"
                               selected={selectedDate}
@@ -974,8 +972,6 @@ export default function CompetitionPage() {
                               initialFocus
                             />
                           </PopoverContent>
-
-
                         </Popover>
                       </div>
                     </div>
