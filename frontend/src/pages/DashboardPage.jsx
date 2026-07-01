@@ -2,12 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API, useUser } from "@/App";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import "@/App.css";
 import {
   Dialog,
   DialogContent,
@@ -187,35 +187,39 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className=" competitions min-h-screen bg-background">
+    <div className="players min-h-screen bg-background ">
       {/* Subscription Banner */}
-      {subscription && !subscription.is_active && (
-        <div className="bg-amber-500 text-amber-950 px-4 py-2 text-center">
-          <span className="text-sm font-medium">Your subscription has expired.</span>
-          <Button
-            variant="link"
-            size="sm"
-            onClick={() => navigate("/subscription")}
-            className="text-amber-950 underline ml-2 p-0 h-auto"
-          >
-            Renew Now
-          </Button>
-        </div>
-      )}
-      {subscription?.is_active && subscription.days_remaining <= 7 && (
-        <div className="bg-primary/20 text-primary px-4 py-2 text-center">
-          <Clock className="w-4 h-4 inline mr-1" />
-          <span className="text-sm font-medium">Subscription expires in {subscription.days_remaining} days.</span>
-          <Button
-            variant="link"
-            size="sm"
-            onClick={() => navigate("/subscription")}
-            className="text-primary underline ml-2 p-0 h-auto"
-          >
-            Extend
-          </Button>
-        </div>
-      )}
+      {
+        subscription && !subscription.is_active && (
+          <div className="bg-amber-500 text-amber-950 px-4 py-2 text-center">
+            <span className="text-sm font-medium">Your subscription has expired.</span>
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => navigate("/subscription")}
+              className="text-amber-950 underline ml-2 p-0 h-auto"
+            >
+              Renew Now
+            </Button>
+          </div>
+        )
+      }
+      {
+        subscription?.is_active && subscription.days_remaining <= 7 && (
+          <div className="bg-primary/20 text-primary px-4 py-2 text-center">
+            <Clock className="w-4 h-4 inline mr-1" />
+            <span className="text-sm font-medium">Subscription expires in {subscription.days_remaining} days.</span>
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => navigate("/subscription")}
+              className="text-primary underline ml-2 p-0 h-auto"
+            >
+              Extend
+            </Button>
+          </div>
+        )
+      }
 
       {/* Header */}
       <header className="golf-header text-white py-6 px-4">
@@ -289,7 +293,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto p-4 sm:p-6">
+      <main className=" lmax-w-6xl mx-auto p-4 sm:p-6">
         {/* Stats Row */}
         <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
           <Card className="border-l-4 border-l-primary">
@@ -530,7 +534,7 @@ export default function DashboardPage() {
               <Card
                 key={competition.id}
                 data-testid={`competition-card-${competition.id}`}
-                className="hover-lift cursor-pointer border-l-4 border-l-primary group relative"
+                className="hover-lift cursor-pointer border-l-[12px] border-l-green-500 group relative bg-green-200/80"
                 onClick={() => navigate(`/competition/${competition.id}`)}
               >
                 <CardHeader className="pb-2">
@@ -829,6 +833,6 @@ export default function DashboardPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }

@@ -236,7 +236,7 @@ export default function PlayersPage() {
       const response = await axios.get(`${API}/societies`);
       setSocieties(response.data);
     } catch (error) {
-      
+
     }
   };
 
@@ -251,7 +251,7 @@ export default function PlayersPage() {
       const response = await axios.get(`${API}/admin-status`);
       setSystemHasAdmins(response.data.has_admins);
     } catch (error) {
-      
+
       // On error, assume no admins exist to allow first-time setup
       setSystemHasAdmins(false);
     }
@@ -262,7 +262,7 @@ export default function PlayersPage() {
       // Global admin with showAllPlayers can see all players
       const url = (isGlobalAdmin && showAllPlayers)
         ? `${API}/players`
-        : user?.society_id 
+        : user?.society_id
           ? `${API}/players?society_id=${user.society_id}`
           : `${API}/players`;
       const response = await axios.get(url);
@@ -290,15 +290,15 @@ export default function PlayersPage() {
       };
       const response = await axios.post(`${API}/players`, payload);
       const newPlayerId = response.data.id;
-      
+
       // Determine differentials to import
       let differentialsToImport = newPlayer.differentials.trim();
-      
+
       // If no differentials provided but handicap is set, create 20 entries with the handicap value
       if (!differentialsToImport && newPlayer.handicap > 0) {
         differentialsToImport = Array(20).fill(newPlayer.handicap.toFixed(1)).join(", ");
       }
-      
+
       // If differentials are available (either entered or generated), import them
       if (differentialsToImport) {
         try {
@@ -308,12 +308,12 @@ export default function PlayersPage() {
           toast.success(`Player added with ${importResponse.data.records_imported} differentials imported. Handicap: ${importResponse.data.new_handicap}`);
         } catch (importError) {
           toast.success("Player added, but failed to import differentials");
-          
+
         }
       } else {
         toast.success("Player added!");
       }
-      
+
       setShowAddDialog(false);
       setNewPlayer({ username: "", handicap: 18, team_logo: "", differentials: "" });
       fetchPlayers();
@@ -407,7 +407,7 @@ export default function PlayersPage() {
 
   const handleMovePlayer = async () => {
     if (!playerToMove) return;
-    
+
     setMovingPlayer(true);
     try {
       const newSocietyId = targetSocietyId === "none" ? null : targetSocietyId;
@@ -504,10 +504,10 @@ export default function PlayersPage() {
         gross_score: editingGross ? parseInt(editingGross) : null,
         playing_handicap: editingPlayingHcp ? parseInt(editingPlayingHcp) : null,
       };
-      
+
       const response = await axios.put(`${API}/players/${historyData.player_id}/update-differential?user_id=${user?.id}`, payload);
       toast.success(`Updated. New handicap: ${response.data.new_handicap}`);
-      
+
       // Refresh history data
       const historyResponse = await axios.get(`${API}/players/${historyData.player_id}/handicap-history`);
       setHistoryData(historyResponse.data);
@@ -528,7 +528,7 @@ export default function PlayersPage() {
     try {
       await axios.delete(`${API}/players/${historyData.player_id}/delete-differential?date=${date}&user_id=${user?.id}`);
       toast.success("Differential deleted");
-      
+
       // Refresh history data
       const historyResponse = await axios.get(`${API}/players/${historyData.player_id}/handicap-history`);
       setHistoryData(historyResponse.data);
@@ -548,7 +548,7 @@ export default function PlayersPage() {
     try {
       const response = await axios.post(`${API}/players/${historyData.player_id}/recalculate-handicap`);
       toast.success(`Handicap recalculated: ${response.data.new_handicap}`);
-      
+
       // Refresh history data
       const historyResponse = await axios.get(`${API}/players/${historyData.player_id}/handicap-history`);
       setHistoryData(historyResponse.data);
@@ -564,7 +564,7 @@ export default function PlayersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className=" min-h-screen bg-background">
       {/* Header */}
       <header className="golf-header text-white py-6 px-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
@@ -589,7 +589,7 @@ export default function PlayersPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto p-6">
+      <main className="players max-w-6xl mx-auto p-6">
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <Card className="border-l-4 border-l-primary">
@@ -619,7 +619,7 @@ export default function PlayersPage() {
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+        <div className=" flex flex-wrap justify-between items-center gap-4 mb-6">
           <h2 className="text-3xl font-bold uppercase tracking-tight">
             {isGlobalAdmin && showAllPlayers ? "All Players (Global)" : "Players"}
           </h2>
@@ -640,93 +640,92 @@ export default function PlayersPage() {
                   data-testid="add-player-btn"
                   className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest"
                 >
-                <Plus className="w-5 h-5 mr-2" />
-                Add Player
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold uppercase tracking-tight">
-                  Add Player
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Player Name</Label>
-                  <Input
-                    data-testid="new-player-name-input"
-                    id="username"
-                    value={newPlayer.username}
-                    onChange={(e) => setNewPlayer({ ...newPlayer, username: e.target.value })}
-                    placeholder="John Smith"
-                    className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="handicap">Handicap</Label>
-                  <Input
-                    data-testid="new-player-handicap-input"
-                    id="handicap"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="54"
-                    value={newPlayer.handicap}
-                    onChange={(e) => setNewPlayer({ ...newPlayer, handicap: parseFloat(e.target.value) || 0 })}
-                    className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Team Logo</Label>
-                  <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto p-2 border rounded">
-                    {TEAM_LOGOS.map((team) => (
-                      <button
-                        key={team.name}
-                        type="button"
-                        onClick={() => setNewPlayer({ ...newPlayer, team_logo: team.logo })}
-                        className={`w-10 h-10 p-1 rounded border-2 transition-all ${
-                          newPlayer.team_logo === team.logo ? 'border-primary bg-primary/10' : 'border-transparent hover:border-muted'
-                        }`}
-                        title={team.name}
-                      >
-                        {team.logo ? (
-                          <img src={team.logo} alt={team.name} className="w-full h-full object-contain" />
-                        ) : (
-                          <div className="w-full h-full bg-muted rounded flex items-center justify-center text-xs">✕</div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="differentials">
-                    Handicap Differentials (Optional)
-                  </Label>
-                  <textarea
-                    data-testid="new-player-differentials-input"
-                    id="differentials"
-                    value={newPlayer.differentials}
-                    onChange={(e) => setNewPlayer({ ...newPlayer, differentials: e.target.value })}
-                    placeholder="Enter up to 20 differentials as comma-separated values, e.g.: 15.2, 16.1, 14.8, 15.5, ..."
-                    rows={3}
-                    className="w-full p-2 border rounded bg-transparent text-sm focus:ring-1 focus:ring-primary"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Import historical differentials to calculate WHS handicap. If left empty, the handicap value above will be used 20 times.
-                  </p>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  data-testid="submit-new-player-btn"
-                  onClick={handleAddPlayer}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest"
-                >
+                  <Plus className="w-5 h-5 mr-2" />
                   Add Player
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold uppercase tracking-tight">
+                    Add Player
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Player Name</Label>
+                    <Input
+                      data-testid="new-player-name-input"
+                      id="username"
+                      value={newPlayer.username}
+                      onChange={(e) => setNewPlayer({ ...newPlayer, username: e.target.value })}
+                      placeholder="John Smith"
+                      className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="handicap">Handicap</Label>
+                    <Input
+                      data-testid="new-player-handicap-input"
+                      id="handicap"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="54"
+                      value={newPlayer.handicap}
+                      onChange={(e) => setNewPlayer({ ...newPlayer, handicap: parseFloat(e.target.value) || 0 })}
+                      className="border-x-0 border-t-0 border-b-2 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-primary"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Team Logo</Label>
+                    <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto p-2 border rounded">
+                      {TEAM_LOGOS.map((team) => (
+                        <button
+                          key={team.name}
+                          type="button"
+                          onClick={() => setNewPlayer({ ...newPlayer, team_logo: team.logo })}
+                          className={`w-10 h-10 p-1 rounded border-2 transition-all ${newPlayer.team_logo === team.logo ? 'border-primary bg-primary/10' : 'border-transparent hover:border-muted'
+                            }`}
+                          title={team.name}
+                        >
+                          {team.logo ? (
+                            <img src={team.logo} alt={team.name} className="w-full h-full object-contain" />
+                          ) : (
+                            <div className="w-full h-full bg-muted rounded flex items-center justify-center text-xs">✕</div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="differentials">
+                      Handicap Differentials (Optional)
+                    </Label>
+                    <textarea
+                      data-testid="new-player-differentials-input"
+                      id="differentials"
+                      value={newPlayer.differentials}
+                      onChange={(e) => setNewPlayer({ ...newPlayer, differentials: e.target.value })}
+                      placeholder="Enter up to 20 differentials as comma-separated values, e.g.: 15.2, 16.1, 14.8, 15.5, ..."
+                      rows={3}
+                      className="w-full p-2 border rounded bg-transparent text-sm focus:ring-1 focus:ring-primary"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Import historical differentials to calculate WHS handicap. If left empty, the handicap value above will be used 20 times.
+                    </p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    data-testid="submit-new-player-btn"
+                    onClick={handleAddPlayer}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest"
+                  >
+                    Add Player
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -756,7 +755,7 @@ export default function PlayersPage() {
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Player Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -927,9 +926,8 @@ export default function PlayersPage() {
                         key={team.name}
                         type="button"
                         onClick={() => setEditingPlayer({ ...editingPlayer, team_logo: team.logo })}
-                        className={`w-10 h-10 p-1 rounded border-2 transition-all ${
-                          editingPlayer.team_logo === team.logo ? 'border-primary bg-primary/10' : 'border-transparent hover:border-muted'
-                        }`}
+                        className={`w-10 h-10 p-1 rounded border-2 transition-all ${editingPlayer.team_logo === team.logo ? 'border-primary bg-primary/10' : 'border-transparent hover:border-muted'
+                          }`}
                         title={team.name}
                       >
                         {team.logo ? (
@@ -1222,7 +1220,7 @@ export default function PlayersPage() {
               <p className="text-sm text-muted-foreground">
                 Import up to 20 score differentials for <strong>{importPlayerName}</strong>.
               </p>
-              
+
               <div className="space-y-2">
                 <Label>Score Differentials (comma-separated)</Label>
                 <Input

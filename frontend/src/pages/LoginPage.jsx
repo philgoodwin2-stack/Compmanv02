@@ -87,7 +87,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className=" login min-h-screen flex flex-col ">
       {/* Hero Section */}
       <div className="golf-header text-white py-12 px-4 flex-shrink-0">
         <div className="max-w-4xl mx-auto text-center">
@@ -107,17 +107,17 @@ export default function LoginPage() {
 
       {/* Auth Section */}
       <div className="flex-1 flex items-center justify-center p-4 bg-secondary/30">
-        <Card className="w-full max-w-md shadow-lg">
+        <Card className="bg-white-100/20 w-full max-w-md shadow-lg">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl font-bold uppercase tracking-tight">
               {mode === "login" ? "Welcome Back" : mode === "register" ? "Create Account" : "Reset Password"}
             </CardTitle>
             <CardDescription className="text-sm mt-1">
-              {mode === "login" 
-                ? "Sign in to your account" 
+              {mode === "login"
+                ? "Sign in to your account"
                 : mode === "register"
-                ? "Join the competition"
-                : "Enter your email to receive a reset link"}
+                  ? "Join the competition"
+                  : "Enter your email to receive a reset link"}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">

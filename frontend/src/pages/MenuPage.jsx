@@ -140,17 +140,17 @@ export default function MenuPage() {
       </div>
 
       {/* Menu Grid with Golf Pattern Background */}
-      <div className=" menu flex-1 p-4 sm:p-6 relative overflow-hidden" >
+      <div className="loogin flex-1 p-4 sm:p-6 relative overflow-hidden" >
         <div className="max-w-4xl mx-auto relative z-10">
           <h2 className="text-lg font-bold uppercase tracking-tight mb-4 text-muted-foreground">
             Menu
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="login grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white/80">
             {menuItems.map((item) => (
               <Card
                 key={item.path}
-                className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] "
                 onClick={() => navigate(item.path)}
                 data-testid={`menu-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
               >
