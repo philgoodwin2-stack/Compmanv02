@@ -93,11 +93,13 @@ export default function LoginPage() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="flex justify-center mb-4">
             <div className="bg-white/10 p-3 rounded-full">
-              <Flag className="w-10 h-10 text-[#C0C0C0]" />
+              <div><Flag className="w-10 h-10 text-[#C0C0C0]" /> </div>
+              <div> <img src="/favicon.ico" className="w-16 h-16 rounded-full" /></div>
+
             </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight uppercase mb-2">
-            Stableford Golf
+          <h1 className="text-5xl md:text-5xl font-bold tracking-tight uppercase mb-2">
+            COMPMAN
           </h1>
           <p className="text-lg md:text-xl text-white/80 font-light">
             Track scores. Compete. Win.
@@ -345,6 +347,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

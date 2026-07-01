@@ -140,13 +140,13 @@ export default function MenuPage() {
       </div>
 
       {/* Menu Grid with Golf Pattern Background */}
-      <div className="loogin flex-1 p-4 sm:p-6 relative overflow-hidden" >
-        <div className="max-w-4xl mx-auto relative z-10">
-          <h2 className="text-lg font-bold uppercase tracking-tight mb-4 text-muted-foreground">
+      <div className="login flex-1 p-4 sm:p-6 relative overflow-hidden" >
+        <div className=" loogin max-w-4xl mx-auto relative z-10">
+          <h2 className=" text-lg font-bold uppercase tracking-tight mb-4 text-muted-foreground  ">
             Menu
           </h2>
 
-          <div className="login grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white/80">
+          <div className="loogin grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white/99">
             {menuItems.map((item) => (
               <Card
                 key={item.path}
@@ -154,7 +154,7 @@ export default function MenuPage() {
                 onClick={() => navigate(item.path)}
                 data-testid={`menu-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
               >
-                <CardContent className="p-4 flex items-center gap-4">
+                <CardContent className="p-4 flex items-center gap-4  ">
                   <div className={`${item.color} p-3 rounded-lg`}>
                     <item.icon className="w-6 h-6 text-white" />
                   </div>
