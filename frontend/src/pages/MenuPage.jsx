@@ -150,18 +150,20 @@ export default function MenuPage() {
             {menuItems.map((item) => (
               <Card
                 key={item.path}
-                className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] "
+                className="bg-blue-200/99 text-white font-bold border-4 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
                 onClick={() => navigate(item.path)}
                 data-testid={`menu-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
               >
-                <CardContent className="p-4 flex items-center gap-4  ">
+                <CardContent className="p-4 flex items-center gap-4 bg-white/99">
                   <div className={`${item.color} p-3 rounded-lg`}>
                     <item.icon className="w-6 h-6 text-white" />
                   </div>
+
                   <div className="flex-1">
                     <h3 className="font-bold text-base">{item.title}</h3>
                     <p className="text-sm text-muted-foreground">{item.description}</p>
                   </div>
+
                   <ChevronRight className="w-5 h-5 text-muted-foreground" />
                 </CardContent>
               </Card>
